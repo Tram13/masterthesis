@@ -6,3 +6,5 @@
 *__pyc__*
 # PyCharm files
 .idea
+# Data files
+data
