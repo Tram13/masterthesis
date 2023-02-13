@@ -4,3 +4,5 @@
 .windows_venv
 # Python compiled files
 *__pyc__*
+# PyCharm files
+.idea
