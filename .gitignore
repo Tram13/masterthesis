@@ -1,0 +1,6 @@
+# Environments
+.venv
+.env
+.windows_venv
+# Python compiled files
+*__pyc__*
