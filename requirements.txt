@@ -1,1 +1,4 @@
 jupyter
+transformers
+tensorflow
+sentence-transformers
