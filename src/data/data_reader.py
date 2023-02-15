@@ -106,7 +106,19 @@ class DataReader:
         entries = DataReader._get_entries_from_file(file_location)
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_BUSINESS_FIELDS)
         businesses: pd.DataFrame = pd.DataFrame.from_records(filtered_entries)
-        # TODO: attributes en categories deftig parsen
+        categories_whitelist = {
+            "Food Trucks",  # Data exploration shows that all restaurant-like businesses
+            "Restaurants",  # either have the category "Food Truck" or "Restaurant".
+        }  # Only keep businesses that contain at least 1 of the categories in this whitelist
+        businesses['categories'] = [
+            set(category_group.split(", "))  # Convert string of all categories to a set of individual categories
+            if category_group and set(category_group.split(", ")).intersection(categories_whitelist)  # If in whitelist
+            else None  # No category is provided by Yelp, or no category is in the whitelist
+            for category_group in businesses['categories']
+        ]
+        businesses = businesses.loc[businesses['categories'].notnull()]  # Remove businesses with no categories listed
+
+        # TODO: attributes deftig parsen
         return businesses
 
     @staticmethod
