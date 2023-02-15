@@ -4,6 +4,8 @@ from transformers import pipeline
 class BasicSentimentAnalysis:
 
     def __init__(self) -> None:
+        # default model for sentiment analysis is
+        # 'distilbert-base-uncased-finetuned-sst-2-english'
         self.pipeline = pipeline("sentiment-analysis")
 
     def get_sentiment(self, text: list[str]) -> list[dict]:
