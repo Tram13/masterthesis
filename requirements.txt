@@ -4,3 +4,4 @@ tqdm
 transformers
 tensorflow
 sentence-transformers
+spacy
