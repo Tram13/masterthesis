@@ -23,4 +23,3 @@ if __name__ == '__main__':
 
     output = test_model.get_sentiment(t2)
     print(output)
-
