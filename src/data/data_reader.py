@@ -19,14 +19,14 @@ class DataReader:
         'yelp_academic_dataset_user.json'
     ]
 
-    RELEVANT_BUSINESS_FIELDS = [
+    RELEVANT_BUSINESS_FIELDS = [  # TODO: set van maken, ook van alles hieronder
         'business_id',
         'name',
         'city',
         'stars',
         'review_count',
-        'attributes',
-        'categories'
+        'attributes',  # Filtered in _parse_categories()
+        'categories'  # Filtered in _parse_categories()
     ]
 
     RELEVANT_CHECKIN_FIELDS = [
