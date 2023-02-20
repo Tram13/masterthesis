@@ -1,12 +1,14 @@
+import pandas as pd
 from transformers import pipeline
 
 
+# todo finetuning
 class BasicSentimentAnalysis:
 
     def __init__(self) -> None:
         # default model for sentiment analysis is
         # 'distilbert-base-uncased-finetuned-sst-2-english'
-        self.pipeline = pipeline("sentiment-analysis")
+        self.pipeline = pipeline("sentiment-analysis", model='distilbert-base-uncased-finetuned-sst-2-english')
 
     def get_sentiment(self, text: list[str]) -> list[dict]:
         return self.pipeline(text)

@@ -1,50 +1,54 @@
-import umap
-from sklearn.cluster import KMeans
 import pandas as pd
+
+from src.NLP.Models.BasicSentimentAnalysis import BasicSentimentAnalysis
 from src.NLP.Models.SBERT_feature_extraction import SentenceBERT
 from src.NLP.dimensionality_reduction import DimensionalityReduction
 from src.NLP.sentence_splitter import SentenceSplitter
-import matplotlib.pyplot as plt
+from src.NLP.clustering import ClusteringAlgorithms
 
 
-def run_main(reviews: list[str]):
-    # split reviews into sentences
-    splitter = SentenceSplitter()
-    splitted_reviews = [splitter.split_text_into_sentences(review) for review in reviews]
-
+# add cluster labels to the DateFrame
+def cluster_sentences(reviews: pd.DataFrame) -> pd.DataFrame:
     # get sentence embedding for each sentence of the review
     feature_extractor = SentenceBERT()
-    extracted_features = [feature_extractor.get_features(review_sentences) for review_sentences in splitted_reviews]
+    df_features = pd.DataFrame(feature_extractor.get_features(reviews['text']))
 
-    # reduce the dimension of the extracted features before clustering
-    dim_reducer = DimensionalityReduction(extracted_features)
+    # dimensionality reduction
+    dim_reducer = DimensionalityReduction(df_features)
     reduced_features = dim_reducer.features_UMAP()
 
     # clustering
-    kmeans = KMeans(
-        init="random",
-        n_clusters=3,
-        n_init=10,
-        max_iter=300,
-        random_state=42
-    )
+    clustering_algorithms = ClusteringAlgorithms(reduced_features)
+    clustering_labels = clustering_algorithms.labels_KMEANS()   # todo finetune this
 
-    kmeans.fit(reduced_features)
+    reviews['cluster_labels'] = clustering_labels
+    return reviews
 
-    # Prepare data
-    data_2d = umap.UMAP(n_neighbors=15, n_components=2, min_dist=0.0, metric='cosine').fit_transform(reduced_features)
-    result = pd.DataFrame(data_2d, columns=['x', 'y'])
-    result['labels'] = kmeans.labels_
 
-    # Visualize clusters
-    fig, ax = plt.subplots(figsize=(20, 10))
-    outliers = result.loc[result.labels == -1, :]
-    clustered = result.loc[result.labels != -1, :]
-    plt.scatter(outliers.x, outliers.y, color='#BDBDBD', s=0.05)
-    plt.scatter(clustered.x, clustered.y, c=clustered.labels, s=0.05, cmap='hsv_r')
-    plt.colorbar()
-    plt.show()
+# add sentiment label and score to the DataFrame
+def sentiment_analysis_sentences(reviews: pd.DataFrame):
+    sentiment_analyzer = BasicSentimentAnalysis()
+    df_sentiment = sentiment_analyzer.get_sentiment(list(reviews['text']))
+    df_sentiment.columns = ['label_sentiment', 'score_sentiment']
+    return pd.concat([reviews, df_sentiment], axis=1)
+
+
+def run_main(reviews: pd.Series):
+    splitter = SentenceSplitter()
+    splitted_reviews = pd.DataFrame(reviews.map(splitter.split_text_into_sentences))
+    # split sentences out in pd.dataframe while keeping indices of review
+    splitted_reviews = splitted_reviews.explode('text').reset_index()
+    splitted_reviews['text'] = splitted_reviews['text'].map(str.strip)
+
+    # clustering label
+    reviews = cluster_sentences(splitted_reviews)
+
+    # sentiment label+score for each sentence
+    reviews = sentiment_analysis_sentences(reviews)
 
 
 if __name__ == '__main__':
-    run_main([])
+    reviews_input = pd.read_csv('tmp.pd')['text']
+    x = run_main(reviews_input)
+    print(x)
+

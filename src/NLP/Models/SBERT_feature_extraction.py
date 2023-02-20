@@ -1,4 +1,4 @@
-import numpy as np
+import pandas as pd
 from sentence_transformers import SentenceTransformer
 
 
@@ -7,8 +7,8 @@ class SentenceBERT:
     def __init__(self, model_name: str = 'all-mpnet-base-v2') -> None:
         self.model = SentenceTransformer(model_name)
 
-    def get_features(self, sentences: list[str]) -> np.ndarray:
-        return self.model.encode(sentences=sentences)
+    def get_features(self, sentences: pd.Series) -> pd.DataFrame:
+        return pd.DataFrame(self.model.encode(sentences=sentences))
 
 
 if __name__ == '__main__':
