@@ -1,3 +1,5 @@
+import re
+from collections import Counter
 from pathlib import Path
 
 import json
@@ -106,6 +108,8 @@ class DataReader:
         entries = DataReader._get_entries_from_file(file_location)
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_BUSINESS_FIELDS)
         businesses: pd.DataFrame = pd.DataFrame.from_records(filtered_entries)
+
+        # PARSING CATEGORIES
         categories_whitelist = {
             "Food Trucks",  # Data exploration shows that all restaurant-like businesses
             "Restaurants",  # either have the category "Food Truck" or "Restaurant".
@@ -116,9 +120,63 @@ class DataReader:
             else None  # No category is provided by Yelp, or no category is in the whitelist
             for category_group in businesses['categories']
         ]
-        businesses = businesses.loc[businesses['categories'].notnull()]  # Remove businesses with no categories listed
+        businesses = businesses.dropna(subset=['categories']).copy()  # Remove businesses with no categories listed
+        # We will only keep the categories with a high occurence
+        all_remaining_categories = (category
+                                    for business_categories in businesses['categories']
+                                    for category in business_categories)
+        categories_appearances = Counter(all_remaining_categories)
+        common_categories = {item for item, count in categories_appearances.items() if count >= 500}
+        businesses['categories'] = businesses['categories'].map(common_categories.intersection)
+        all_remaining_categories = (category for business_categories in businesses['categories'] for category in business_categories)
+        categories_appearances = Counter(all_remaining_categories)
 
-        # TODO: attributes deftig parsen
+        onehot_categories = [businesses['categories'].map(lambda business_categories: category in business_categories) for category in categories_appearances.keys()]
+        businesses = pd.concat([businesses, *onehot_categories], axis=1)
+        businesses = businesses.drop(columns=['categories'])
+
+        # PARSING ATTRIBUTES
+        businesses_attributes_filtered = []
+
+        filtered_attributes_single = {
+            'RestaurantsTakeOut',
+            'RestaurantsDelivery',
+            'RestaurantsPriceRange2',
+            'GoodForKids',
+            'RestaurantsGoodForGroups',
+            'RestaurantsAttire',
+            'NoiseLevel'
+        }
+        filtered_attributes_multi = {
+            'Ambience',
+            'GoodForMeal'
+        }
+
+        for business_attributes in businesses['attributes']:
+            parsed_business_attributes = {}
+            if business_attributes is not None:
+                for attribute_key, attribute_value in business_attributes.items():
+                    if attribute_key in filtered_attributes_multi and attribute_value.startswith('{'):  # Attribute is again a dict
+                        json_string = re.sub(
+                            ', u"',
+                            ', "',
+                            attribute_value.replace('\'', '\"').lower().replace('none', 'null')
+                        ).replace('{u', '{')  # The provided JSON dict is not entirely up-to-spec
+                        sub_attributes = json.loads(json_string)
+                        sub_attributes = {key: value for key, value in sub_attributes.items() if value}  # Keep only sub-attributes those where value is true
+                        for sub_key, sub_value in sub_attributes.items():
+                            parsed_business_attributes[sub_key] = sub_value
+                    elif attribute_key in filtered_attributes_single:
+                        parsed_business_attributes[attribute_key] = attribute_value
+            businesses_attributes_filtered.append(parsed_business_attributes)
+
+        businesses['attributes'] = businesses_attributes_filtered
+        all_remaining_attributes = (attribute_key for business_attributes in businesses['attributes'] for attribute_key in business_attributes.keys())
+        attributes_appearances = Counter(all_remaining_attributes)
+        onehot_attributes = [businesses['attributes'].map(lambda business_categories: attribute in business_attributes) for attribute in attributes_appearances.keys()]
+        businesses = pd.concat([businesses, *onehot_attributes], axis=1)
+        businesses = businesses.drop(columns=['attributes'])
+
         return businesses
 
     @staticmethod
