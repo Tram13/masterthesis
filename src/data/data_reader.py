@@ -133,8 +133,10 @@ class DataReader:
         categories_appearances = Counter(all_remaining_categories)
 
         onehot_categories = [
-            businesses['categories'].map(lambda business_categories: category in business_categories).rename(
-                f"category_{category.replace(' ', '_').lower()}") for category in categories_appearances.keys()]
+            businesses['categories']
+            .map(lambda business_categories: 1 if category in business_categories else 0)
+            .rename(f"category_{category.replace(' ', '_').lower()}") for category in categories_appearances.keys()
+        ]
         businesses = pd.concat([businesses, *onehot_categories], axis=1)
         businesses = businesses.drop(columns=['categories'])
 
