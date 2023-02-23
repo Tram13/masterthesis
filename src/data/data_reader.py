@@ -1,10 +1,10 @@
+import json
+import os
 import re
 from collections import Counter
 from pathlib import Path
 
-import json
 import pandas as pd
-import os
 
 from src.data.data_exception import DataException
 from src.tools.config_parser import ConfigParser
@@ -128,10 +128,13 @@ class DataReader:
         categories_appearances = Counter(all_remaining_categories)
         common_categories = {item for item, count in categories_appearances.items() if count >= 500}
         businesses['categories'] = businesses['categories'].map(common_categories.intersection)
-        all_remaining_categories = (category for business_categories in businesses['categories'] for category in business_categories)
+        all_remaining_categories = (category for business_categories in businesses['categories'] for category in
+                                    business_categories)
         categories_appearances = Counter(all_remaining_categories)
 
-        onehot_categories = [businesses['categories'].map(lambda business_categories: category in business_categories) for category in categories_appearances.keys()]
+        onehot_categories = [
+            businesses['categories'].map(lambda business_categories: category in business_categories).rename(
+                f"category_{category.replace(' ', '_').lower()}") for category in categories_appearances.keys()]
         businesses = pd.concat([businesses, *onehot_categories], axis=1)
         businesses = businesses.drop(columns=['categories'])
 
@@ -156,14 +159,16 @@ class DataReader:
             parsed_business_attributes = {}
             if business_attributes is not None:
                 for attribute_key, attribute_value in business_attributes.items():
-                    if attribute_key in filtered_attributes_multi and attribute_value.startswith('{'):  # Attribute is again a dict
+                    if attribute_key in filtered_attributes_multi and attribute_value.startswith(
+                            '{'):  # Attribute is again a dict
                         json_string = re.sub(
                             ', u"',
                             ', "',
                             attribute_value.replace('\'', '\"').lower().replace('none', 'null')
                         ).replace('{u', '{')  # The provided JSON dict is not entirely up-to-spec
                         sub_attributes = json.loads(json_string)
-                        sub_attributes = {key: value for key, value in sub_attributes.items() if value}  # Keep only sub-attributes those where value is true
+                        sub_attributes = {key: value for key, value in sub_attributes.items() if
+                                          value}  # Keep only sub-attributes those where value is true
                         for sub_key, sub_value in sub_attributes.items():
                             parsed_business_attributes[sub_key] = sub_value
                     elif attribute_key in filtered_attributes_single:
@@ -171,9 +176,12 @@ class DataReader:
             businesses_attributes_filtered.append(parsed_business_attributes)
 
         businesses['attributes'] = businesses_attributes_filtered
-        all_remaining_attributes = (attribute_key for business_attributes in businesses['attributes'] for attribute_key in business_attributes.keys())
+        all_remaining_attributes = (attribute_key for business_attributes in businesses['attributes'] for attribute_key
+                                    in business_attributes.keys())
         attributes_appearances = Counter(all_remaining_attributes)
-        onehot_attributes = [businesses['attributes'].map(lambda business_categories: attribute in business_attributes) for attribute in attributes_appearances.keys()]
+        onehot_attributes = [
+            businesses['attributes'].map(lambda business_categories: attribute in business_attributes).rename(
+                f'attribute_{attribute.lower()}') for attribute in attributes_appearances.keys()]
         businesses = pd.concat([businesses, *onehot_attributes], axis=1)
         businesses = businesses.drop(columns=['attributes'])
 
