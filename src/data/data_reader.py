@@ -167,8 +167,6 @@ class DataReader:
                             attribute_value.replace('\'', '\"').lower().replace('none', 'null')
                         ).replace('{u', '{')  # The provided JSON dict is not entirely up-to-spec
                         sub_attributes = json.loads(json_string)
-                        sub_attributes = {key: value for key, value in sub_attributes.items() if
-                                          value}  # Keep only sub-attributes those where value is true
                         for sub_key, sub_value in sub_attributes.items():
                             parsed_business_attributes[sub_key] = sub_value
                     elif attribute_key in filtered_attributes_single:
@@ -180,8 +178,41 @@ class DataReader:
                                     in business_attributes.keys())
         attributes_appearances = Counter(all_remaining_attributes)
         onehot_attributes = [
-            businesses['attributes'].map(lambda business_categories: attribute in business_attributes).rename(
-                f'attribute_{attribute.lower()}') for attribute in attributes_appearances.keys()]
+            businesses['attributes']
+            .map(
+                lambda business_attributes:
+                business_attributes[attribute] if attribute in business_attributes
+                else None
+            )
+            .rename(f'attribute_{attribute.lower()}')
+            .replace('None', None)
+            .replace('True', True)
+            .replace('False', False)
+            for attribute, _ in attributes_appearances.most_common()  # Sorted list of attributes, since order matters
+        ]
+        onehot_attributes = [
+            series.map(
+                lambda attributes:
+                re.sub("^u'", "", attributes).replace("'", "") if isinstance(attributes, str) else attributes)
+            for series in onehot_attributes
+        ]
+
+        for index in range(len(onehot_attributes)):  # Convert string/boolean attributes to floats
+            if index == 2:  # attribute_restaurantspricerange2
+                onehot_attributes[index] = onehot_attributes[index].map(
+                    lambda x: 0 if x == '1' else (
+                        0.33 if x == '2' else (0.67 if x == '3' else (1 if x == '4' else 0.33)))
+                )  # '2' seems to be the most common value, thus default
+            elif index == 14:  # attribute_noiselevel
+                onehot_attributes[index] = onehot_attributes[index].map(
+                    lambda x: 0 if x == 'quiet' else (
+                        0.33 if x == 'average' else (0.67 if x == 'loud' else (1 if x == 'very_loud' else 0.33)))
+                )  # 'average' is the default value
+            else:
+                onehot_attributes[index] = onehot_attributes[index].map(
+                    lambda x: 1 if x is True else (0 if x is False else 0.5)
+                )
+
         businesses = pd.concat([businesses, *onehot_attributes], axis=1)
         businesses = businesses.drop(columns=['attributes'])
 
