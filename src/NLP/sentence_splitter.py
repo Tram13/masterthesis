@@ -1,3 +1,4 @@
+import pandas as pd
 from spacy.lang.en import English
 
 
@@ -11,12 +12,12 @@ class SentenceSplitter:
         return [sent.text for sent in self.nlp(text).sents]
 
 
-if __name__ == '__main__':
+def split_reviews(reviews: pd.Series):
     splitter = SentenceSplitter()
-    t1 = "Please read the analysis. You'll be amazed."
-    t2 = "This restaurant sucks. It has the worst staff and terrible food. Only Jonny liked it."
-    s = splitter.split_text_into_sentences(t1)
-    print(s)
-    s = splitter.split_text_into_sentences(t2)
-    print(s)
+    splitted_reviews = pd.DataFrame(reviews.map(splitter.split_text_into_sentences))
+    # split sentences out in pd.dataframe while keeping indices of review
+    splitted_reviews = splitted_reviews.explode('text').reset_index()
+    splitted_reviews['text'] = splitted_reviews['text'].map(str.strip)
+    return splitted_reviews
+
 

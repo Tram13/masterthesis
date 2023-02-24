@@ -7,3 +7,6 @@ sentence-transformers
 spacy
 umap-learn
 matplotlib
+BERTopic
+torch
+cuda-python

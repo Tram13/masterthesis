@@ -16,7 +16,7 @@ class ClusteringAlgorithms:
         )
 
     def labels_KMEANS(self, init: str = "random", n_clusters: int = 10, n_init: int = 10,
-                      max_iter: int = 300) -> pd.Series:
+                      max_iter: int = 300) -> tuple[pd.Series, int]:
         kmeans = self.get_KMEANS_Model(
             init=init,
             n_clusters=n_clusters,
@@ -24,7 +24,5 @@ class ClusteringAlgorithms:
             max_iter=max_iter,
         )
         clustered = kmeans.fit(self.features)
-        return pd.Series(clustered.labels_, name='cluster_labels')
+        return pd.Series(clustered.labels_, name='cluster_labels'), n_clusters
 
-    # TODO PCA
-    # TODO TruncatedSVD

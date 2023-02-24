@@ -1,11 +1,15 @@
 import pandas as pd
+import torch
 from sentence_transformers import SentenceTransformer
 
 
 class SentenceBERT:
     # https://www.sbert.net/docs/pretrained_models.html
     def __init__(self, model_name: str = 'all-mpnet-base-v2') -> None:
-        self.model = SentenceTransformer(model_name)
+        self.model = SentenceTransformer(model_name, device='cuda')
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(device)
 
     def get_features(self, sentences: pd.Series) -> pd.DataFrame:
         return pd.DataFrame(self.model.encode(sentences=sentences))
