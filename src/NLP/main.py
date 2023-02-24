@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 from src.NLP.Models.BERTopic import CustomBERTTopic
 from src.NLP.df_NLP_manipulation.df_clustering import cluster_sentences
@@ -8,20 +9,23 @@ from src.NLP.scoring_functions import bertopic_scoring_func, basic_clustering_sc
 from src.NLP.sentence_splitter import split_reviews
 
 
-def main_BERTopic(reviews: pd.Series, precompute_and_save_embeddings: bool = False) -> tuple[pd.Series, pd.DataFrame]:
+def main_BERTopic(reviews: pd.Series, embeddings: np.ndarray = None, do_precompute_and_save_embeddings: bool = False,
+                  save_path: Path = None) -> tuple[pd.Series, pd.DataFrame]:
     # split reviews into sentences
     reviews = split_reviews(reviews)
+    input_data = reviews['text']
 
     # create the model
-    BERTopic_model = CustomBERTTopic(max_topics=50).model
+    BERTopic = CustomBERTTopic(max_topics=50)
+    BERTopic_model = BERTopic.model
 
-    embeddings = None
-    if precompute_and_save_embeddings:
-        pass
+    # if there are no given embeddings, it is possible to precompute them and save them
+    if embeddings is None and do_precompute_and_save_embeddings:
+        embeddings = BERTopic.precompute_and_save_embeddings(input_data, save_path=save_path)
 
     # generate topics
-    topics, probabilities = BERTopic_model.fit_transform(reviews['text'], embeddings=embeddings)
-    force_topics = BERTopic_model.reduce_outliers(documents=reviews['text'], topics=topics, threshold=0.1)
+    topics, probabilities = BERTopic_model.fit_transform(input_data, embeddings=embeddings)
+    force_topics = BERTopic_model.reduce_outliers(documents=input_data, topics=topics, threshold=0.1)
 
     # add them to the dataframe
     col_names = list(reviews.columns) + ['topic_id', 'force_topic_id', 'topic_probability']

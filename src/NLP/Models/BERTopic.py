@@ -1,4 +1,9 @@
+import pathlib
+
+import numpy as np
+import pandas as pd
 import torch
+from pathlib import Path
 
 from umap import UMAP
 from hdbscan import HDBSCAN
@@ -6,7 +11,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from bertopic import BERTopic
 from bertopic.representation import KeyBERTInspired
 from bertopic.vectorizers import ClassTfidfTransformer
-
+from sentence_transformers import SentenceTransformer
 from src.NLP.Models.SBERT_feature_extraction import SentenceBERT
 
 
@@ -64,3 +69,14 @@ class CustomBERTTopic:
     def enable_gpu(self):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.embedding_model.to(device)
+
+    def precompute_and_save_embeddings(self, data: pd.Series, save_path: pathlib.Path = None) -> np.ndarray:
+        if isinstance(self.model.embedding_model, SentenceTransformer):
+            embeddings = self.model.embedding_model.encode(sentences=data)
+        else:
+            raise NotImplementedError()
+
+        if save_path is not None:
+            np.save(file=save_path.with_suffix('.npy'), arr=embeddings)
+
+        return embeddings
