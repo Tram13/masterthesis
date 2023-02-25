@@ -2,9 +2,12 @@ import json
 import os
 import re
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+from sklearn import preprocessing
 
 from src.data.data_exception import DataException
 from src.tools.config_parser import ConfigParser
@@ -33,10 +36,10 @@ class DataReader:
 
     RELEVANT_CHECKIN_FIELDS = [
         'business_id',
-        'date'  # TODO: uitzoeken hoe deze lijst van dates kan gebruikt worden (bvb: average checkins per week?)
+        'date'  # Will be transformed to 'average_checkins_per_week_normalised' and included in businesses dataframe
     ]
 
-    RELEVANT_REVIEW_FIELDS = [
+    RELEVANT_REVIEW_FIELDS = [  # TODO: uitzoeken of een gebruiker meerdere reviews over hetzelfde restaurant kan hebben?
         'review_id',
         'user_id',
         'business_id',
@@ -48,7 +51,7 @@ class DataReader:
         'date'
     ]
 
-    RELEVANT_TIP_FIELDS = [
+    RELEVANT_TIP_FIELDS = [  # TODO: prob dit mergen samen met de review, indien dit veld bestaat
         'user_id',
         'business_id',
         'text',
@@ -59,8 +62,7 @@ class DataReader:
     RELEVANT_USER_FIELDS = [
         'user_id',
         'name',
-        'review_count',
-        'yelping_since',
+        'review_count',  # TODO: Check of dit correct is?
         'friends',
         'useful',
         'funny',
@@ -224,7 +226,23 @@ class DataReader:
     def _parse_checkins(file_location: os.PathLike) -> pd.DataFrame:
         entries = DataReader._get_entries_from_file(file_location)
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_CHECKIN_FIELDS)
-        checkins: pd.DataFrame = pd.DataFrame.from_records(filtered_entries)
+        checkins = pd.DataFrame.from_records(filtered_entries)
+        checkins['date'] = checkins['date'].map(
+            lambda datelist: [datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S') for date_str in datelist.split(', ')]
+        )
+
+        first_checkins = checkins['date'].map(lambda datelist: min(datelist))  # First check-in per restaurant
+        last_checkin = checkins['date'].map(lambda datelist: max(datelist)).max()  # Last checkin date in entire dataset
+        #  Amount of weeks between first check-in and last possible check-in
+        amount_of_weeks = (last_checkin - first_checkins).map(lambda x: x.days / 7)
+        amount_of_checkins = checkins['date'].transform(len)
+        avg_checkins_per_week = (amount_of_checkins / amount_of_weeks).replace([np.inf, -np.inf], 0)
+        avg_checkins_per_week_normalised = pd.Series(
+            data=preprocessing.MinMaxScaler().fit_transform(avg_checkins_per_week.to_numpy().reshape(-1, 1)).flatten(),
+            name="average_checkins_per_week_normalised")
+
+        checkins = pd.concat([checkins, avg_checkins_per_week_normalised], axis=1)
+        checkins = checkins.drop(columns=['date'])
         return checkins
 
     @staticmethod
