@@ -78,13 +78,12 @@ class DataReader:
         self._assert_correct_data_dir(data_path)
         self.file_paths = [Path(data_path, file) for file in self.EXPECTED_FILES]
 
-    def read_data(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def read_data(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         businesses = self._parse_businesses(self.file_paths[0])
-        checkins = self._parse_checkins(self.file_paths[1])
         reviews = self._parse_reviews(self.file_paths[2])
         tips = self._parse_tips(self.file_paths[3])
         users = self._parse_users(self.file_paths[4])
-        return businesses, checkins, reviews, tips, users
+        return businesses, reviews, tips, users
 
     # Check if ALL and NOTHING BUT the data files are present in the provided directory
     def _assert_correct_data_dir(self, data_path):
@@ -105,8 +104,7 @@ class DataReader:
     def _filter_entries(entries: list[dict[str, any]], fields: list[str]) -> list[dict[str, any]]:
         return [{key: entry[key] for key in fields} for entry in entries]
 
-    @staticmethod
-    def _parse_businesses(file_location: os.PathLike) -> pd.DataFrame:
+    def _parse_businesses(self, file_location: os.PathLike) -> pd.DataFrame:
         entries = DataReader._get_entries_from_file(file_location)
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_BUSINESS_FIELDS)
         businesses: pd.DataFrame = pd.DataFrame.from_records(filtered_entries)
@@ -219,6 +217,11 @@ class DataReader:
 
         businesses = pd.concat([businesses, *onehot_attributes], axis=1)
         businesses = businesses.drop(columns=['attributes'])
+        businesses = businesses.set_index('business_id')
+
+        # ADD CHECK-INS
+        checkins = DataReader._parse_checkins(self.file_paths[1])
+        businesses = businesses.join(checkins, on='business_id')
 
         return businesses
 
@@ -243,6 +246,7 @@ class DataReader:
 
         checkins = pd.concat([checkins, avg_checkins_per_week_normalised], axis=1)
         checkins = checkins.drop(columns=['date'])
+        checkins = checkins.set_index('business_id')
         return checkins
 
     @staticmethod
