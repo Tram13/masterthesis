@@ -62,7 +62,7 @@ class DataReader:
     RELEVANT_USER_FIELDS = [
         'user_id',
         'name',
-        'review_count',  # TODO: Check of dit correct is?
+        'review_count',  # See FAQ on Yelp.com, not entirely correct with the actual amount of reviews we have
         'friends',
         'useful',
         'funny',
@@ -286,5 +286,6 @@ class DataReader:
             entry['compliments'] = sum_combined_for_entry
 
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_USER_FIELDS)
-        users: pd.DataFrame = pd.DataFrame.from_records(filtered_entries)
+        users = pd.DataFrame.from_records(filtered_entries)
+        users['friends'] = users['friends'].map(lambda friend_str: friend_str.split(', '))
         return users
