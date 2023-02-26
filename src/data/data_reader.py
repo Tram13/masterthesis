@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import sys
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -8,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn import preprocessing
+from tqdm import tqdm
 
 from src.data.data_exception import DataException
 from src.tools.config_parser import ConfigParser
@@ -39,7 +41,8 @@ class DataReader:
         'date'  # Will be transformed to 'average_checkins_per_week_normalised' and included in businesses dataframe
     ]
 
-    RELEVANT_REVIEW_FIELDS = [  # TODO: uitzoeken of een gebruiker meerdere reviews over hetzelfde restaurant kan hebben?
+    RELEVANT_REVIEW_FIELDS = [
+        # TODO: uitzoeken of een gebruiker meerdere reviews over hetzelfde restaurant kan hebben?
         'review_id',
         'user_id',
         'business_id',
@@ -75,23 +78,63 @@ class DataReader:
         # Default value for data_path is provided by config.ini file
         if data_path is None:
             data_path = Path(ConfigParser.get_value('data', 'data_path'))
-        self._assert_correct_data_dir(data_path)
+        self.data_path = data_path
+        self.cache_path = Path(self.data_path, ConfigParser.get_value('data', 'cache_directory'))
+        self._assert_correct_data_dir()
         self.file_paths = [Path(data_path, file) for file in self.EXPECTED_FILES]
 
-    def read_data(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        businesses = self._parse_businesses(self.file_paths[0])
-        reviews = self._parse_reviews(self.file_paths[2], businesses)
-        tips = self._parse_tips(self.file_paths[3], businesses)
-        users = self._parse_users(self.file_paths[4])
+    def read_data(self, use_cache: bool = True, save_as_cache: bool = True) -> tuple[
+        pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        if use_cache:
+            businesses, reviews, tips, users = self._read_from_cache()
+        else:
+            businesses, reviews, tips, users = self._read_from_disk()
+        if save_as_cache:
+            businesses.to_parquet(Path(self.cache_path, 'businesses.parquet'), engine='fastparquet')
+            reviews.to_parquet(Path(self.cache_path, 'reviews.parquet'), engine='fastparquet')
+            tips.to_parquet(Path(self.cache_path, 'tips.parquet'), engine='fastparquet')
+            users.to_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
+        return businesses, reviews, tips, users
+
+    def _read_from_disk(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        with tqdm(total=4, desc="Reading files from disk") as p_bar:
+            p_bar.set_postfix_str('(current: businesses)')
+            businesses = self._parse_businesses(self.file_paths[0])
+            p_bar.update()
+            p_bar.set_postfix_str('(current: reviews)')
+            reviews = self._parse_reviews(self.file_paths[2], businesses)
+            p_bar.update()
+            p_bar.set_postfix_str('current: tips')
+            tips = self._parse_tips(self.file_paths[3], businesses)
+            p_bar.update()
+            p_bar.set_postfix_str('current: users')
+            users = self._parse_users(self.file_paths[4])
+            p_bar.update()
+        return businesses, reviews, tips, users
+
+    def _read_from_cache(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        try:
+            businesses = pd.read_parquet(Path(self.cache_path, 'businesses.parquet'), engine='fastparquet')
+            reviews = pd.read_parquet(Path(self.cache_path, 'reviews.parquet'), engine='fastparquet')
+            tips = pd.read_parquet(Path(self.cache_path, 'tips.parquet'), engine='fastparquet')
+            users = pd.read_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
+        except OSError:
+            print("Could not reach caches!", file=sys.stderr)
+            businesses, reviews, tips, users = self._read_from_disk()
         return businesses, reviews, tips, users
 
     # Check if ALL and NOTHING BUT the data files are present in the provided directory
-    def _assert_correct_data_dir(self, data_path):
-        if set(os.listdir(data_path)) != set(self.EXPECTED_FILES):
+    def _assert_correct_data_dir(self):
+        cache_already_exists = os.path.isdir(self.cache_path)
+        if not cache_already_exists:
+            os.mkdir(self.cache_path)
+        if set(os.listdir(self.data_path)) != {self.cache_path.name, *self.EXPECTED_FILES}:
+            if not cache_already_exists:  # We just created the cache directory
+                os.rmdir(self.cache_path)
             raise DataException(
-                f"\n\nInvalid files found in {data_path}:\n"
-                f"\tFound: {os.listdir(data_path)}\n"
-                f"\tExpected: {self.EXPECTED_FILES}"
+                f"\n\nInvalid files/directories found in {self.data_path}:\n"
+                f"\tFound: {os.listdir(self.data_path)}\n"
+                f"\tExpected: {self.cache_path.name, *self.EXPECTED_FILES}"
             )
 
     @staticmethod
