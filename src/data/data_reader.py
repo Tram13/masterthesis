@@ -77,9 +77,9 @@ class DataReader:
     def __init__(self, data_path: os.PathLike = None):
         # Default value for data_path is provided by config.ini file
         if data_path is None:
-            data_path = Path(ConfigParser.get_value('data', 'data_path'))
+            data_path = Path(ConfigParser().get_value('data', 'data_path'))
         self.data_path = data_path
-        self.cache_path = Path(self.data_path, ConfigParser.get_value('data', 'cache_directory'))
+        self.cache_path = Path(self.data_path, ConfigParser().get_value('data', 'cache_directory'))
         self._assert_correct_data_dir()
         self.file_paths = [Path(data_path, file) for file in self.EXPECTED_FILES]
 
