@@ -80,8 +80,8 @@ class DataReader:
 
     def read_data(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         businesses = self._parse_businesses(self.file_paths[0])
-        reviews = self._parse_reviews(self.file_paths[2])
-        tips = self._parse_tips(self.file_paths[3])
+        reviews = self._parse_reviews(self.file_paths[2], businesses)
+        tips = self._parse_tips(self.file_paths[3], businesses)
         users = self._parse_users(self.file_paths[4])
         return businesses, reviews, tips, users
 
@@ -250,17 +250,28 @@ class DataReader:
         return checkins
 
     @staticmethod
-    def _parse_reviews(file_location: os.PathLike) -> pd.DataFrame:
+    def _parse_reviews(file_location: os.PathLike, businesses: pd.DataFrame) -> pd.DataFrame:
+        """
+        :param file_location: Location of the reviews dataset in json format
+        :param businesses: The businesses DataFrame as parsed by `_parse_businesses()`
+        :return: A DataFrame containing all reviews for the given businesses
+        """
         entries = DataReader._get_entries_from_file(file_location)
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_REVIEW_FIELDS)
-        reviews: pd.DataFrame = pd.DataFrame.from_records(filtered_entries)
+        reviews = pd.DataFrame.from_records(filtered_entries)
+
+        # Only keep reviews for restaurants
+        reviews = reviews[reviews['business_id'].isin(businesses.index)]
+        reviews = reviews.set_index('review_id')
+
         return reviews
 
     @staticmethod
-    def _parse_tips(file_location: os.PathLike) -> pd.DataFrame:
+    def _parse_tips(file_location: os.PathLike, businesses: pd.DataFrame) -> pd.DataFrame:
         entries = DataReader._get_entries_from_file(file_location)
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_TIP_FIELDS)
-        tips: pd.DataFrame = pd.DataFrame.from_records(filtered_entries)
+        tips = pd.DataFrame.from_records(filtered_entries)
+        tips = tips[tips['business_id'].isin(businesses.index)]  # Only keep tips for restaurants
         return tips
 
     @staticmethod
