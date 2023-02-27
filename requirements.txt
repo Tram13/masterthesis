@@ -1,6 +1,16 @@
 jupyter
 pandas
 tqdm
+scikit-learn
+scipy
+numpy
+fastparquet
+--extra-index-url https://download.pytorch.org/whl/cu117
+torch
+--extra-index-url https://download.pytorch.org/whl/cu117
+torchvision
+--extra-index-url https://download.pytorch.org/whl/cu117
+torchaudio
 transformers
 tensorflow
 sentence-transformers
