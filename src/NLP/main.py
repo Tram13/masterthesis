@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
+from src.NLP.ClusteringMetrics import ClusteringMetrics
 from src.NLP.Models.BERTopic import CustomBERTTopic
 from src.NLP.df_NLP_manipulation.df_clustering import cluster_sentences
 from src.NLP.df_NLP_manipulation.df_sentiment_analysis import sentiment_analysis_sentences
@@ -77,8 +78,13 @@ def main_basic_clustering(reviews: pd.Series):
 
 
 if __name__ == '__main__':
+    import torch
+
+    print(f'CUDA: {torch.cuda.is_available()}')
     # reviews_input = pd.read_csv('tmp.pd')['text']
+    print('Loading in Data...')
     reviews_input_big = pd.read_csv('full_tmp.pd')['text'].head(100_000)
+    print('Loaded in Data, starting BERTopic...')
     bert_scores, bert_topics = main_BERTopic(reviews_input_big, do_precompute_and_save_embeddings=True,
                                              save_path=Path("tmp_embeddings_100_000"))
 

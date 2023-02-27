@@ -18,7 +18,7 @@ from src.NLP.Models.SBERT_feature_extraction import SentenceBERT
 class CustomBERTTopic:
 
     def __init__(self, embedding_model=None, dim_reduction_model=None, cluster_model=None, vectorizer_model=None,
-                 ctfidf_model=None, fine_tuning_representation_model=KeyBERTInspired(), max_topics="auto"):
+                 ctfidf_model=None, fine_tuning_representation_model=KeyBERTInspired(), max_topics="auto", batch_size: int = 128):
         # Extract embeddings
         # see docs for other models
         self.embedding_model = SentenceBERT().model if embedding_model is None else embedding_model
@@ -62,17 +62,18 @@ class CustomBERTTopic:
         self.model.ctfidf_model = self.ctfidf_model
         self.model.representation_model = self.fine_tuning_representation_model
 
-        self.enable_gpu()
-
+        self.device = self.enable_gpu()
+        self.batch_size = batch_size
         print(f'current device: {self.model.embedding_model.device}')
 
     def enable_gpu(self):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.embedding_model.to(device)
+        return device
 
     def precompute_and_save_embeddings(self, data: pd.Series, save_path: pathlib.Path = None) -> np.ndarray:
         if isinstance(self.model.embedding_model, SentenceTransformer):
-            embeddings = self.model.embedding_model.encode(sentences=data)
+            embeddings = self.model.embedding_model.encode(sentences=data, show_progress_bar=True, device='cuda', batch_size=self.batch_size)
         else:
             raise NotImplementedError()
 
