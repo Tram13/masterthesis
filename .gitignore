@@ -1,10 +1,10 @@
 # Environments
-.venv
-.env
-.venv_windows
+/.venv
+/.env
+/.venv_windows
 # Python compiled files
 *__pyc__*
 # PyCharm files
-.idea
+/.idea
 # Data files
-data
+/data
