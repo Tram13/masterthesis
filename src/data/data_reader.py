@@ -178,7 +178,8 @@ class DataReader:
         onehot_categories = [
             businesses['categories']
             .map(lambda business_categories: 1 if category in business_categories else 0)
-            .rename(f"category_{category.replace(' ', '_').lower()}") for category in categories_appearances.keys()
+            .rename(f"category_{category.replace(' ', '_').lower()}").astype(np.int8)
+            for category in categories_appearances.keys()
         ]
         businesses = pd.concat([businesses, *onehot_categories], axis=1)
         businesses = businesses.drop(columns=['categories'])
@@ -247,20 +248,25 @@ class DataReader:
                 onehot_attributes[index] = onehot_attributes[index].map(
                     lambda x: 0 if x == '1' else (
                         0.33 if x == '2' else (0.67 if x == '3' else (1 if x == '4' else 0.33)))
-                )  # '2' seems to be the most common value, thus default
+                ).astype(np.float16)  # '2' seems to be the most common value, thus default
             elif index == 14:  # attribute_noiselevel
                 onehot_attributes[index] = onehot_attributes[index].map(
                     lambda x: 0 if x == 'quiet' else (
                         0.33 if x == 'average' else (0.67 if x == 'loud' else (1 if x == 'very_loud' else 0.33)))
-                )  # 'average' is the default value
+                ).astype(np.float16)  # 'average' is the default value
             else:
                 onehot_attributes[index] = onehot_attributes[index].map(
                     lambda x: 1 if x is True else (0 if x is False else 0.5)
-                )
+                ).astype(np.float16)
 
         businesses = pd.concat([businesses, *onehot_attributes], axis=1)
         businesses = businesses.drop(columns=['attributes'])
         businesses = businesses.set_index('business_id')
+
+        businesses = businesses.rename(columns={
+            'stars': 'business_average_stars',
+            'review_count': 'business_review_count'
+        })
 
         # ADD CHECK-INS
         checkins = DataReader._parse_checkins(self.file_paths[1])
@@ -306,6 +312,7 @@ class DataReader:
         # Only keep reviews for restaurants
         reviews = reviews[reviews['business_id'].isin(businesses.index)]
         reviews = reviews.set_index('review_id')
+        reviews['text'] = reviews['text'].astype("string")
 
         return reviews
 
@@ -315,6 +322,7 @@ class DataReader:
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_TIP_FIELDS)
         tips = pd.DataFrame.from_records(filtered_entries)
         tips = tips[tips['business_id'].isin(businesses.index)]  # Only keep tips for restaurants
+        tips['text'] = tips['text'].astype("string")
         return tips
 
     @staticmethod
@@ -342,4 +350,9 @@ class DataReader:
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_USER_FIELDS)
         users = pd.DataFrame.from_records(filtered_entries)
         users['friends'] = users['friends'].map(lambda friend_str: friend_str.split(', '))
+
+        users = users.rename(columns={'review_count': 'user_review_count'})
+        users['name'] = users['name'].astype("string")
+        users = users.set_index('user_id')
+
         return users
