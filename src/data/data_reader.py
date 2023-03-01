@@ -152,6 +152,22 @@ class DataReader:
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_BUSINESS_FIELDS)
         businesses: pd.DataFrame = pd.DataFrame.from_records(filtered_entries)
 
+        # Normalise data
+        businesses = businesses.rename(columns={'stars': 'average_stars'})
+        column_names_to_normalise = ['average_stars', 'review_count']
+        normalised_series = [
+            pd.Series(
+                data=preprocessing.MinMaxScaler().fit_transform(
+                    businesses[column_name].to_numpy().reshape(-1, 1)
+                ).flatten(),
+                name=f'business_{column_name}_normalised',
+                dtype=np.float16,
+            ).set_axis(businesses.index)  # To relink with the original dataframe
+            for column_name in column_names_to_normalise
+        ]
+        businesses = businesses.drop(columns=column_names_to_normalise)
+        businesses = pd.concat([businesses, *normalised_series], axis=1)
+
         # PARSING CATEGORIES
         categories_whitelist = {
             "Food Trucks",  # Data exploration shows that all restaurant-like businesses
@@ -262,11 +278,6 @@ class DataReader:
         businesses = pd.concat([businesses, *onehot_attributes], axis=1)
         businesses = businesses.drop(columns=['attributes'])
         businesses = businesses.set_index('business_id')
-
-        businesses = businesses.rename(columns={
-            'stars': 'business_average_stars',
-            'review_count': 'business_review_count'
-        })
 
         # ADD CHECK-INS
         checkins = DataReader._parse_checkins(self.file_paths[1])
