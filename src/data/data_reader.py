@@ -84,20 +84,20 @@ class DataReader:
         self.file_paths = [Path(data_path, file) for file in self.EXPECTED_FILES]
 
     def read_data(self, use_cache: bool = True, save_as_cache: bool = True) -> tuple[
-        pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         if use_cache:
-            businesses, reviews, tips, users = self._read_from_cache()
+            businesses, reviews, tips = self._read_from_cache()
         else:
-            businesses, reviews, tips, users = self._read_from_disk()
+            businesses, reviews, tips = self._read_from_disk()
         if save_as_cache:
             businesses.to_parquet(Path(self.cache_path, 'businesses.parquet'), engine='fastparquet')
             reviews.to_parquet(Path(self.cache_path, 'reviews.parquet'), engine='fastparquet')
             tips.to_parquet(Path(self.cache_path, 'tips.parquet'), engine='fastparquet')
-            users.to_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
-        return businesses, reviews, tips, users
+            # users.to_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
+        return businesses, reviews, tips
 
-    def _read_from_disk(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        with tqdm(total=4, desc="Reading files from disk") as p_bar:
+    def _read_from_disk(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        with tqdm(total=3, desc="Reading files from disk") as p_bar:
             p_bar.set_postfix_str('(current: businesses)')
             businesses = self._parse_businesses(self.file_paths[0])
             p_bar.update()
@@ -107,21 +107,21 @@ class DataReader:
             p_bar.set_postfix_str('current: tips')
             tips = self._parse_tips(self.file_paths[3], businesses)
             p_bar.update()
-            p_bar.set_postfix_str('current: users')
-            users = self._parse_users(self.file_paths[4])
-            p_bar.update()
-        return businesses, reviews, tips, users
+            # p_bar.set_postfix_str('current: users')
+            # users = self._parse_users(self.file_paths[4])
+            # p_bar.update()
+        return businesses, reviews, tips
 
-    def _read_from_cache(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def _read_from_cache(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         try:
             businesses = pd.read_parquet(Path(self.cache_path, 'businesses.parquet'), engine='fastparquet')
             reviews = pd.read_parquet(Path(self.cache_path, 'reviews.parquet'), engine='fastparquet')
             tips = pd.read_parquet(Path(self.cache_path, 'tips.parquet'), engine='fastparquet')
-            users = pd.read_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
+            # users = pd.read_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
         except OSError:
             print("Could not reach caches!", file=sys.stderr)
-            businesses, reviews, tips, users = self._read_from_disk()
-        return businesses, reviews, tips, users
+            businesses, reviews, tips = self._read_from_disk()
+        return businesses, reviews, tips
 
     # Check if ALL and NOTHING BUT the data files are present in the provided directory
     def _assert_correct_data_dir(self):
@@ -178,7 +178,7 @@ class DataReader:
         onehot_categories = [
             businesses['categories']
             .map(lambda business_categories: 1 if category in business_categories else 0)
-            .rename(f"category_{category.replace(' ', '_').lower()}").astype(np.int8)
+            .rename(f"category_{category.replace(' ', '_').lower()}").astype(np.uint8)
             for category in categories_appearances.keys()
         ]
         businesses = pd.concat([businesses, *onehot_categories], axis=1)
@@ -291,7 +291,8 @@ class DataReader:
         avg_checkins_per_week = (amount_of_checkins / amount_of_weeks).replace([np.inf, -np.inf], 0)
         avg_checkins_per_week_normalised = pd.Series(
             data=preprocessing.MinMaxScaler().fit_transform(avg_checkins_per_week.to_numpy().reshape(-1, 1)).flatten(),
-            name="average_checkins_per_week_normalised")
+            name="average_checkins_per_week_normalised"
+        )
 
         checkins = pd.concat([checkins, avg_checkins_per_week_normalised], axis=1)
         checkins = checkins.drop(columns=['date'])
@@ -327,32 +328,33 @@ class DataReader:
 
     @staticmethod
     def _parse_users(file_location: os.PathLike) -> pd.DataFrame:
-        entries = DataReader._get_entries_from_file(file_location)
-        # Combine all compliments
-        compliment_fields = [
-            'compliment_hot',
-            'compliment_more',
-            'compliment_profile',
-            'compliment_cute',
-            'compliment_list',
-            'compliment_note',
-            'compliment_plain',
-            'compliment_cool',
-            'compliment_funny',
-            'compliment_writer',
-            'compliment_photos'
-        ]
-        combined_compliments = DataReader._filter_entries(entries, compliment_fields)
-        combined_compliments = [sum(x.values()) for x in combined_compliments]
-        for entry, sum_combined_for_entry in zip(entries, combined_compliments):
-            entry['compliments'] = sum_combined_for_entry
-
-        filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_USER_FIELDS)
-        users = pd.DataFrame.from_records(filtered_entries)
-        users['friends'] = users['friends'].map(lambda friend_str: friend_str.split(', '))
-
-        users = users.rename(columns={'review_count': 'user_review_count'})
-        users['name'] = users['name'].astype("string")
-        users = users.set_index('user_id')
-
-        return users
+        # Currently not used in training of the model!
+        # entries = DataReader._get_entries_from_file(file_location)
+        # # Combine all compliments
+        # compliment_fields = [
+        #     'compliment_hot',
+        #     'compliment_more',
+        #     'compliment_profile',
+        #     'compliment_cute',
+        #     'compliment_list',
+        #     'compliment_note',
+        #     'compliment_plain',
+        #     'compliment_cool',
+        #     'compliment_funny',
+        #     'compliment_writer',
+        #     'compliment_photos'
+        # ]
+        # combined_compliments = DataReader._filter_entries(entries, compliment_fields)
+        # combined_compliments = [sum(x.values()) for x in combined_compliments]
+        # for entry, sum_combined_for_entry in zip(entries, combined_compliments):
+        #     entry['compliments'] = sum_combined_for_entry
+        #
+        # filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_USER_FIELDS)
+        # users = pd.DataFrame.from_records(filtered_entries)
+        # users['friends'] = users['friends'].map(lambda friend_str: friend_str.split(', '))
+        #
+        # users = users.rename(columns={'review_count': 'user_review_count'})
+        # users['name'] = users['name'].astype("string")
+        # users = users.set_index('user_id')
+        # return users
+        raise NotImplementedError
