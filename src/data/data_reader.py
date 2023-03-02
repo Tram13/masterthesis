@@ -333,11 +333,12 @@ class DataReader:
         reviews = pd.concat([reviews, normalised_column], axis=1)
 
         # cleanup of other fields
-        reviews['useful'] = reviews['useful'].transform(lambda x: 0 if x == 0 else 1)
+        reviews['useful'] = reviews['useful'].transform(lambda x: 0 if x == 0 else 1).astype(np.uint8)
         reviews['funny_cool'] = reviews[['funny', 'cool']].apply(
             lambda row: 0 if row['funny'] == 0 and row['cool'] == 1 else 1, axis=1
         ).rename("funny_cool").astype(np.uint8)
         reviews = reviews.drop(columns=['funny', 'cool'])
+        reviews['date'] = reviews['date'].map(lambda date_str: datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S'))
 
         # Only keep reviews for restaurants
         reviews = reviews[reviews['business_id'].isin(businesses.index)]
