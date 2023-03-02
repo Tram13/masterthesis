@@ -42,14 +42,13 @@ class DataReader:
     ]
 
     RELEVANT_REVIEW_FIELDS = [
-        # TODO: uitzoeken of een gebruiker meerdere reviews over hetzelfde restaurant kan hebben?
         'review_id',
         'user_id',
         'business_id',
         'stars',
         'useful',
-        'funny',  # TODO: onderzoeken of 'cool' en 'funny' velden nuttig zijn? Indien ja, combineren met useful
-        'cool',  # TODO: onderzoeken of 'cool' en 'funny' velden nuttig zijn? Indien ja, combineren met useful
+        'funny',
+        'cool',
         'text',
         'date'
     ]
@@ -320,6 +319,25 @@ class DataReader:
         entries = DataReader._get_entries_from_file(file_location)
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_REVIEW_FIELDS)
         reviews = pd.DataFrame.from_records(filtered_entries)
+
+        # TODO: extra normalisation: aan de hand van de gemiddelde rating van de gebruiker
+        normalised_column = pd.Series(
+            data=
+            preprocessing.MinMaxScaler().fit_transform(
+                reviews['stars'].to_numpy().reshape(-1, 1)
+            ).flatten(),
+            name='stars_normalised',
+            dtype=np.float16,
+        ).set_axis(reviews.index)  # To relink with the original dataframe
+        reviews = reviews.drop(columns=['stars'])
+        reviews = pd.concat([reviews, normalised_column], axis=1)
+
+        # cleanup of other fields
+        reviews['useful'] = reviews['useful'].transform(lambda x: 0 if x == 0 else 1)
+        reviews['funny_cool'] = reviews[['funny', 'cool']].apply(
+            lambda row: 0 if row['funny'] == 0 and row['cool'] == 1 else 1, axis=1
+        ).rename("funny_cool").astype(np.uint8)
+        reviews = reviews.drop(columns=['funny', 'cool'])
 
         # Only keep reviews for restaurants
         reviews = reviews[reviews['business_id'].isin(businesses.index)]
