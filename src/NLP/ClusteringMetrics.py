@@ -8,9 +8,9 @@ class ClusteringMetrics:
     def __init__(self, features: np.array, labels: np.array) -> None:
         self.features = features
         self.labels = labels
-        self.silhouet_index = None
-        self.dunn_index = None
-        self.davies_bouldin_index = None
+        self.silhouet_index = None          # -1 to 1 => close to 1 is good
+        self.dunn_index = None              #
+        self.davies_bouldin_index = None    # as high as possible
 
     def calculate_silhouet_index(self) -> float:
         if self.silhouet_index is None:
@@ -31,7 +31,17 @@ class ClusteringMetrics:
         return self.davies_bouldin_index
 
     def calculate_all_indices(self):
+        print("calculating silhouet...")
         self.calculate_silhouet_index()
+        print("calculating dunn...")
         self.calculate_dunn_index()
+        print("calculating davies_bouldin...")
         self.calculate_davies_bouldin_index()
+
+    def __str__(self):
+        return f"""Scores:
+        Silhouet_index: {self.silhouet_index}
+        Dunn_index: {self.dunn_index}
+        Davies_bouldin_index: {self.davies_bouldin_index}
+        """
 
