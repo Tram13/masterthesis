@@ -42,14 +42,13 @@ class DataReader:
     ]
 
     RELEVANT_REVIEW_FIELDS = [
-        # TODO: uitzoeken of een gebruiker meerdere reviews over hetzelfde restaurant kan hebben?
         'review_id',
         'user_id',
         'business_id',
         'stars',
         'useful',
-        'funny',  # TODO: onderzoeken of 'cool' en 'funny' velden nuttig zijn? Indien ja, combineren met useful
-        'cool',  # TODO: onderzoeken of 'cool' en 'funny' velden nuttig zijn? Indien ja, combineren met useful
+        'funny',
+        'cool',
         'text',
         'date'
     ]
@@ -84,20 +83,20 @@ class DataReader:
         self.file_paths = [Path(data_path, file) for file in self.EXPECTED_FILES]
 
     def read_data(self, use_cache: bool = True, save_as_cache: bool = True) -> tuple[
-        pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         if use_cache:
-            businesses, reviews, tips, users = self._read_from_cache()
+            businesses, reviews, tips = self._read_from_cache()
         else:
-            businesses, reviews, tips, users = self._read_from_disk()
+            businesses, reviews, tips = self._read_from_disk()
         if save_as_cache:
             businesses.to_parquet(Path(self.cache_path, 'businesses.parquet'), engine='fastparquet')
             reviews.to_parquet(Path(self.cache_path, 'reviews.parquet'), engine='fastparquet')
             tips.to_parquet(Path(self.cache_path, 'tips.parquet'), engine='fastparquet')
-            users.to_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
-        return businesses, reviews, tips, users
+            # users.to_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
+        return businesses, reviews, tips
 
-    def _read_from_disk(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        with tqdm(total=4, desc="Reading files from disk") as p_bar:
+    def _read_from_disk(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        with tqdm(total=3, desc="Reading files from disk") as p_bar:
             p_bar.set_postfix_str('(current: businesses)')
             businesses = self._parse_businesses(self.file_paths[0])
             p_bar.update()
@@ -107,21 +106,21 @@ class DataReader:
             p_bar.set_postfix_str('current: tips')
             tips = self._parse_tips(self.file_paths[3], businesses)
             p_bar.update()
-            p_bar.set_postfix_str('current: users')
-            users = self._parse_users(self.file_paths[4])
-            p_bar.update()
-        return businesses, reviews, tips, users
+            # p_bar.set_postfix_str('current: users')
+            # users = self._parse_users(self.file_paths[4])
+            # p_bar.update()
+        return businesses, reviews, tips
 
-    def _read_from_cache(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def _read_from_cache(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         try:
             businesses = pd.read_parquet(Path(self.cache_path, 'businesses.parquet'), engine='fastparquet')
             reviews = pd.read_parquet(Path(self.cache_path, 'reviews.parquet'), engine='fastparquet')
             tips = pd.read_parquet(Path(self.cache_path, 'tips.parquet'), engine='fastparquet')
-            users = pd.read_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
+            # users = pd.read_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
         except OSError:
             print("Could not reach caches!", file=sys.stderr)
-            businesses, reviews, tips, users = self._read_from_disk()
-        return businesses, reviews, tips, users
+            businesses, reviews, tips = self._read_from_disk()
+        return businesses, reviews, tips
 
     # Check if ALL and NOTHING BUT the data files are present in the provided directory
     def _assert_correct_data_dir(self):
@@ -152,6 +151,22 @@ class DataReader:
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_BUSINESS_FIELDS)
         businesses: pd.DataFrame = pd.DataFrame.from_records(filtered_entries)
 
+        # Normalise data
+        businesses = businesses.rename(columns={'stars': 'average_stars'})
+        column_names_to_normalise = ['average_stars', 'review_count']
+        normalised_series = [
+            pd.Series(
+                data=preprocessing.MinMaxScaler().fit_transform(
+                    businesses[column_name].to_numpy().reshape(-1, 1)
+                ).flatten(),
+                name=f'business_{column_name}_normalised',
+                dtype=np.float16,
+            ).set_axis(businesses.index)  # To relink with the original dataframe
+            for column_name in column_names_to_normalise
+        ]
+        businesses = businesses.drop(columns=column_names_to_normalise)
+        businesses = pd.concat([businesses, *normalised_series], axis=1)
+
         # PARSING CATEGORIES
         categories_whitelist = {
             "Food Trucks",  # Data exploration shows that all restaurant-like businesses
@@ -178,7 +193,8 @@ class DataReader:
         onehot_categories = [
             businesses['categories']
             .map(lambda business_categories: 1 if category in business_categories else 0)
-            .rename(f"category_{category.replace(' ', '_').lower()}") for category in categories_appearances.keys()
+            .rename(f"category_{category.replace(' ', '_').lower()}").astype(np.uint8)
+            for category in categories_appearances.keys()
         ]
         businesses = pd.concat([businesses, *onehot_categories], axis=1)
         businesses = businesses.drop(columns=['categories'])
@@ -247,16 +263,16 @@ class DataReader:
                 onehot_attributes[index] = onehot_attributes[index].map(
                     lambda x: 0 if x == '1' else (
                         0.33 if x == '2' else (0.67 if x == '3' else (1 if x == '4' else 0.33)))
-                )  # '2' seems to be the most common value, thus default
+                ).astype(np.float16)  # '2' seems to be the most common value, thus default
             elif index == 14:  # attribute_noiselevel
                 onehot_attributes[index] = onehot_attributes[index].map(
                     lambda x: 0 if x == 'quiet' else (
                         0.33 if x == 'average' else (0.67 if x == 'loud' else (1 if x == 'very_loud' else 0.33)))
-                )  # 'average' is the default value
+                ).astype(np.float16)  # 'average' is the default value
             else:
                 onehot_attributes[index] = onehot_attributes[index].map(
                     lambda x: 1 if x is True else (0 if x is False else 0.5)
-                )
+                ).astype(np.float16)
 
         businesses = pd.concat([businesses, *onehot_attributes], axis=1)
         businesses = businesses.drop(columns=['attributes'])
@@ -285,7 +301,8 @@ class DataReader:
         avg_checkins_per_week = (amount_of_checkins / amount_of_weeks).replace([np.inf, -np.inf], 0)
         avg_checkins_per_week_normalised = pd.Series(
             data=preprocessing.MinMaxScaler().fit_transform(avg_checkins_per_week.to_numpy().reshape(-1, 1)).flatten(),
-            name="average_checkins_per_week_normalised")
+            name="average_checkins_per_week_normalised"
+        )
 
         checkins = pd.concat([checkins, avg_checkins_per_week_normalised], axis=1)
         checkins = checkins.drop(columns=['date'])
@@ -303,9 +320,30 @@ class DataReader:
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_REVIEW_FIELDS)
         reviews = pd.DataFrame.from_records(filtered_entries)
 
+        # TODO: extra normalisation: aan de hand van de gemiddelde rating van de gebruiker
+        normalised_column = pd.Series(
+            data=
+            preprocessing.MinMaxScaler().fit_transform(
+                reviews['stars'].to_numpy().reshape(-1, 1)
+            ).flatten(),
+            name='stars_normalised',
+            dtype=np.float16,
+        ).set_axis(reviews.index)  # To relink with the original dataframe
+        reviews = reviews.drop(columns=['stars'])
+        reviews = pd.concat([reviews, normalised_column], axis=1)
+
+        # cleanup of other fields
+        reviews['useful'] = reviews['useful'].transform(lambda x: 0 if x == 0 else 1).astype(np.uint8)
+        reviews['funny_cool'] = reviews[['funny', 'cool']].apply(
+            lambda row: 0 if row['funny'] == 0 and row['cool'] == 1 else 1, axis=1
+        ).rename("funny_cool").astype(np.uint8)
+        reviews = reviews.drop(columns=['funny', 'cool'])
+        reviews['date'] = reviews['date'].map(lambda date_str: datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S'))
+
         # Only keep reviews for restaurants
         reviews = reviews[reviews['business_id'].isin(businesses.index)]
         reviews = reviews.set_index('review_id')
+        reviews['text'] = reviews['text'].astype("string")
 
         return reviews
 
@@ -315,31 +353,38 @@ class DataReader:
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_TIP_FIELDS)
         tips = pd.DataFrame.from_records(filtered_entries)
         tips = tips[tips['business_id'].isin(businesses.index)]  # Only keep tips for restaurants
+        tips['text'] = tips['text'].astype("string")
         return tips
 
     @staticmethod
     def _parse_users(file_location: os.PathLike) -> pd.DataFrame:
-        entries = DataReader._get_entries_from_file(file_location)
-        # Combine all compliments
-        compliment_fields = [
-            'compliment_hot',
-            'compliment_more',
-            'compliment_profile',
-            'compliment_cute',
-            'compliment_list',
-            'compliment_note',
-            'compliment_plain',
-            'compliment_cool',
-            'compliment_funny',
-            'compliment_writer',
-            'compliment_photos'
-        ]
-        combined_compliments = DataReader._filter_entries(entries, compliment_fields)
-        combined_compliments = [sum(x.values()) for x in combined_compliments]
-        for entry, sum_combined_for_entry in zip(entries, combined_compliments):
-            entry['compliments'] = sum_combined_for_entry
-
-        filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_USER_FIELDS)
-        users = pd.DataFrame.from_records(filtered_entries)
-        users['friends'] = users['friends'].map(lambda friend_str: friend_str.split(', '))
-        return users
+        # Currently not used in training of the model!
+        # entries = DataReader._get_entries_from_file(file_location)
+        # # Combine all compliments
+        # compliment_fields = [
+        #     'compliment_hot',
+        #     'compliment_more',
+        #     'compliment_profile',
+        #     'compliment_cute',
+        #     'compliment_list',
+        #     'compliment_note',
+        #     'compliment_plain',
+        #     'compliment_cool',
+        #     'compliment_funny',
+        #     'compliment_writer',
+        #     'compliment_photos'
+        # ]
+        # combined_compliments = DataReader._filter_entries(entries, compliment_fields)
+        # combined_compliments = [sum(x.values()) for x in combined_compliments]
+        # for entry, sum_combined_for_entry in zip(entries, combined_compliments):
+        #     entry['compliments'] = sum_combined_for_entry
+        #
+        # filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_USER_FIELDS)
+        # users = pd.DataFrame.from_records(filtered_entries)
+        # users['friends'] = users['friends'].map(lambda friend_str: friend_str.split(', '))
+        #
+        # users = users.rename(columns={'review_count': 'user_review_count'})
+        # users['name'] = users['name'].astype("string")
+        # users = users.set_index('user_id')
+        # return users
+        raise NotImplementedError
