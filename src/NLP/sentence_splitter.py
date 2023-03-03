@@ -21,9 +21,11 @@ class SentenceSplitter:
         return [sent.text for sent in self.nlp(text).sents]
 
     def _load_splitted_reviews_from_cache(self):
+        print('Reading splitted reviews from cache...')
         try:
             splitted_reviews = pd.read_parquet(Path(self.cache_path, self.cache_fname), engine='fastparquet')
         except OSError:
+            print('Could not read splitted reviews from cache, splitting them now...')
             splitted_reviews = None
         return splitted_reviews
 
