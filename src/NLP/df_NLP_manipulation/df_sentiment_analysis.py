@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.NLP.Models.BasicSentimentAnalysis import BasicSentimentAnalysis
+from src.NLP.ModelsImplementations.BasicSentimentAnalysis import BasicSentimentAnalysis
 
 
 # add sentiment label and score to the DataFrame

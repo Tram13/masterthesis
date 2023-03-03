@@ -1,8 +1,8 @@
 import pandas as pd
 
-from src.NLP.Models.SBERT_feature_extraction import SentenceBERT
-from src.NLP.Models.dimensionality_reduction import DimensionalityReduction
-from src.NLP.Models.clustering import ClusteringAlgorithms
+from src.NLP.ModelsImplementations.SBERT_feature_extraction import SentenceBERT
+from src.NLP.ModelsImplementations.dimensionality_reduction import DimensionalityReduction
+from src.NLP.ModelsImplementations.clustering import ClusteringAlgorithms
 
 
 # add cluster labels to the DateFrame
