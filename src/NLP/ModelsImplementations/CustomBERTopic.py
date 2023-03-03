@@ -12,13 +12,14 @@ from bertopic import BERTopic
 from bertopic.representation import KeyBERTInspired
 from bertopic.vectorizers import ClassTfidfTransformer
 from sentence_transformers import SentenceTransformer
-from src.NLP.Models.SBERT_feature_extraction import SentenceBERT
+from src.NLP.ModelsImplementations.SBERT_feature_extraction import SentenceBERT
 
 
 class CustomBERTTopic:
 
     def __init__(self, embedding_model=None, dim_reduction_model=None, cluster_model=None, vectorizer_model=None,
-                 ctfidf_model=None, fine_tuning_representation_model=KeyBERTInspired(), max_topics="auto", batch_size: int = 128):
+                 ctfidf_model=None, fine_tuning_representation_model=KeyBERTInspired(), max_topics="auto", batch_size: int = 32):
+        self.batch_size = batch_size
         # Extract embeddings
         # see docs for other models
         self.embedding_model = SentenceBERT().model if embedding_model is None else embedding_model
@@ -34,7 +35,7 @@ class CustomBERTTopic:
                                      prediction_data=True) if cluster_model is None else cluster_model
 
         # Tokenize clusters => no assumptions of cluster structure
-        self.vectorizer_model = CountVectorizer(stop_words="english") if vectorizer_model is None else vectorizer_model
+        self.vectorizer_model = CountVectorizer(stop_words="english", min_df=3) if vectorizer_model is None else vectorizer_model
 
         # Cluster - TF-IDF
         self.ctfidf_model = ClassTfidfTransformer() if ctfidf_model is None else ctfidf_model
@@ -63,7 +64,7 @@ class CustomBERTTopic:
         self.model.representation_model = self.fine_tuning_representation_model
 
         self.device = self.enable_gpu()
-        self.batch_size = batch_size
+
         print(f'current device: {self.model.embedding_model.device}')
 
     def enable_gpu(self):
