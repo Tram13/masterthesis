@@ -12,7 +12,7 @@ from src.NLP.ModelsImplementations.CustomBERTopic import CustomBERTTopic
 from src.NLP.df_NLP_manipulation.df_clustering import cluster_sentences
 from src.NLP.df_NLP_manipulation.df_sentiment_analysis import sentiment_analysis_sentences
 from src.NLP.scoring_functions import bertopic_scoring_func, basic_clustering_scoring_func, online_bertopic_scoring_func
-from src.NLP.sentence_splitter import split_reviews
+from src.NLP.sentence_splitter import SentenceSplitter
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.decomposition import IncrementalPCA
 from bertopic.vectorizers import OnlineCountVectorizer
@@ -34,7 +34,8 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
 
     # split reviews into sentences
     print('Splitting Sentences...')
-    reviews = split_reviews(reviews)
+    sentence_splitter = SentenceSplitter()
+    reviews = sentence_splitter.split_reviews(reviews)
 
     print('Calculating Topics')
     topics, _ = model_online_BERTopic.transform(reviews['text'])
@@ -67,7 +68,8 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
 def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 500_000):
     # split reviews into sentences
     print('Splitting Sentences...')
-    reviews = split_reviews(reviews)
+    sentence_splitter = SentenceSplitter()
+    reviews = sentence_splitter.split_reviews(reviews)
     input_data = reviews['text']
 
     print('Doing Online BERTopic...')
@@ -102,7 +104,8 @@ def main_BERTopic(reviews: pd.Series, embeddings: np.ndarray = None, do_precompu
                   save_path: Path = None) -> tuple[pd.Series, pd.DataFrame]:
     # split reviews into sentences
     print('Splitting Sentences...')
-    reviews = split_reviews(reviews)
+    sentence_splitter = SentenceSplitter()
+    reviews = sentence_splitter.split_reviews(reviews)
     input_data = reviews['text']
 
     # create the model
@@ -160,7 +163,8 @@ def main_BERTopic(reviews: pd.Series, embeddings: np.ndarray = None, do_precompu
 
 def main_basic_clustering(reviews: pd.Series):
     # split reviews into sentences
-    splitted_reviews = split_reviews(reviews)
+    sentence_splitter = SentenceSplitter()
+    splitted_reviews = sentence_splitter.split_reviews(reviews)
 
     # clustering label
     reviews, amount_clusters = cluster_sentences(splitted_reviews)
@@ -185,7 +189,8 @@ def main_basic_clustering(reviews: pd.Series):
 def test_manual_bert(reviews: pd.Series):
     # split reviews into sentences
     print('Splitting Sentences...')
-    reviews = split_reviews(reviews)
+    sentence_splitter = SentenceSplitter()
+    reviews = sentence_splitter.split_reviews(reviews)
     input_data = reviews['text']
 
     # create the model
