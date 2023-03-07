@@ -14,7 +14,7 @@ from bertopic.vectorizers import OnlineCountVectorizer
 from src.tools.config_parser import ConfigParser
 
 
-def create_scores_from_online_model(reviews: pd.Series, current_model_save_path: str = None):
+def create_scores_from_online_model(reviews: pd.Series, current_model_save_path: str = None, use_cache: bool = True):
     print("Loading in model...")
     if current_model_save_path is None:
         current_save_dir = Path(ConfigParser().get_value('data', 'online_bert_model_path'))
@@ -29,7 +29,7 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
     # split reviews into sentences
     print('Splitting Sentences...')
     sentence_splitter = SentenceSplitter()
-    reviews = sentence_splitter.split_reviews(reviews)
+    reviews = sentence_splitter.split_reviews(reviews, read_cache=use_cache, save_in_cache=False)
 
     print('Calculating Topics')
     topics, _ = model_online_BERTopic.transform(reviews['text'])
@@ -51,15 +51,17 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
         np.array)
 
     print('calculating final scores...')
+
     # aggregate scores using a custom formula
     bert_scores = reviews[
         ['topic_id', 'label_sentiment', 'score_sentiment']].apply(
         online_bertopic_scoring_func, total_amount_topics=len(model_online_BERTopic.get_topic_info()['Topic']), axis=1)
 
-    return bert_scores
+    # return each feature in a separate
+    return pd.DataFrame(bert_scores.to_list())
 
 
-def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 500_000):
+def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 500_000, model_name: str = None, max_topics: int = 100):
     # split reviews into sentences
     print('Splitting Sentences...')
     sentence_splitter = SentenceSplitter()
@@ -74,8 +76,14 @@ def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 
     # low decay because we want to keep as much data
     online_vectorizer = OnlineCountVectorizer(stop_words="english", decay=.01)
 
-    BERTopic_online = CustomBERTTopic(max_topics=100, dim_reduction_model=online_dim_reduction, cluster_model=online_clustering, vectorizer_model=online_vectorizer)
+    BERTopic_online = CustomBERTTopic(max_topics=max_topics, dim_reduction_model=online_dim_reduction, cluster_model=online_clustering, vectorizer_model=online_vectorizer)
     BERTopic_online_model = BERTopic_online.model
+
+    current_save_dir = Path(ConfigParser().get_value('data', 'online_bert_model_path'))
+    if not current_save_dir.is_dir():
+        current_save_dir.mkdir()
+
+    tmp_save_path = current_save_dir.joinpath("online_model_tmp.bert")
 
     # total amount of sentences // amount of sentences per batch
     amount_of_batches = 1 + input_data.size // sentence_batch_size
@@ -83,12 +91,11 @@ def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 
         print()
         batch = batch.reset_index()['text']
         BERTopic_online_model.partial_fit(batch)
+        BERTopic_online_model.save(tmp_save_path)
 
-    current_save_dir = Path(ConfigParser().get_value('data', 'online_bert_model_path'))
-    if not current_save_dir.is_dir():
-        current_save_dir.mkdir()
-
-    current_save_path = current_save_dir.joinpath(Path(ConfigParser().get_value('data', 'online_bert_model_fname')))
+    if model_name is None:
+        model_name = Path(ConfigParser().get_value('data', 'online_bert_model_fname'))
+    current_save_path = current_save_dir.joinpath(model_name)
 
     BERTopic_online_model.save(current_save_path)
     print(f'Saved final model in: {current_save_path}')
