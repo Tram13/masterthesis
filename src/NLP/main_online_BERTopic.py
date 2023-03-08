@@ -45,7 +45,7 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
 
     logging.info('Saving topics...')
     # save state
-    pd.Series(topics).to_parquet(Path(cache_path, "topics.parquet"), engine='fastparquet')
+    pd.DataFrame(topics).to_parquet(Path(cache_path, "topics.parquet"), engine='fastparquet')
 
     logging.info('Calculating sentiment...')
     # sentiment label+score for each sentence

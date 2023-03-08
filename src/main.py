@@ -85,7 +85,7 @@ def main():
     # for review, user in tqdm(reviews):
     #   calculate_profile_by_user_pool(review, user)
 
-    # to memory heavy code:
+    # too memory heavy code:
     scores = create_scores_from_online_model(reviews['text'], use_cache=True, save_in_cache=False)
 
     cache_path = Path(ConfigParser().get_value('data', 'nlp_cache_dir'))
