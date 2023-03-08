@@ -29,6 +29,7 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
 
     model_online_BERTopic: BERTopic = BERTopic.load(current_model_save_path)
     model_online_BERTopic.verbose = verbose
+    model_online_BERTopic.calculate_probabilities = False
 
     # split reviews into sentences
     logging.info('Splitting Sentences...')
@@ -38,9 +39,21 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
     logging.info('Calculating Topics')
     topics, _ = model_online_BERTopic.transform(reviews['text'])
 
+    cache_path = Path(ConfigParser().get_value('data', 'nlp_cache_dir'))
+    if not cache_path.is_dir():
+        cache_path.mkdir()
+
+    logging.info('Saving topics...')
+    # save state
+    pd.Series(topics).to_parquet(Path(cache_path, "topics.parquet"), engine='fastparquet')
+
     logging.info('Calculating sentiment...')
     # sentiment label+score for each sentence
     reviews = sentiment_analysis_sentences(reviews, verbose=verbose)
+
+    logging.info('Saving sentiment...')
+    # save state
+    reviews.to_parquet(Path(cache_path, "rev_with_sentiment.parquet"), engine='fastparquet')
 
     logging.info('Merging Dataframe...')
     # add them to the dataframe
