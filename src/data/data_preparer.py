@@ -1,4 +1,5 @@
 import pandas as pd
+import torch
 from sklearn.model_selection import train_test_split
 
 
@@ -28,3 +29,10 @@ class DataPreparer:
         user_reviewed_restaurant.set_index(['user_id', 'business_id'], append=True)
 
         return user_reviewed_restaurant
+
+    @staticmethod
+    def get_tensor_for_ml(restaurant_reviews: torch.Tensor, ratings: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        ratings = ratings.unsqueeze(-1)
+        restaurant_reviews, ratings = restaurant_reviews.to(device), ratings.to(device)  # Copy to GPU
+        return restaurant_reviews, ratings
