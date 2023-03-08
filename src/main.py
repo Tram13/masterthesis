@@ -87,9 +87,20 @@ def main():
 
     # to memory heavy code:
     scores = create_scores_from_online_model(reviews['text'], use_cache=True, save_in_cache=False)
+
+    cache_path = Path(ConfigParser().get_value('data', 'nlp_cache_dir'))
+    if not cache_path.is_dir():
+        cache_path.mkdir()
+
+    logging.info('Saving all scores...')
+    # save state
+    scores.to_parquet(Path(cache_path, "full_scores.parquet"), engine='fastparquet')
+
     logging.info('creating user profiles...')
     user_profiles = calculate_basic_user_profiles(reviews, scores)
     user_profiles.columns = [str(x) for x in user_profiles.columns]
+
+    logging.info('Saving user profiles...')
     user_profiles.to_parquet(Path('NLP/TEST_USER_PROFILES.parquet'), engine='fastparquet')
 
 
