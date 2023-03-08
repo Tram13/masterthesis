@@ -9,14 +9,18 @@ from src.NLP.ListDataset import ListDataset
 # todo finetuning
 class BasicSentimentAnalysis:
 
-    def __init__(self) -> None:
+    def __init__(self, verbose: bool = True) -> None:
         # default model for sentiment analysis is
         # 'distilbert-base-uncased-finetuned-sst-2-english'
         self.pipeline = pipeline(task="sentiment-analysis", model='distilbert-base-uncased-finetuned-sst-2-english',
                                  device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
+        self.verbose = verbose
 
     def get_sentiment(self, text: list[str]) -> list[dict]:
-        return list(tqdm(self.pipeline(ListDataset(text), batch_size=128), total=len(text)))
+        if self.verbose:
+            return list(tqdm(self.pipeline(ListDataset(text), batch_size=128), total=len(text)))
+        else:
+            return list(self.pipeline(ListDataset(text), batch_size=128))
 
 
 if __name__ == '__main__':

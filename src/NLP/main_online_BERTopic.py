@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+import logging
 from pathlib import Path
 from bertopic import BERTopic
 from tqdm import tqdm
@@ -14,31 +14,33 @@ from bertopic.vectorizers import OnlineCountVectorizer
 from src.tools.config_parser import ConfigParser
 
 
-def create_scores_from_online_model(reviews: pd.Series, current_model_save_path: str = None, use_cache: bool = True):
-    print("Loading in model...")
+def create_scores_from_online_model(reviews: pd.Series, current_model_save_path: str = None, use_cache: bool = True,
+                                    save_in_cache: bool = False, verbose: bool = True):
+    logging.info("Loading in model...")
     if current_model_save_path is None:
         current_save_dir = Path(ConfigParser().get_value('data', 'online_bert_model_path'))
-        current_model_save_path = current_save_dir.joinpath(Path(ConfigParser().get_value('data', 'online_bert_model_fname')))
+        current_model_save_path = current_save_dir.joinpath(
+            Path(ConfigParser().get_value('data', 'online_bert_model_fname')))
 
     if not current_model_save_path.is_file():
         raise FileNotFoundError("No model found")
 
     model_online_BERTopic: BERTopic = BERTopic.load(current_model_save_path)
-    model_online_BERTopic.verbose = True
+    model_online_BERTopic.verbose = verbose
 
     # split reviews into sentences
-    print('Splitting Sentences...')
-    sentence_splitter = SentenceSplitter()
-    reviews = sentence_splitter.split_reviews(reviews, read_cache=use_cache, save_in_cache=False)
+    logging.info('Splitting Sentences...')
+    sentence_splitter = SentenceSplitter(verbose=verbose)
+    reviews = sentence_splitter.split_reviews(reviews, read_cache=use_cache, save_in_cache=save_in_cache)
 
-    print('Calculating Topics')
+    logging.info('Calculating Topics')
     topics, _ = model_online_BERTopic.transform(reviews['text'])
 
-    print('Calculating sentiment...')
+    logging.info('Calculating sentiment...')
     # sentiment label+score for each sentence
-    reviews = sentiment_analysis_sentences(reviews)
+    reviews = sentiment_analysis_sentences(reviews, verbose=verbose)
 
-    print('Merging Dataframe...')
+    logging.info('Merging Dataframe...')
     # add them to the dataframe
     col_names = list(reviews.columns) + ['topic_id']
     reviews = pd.concat([reviews, pd.Series(topics)], axis=1)
@@ -50,7 +52,7 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
         ['topic_id', 'label_sentiment', 'score_sentiment']].applymap(
         np.array)
 
-    print('calculating final scores...')
+    logging.info('calculating final scores...')
 
     # aggregate scores using a custom formula
     bert_scores = reviews[
@@ -61,7 +63,8 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
     return pd.DataFrame(bert_scores.to_list())
 
 
-def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 500_000, model_name: str = None, max_topics: int = 100):
+def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 500_000, model_name: str = None,
+                                 max_topics: int = 100):
     # split reviews into sentences
     print('Splitting Sentences...')
     sentence_splitter = SentenceSplitter()
@@ -76,7 +79,8 @@ def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 
     # low decay because we want to keep as much data
     online_vectorizer = OnlineCountVectorizer(stop_words="english", decay=.01)
 
-    BERTopic_online = CustomBERTTopic(max_topics=max_topics, dim_reduction_model=online_dim_reduction, cluster_model=online_clustering, vectorizer_model=online_vectorizer)
+    BERTopic_online = CustomBERTTopic(max_topics=max_topics, dim_reduction_model=online_dim_reduction,
+                                      cluster_model=online_clustering, vectorizer_model=online_vectorizer)
     BERTopic_online_model = BERTopic_online.model
 
     current_save_dir = Path(ConfigParser().get_value('data', 'online_bert_model_path'))

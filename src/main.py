@@ -1,25 +1,65 @@
+import logging
+
 import pandas as pd
+from pathlib import Path
+
+from tqdm import tqdm
 
 from src.NLP.main_online_BERTopic import create_model_online_BERTopic, create_scores_from_online_model
 from src.NLP.sentence_splitter import SentenceSplitter
 from src.data.data_preparer import DataPreparer
 from src.data.data_reader import DataReader
+from src.tools.config_parser import ConfigParser
 from src.user_profile_creation import calculate_basic_user_profiles
+
+
+def calculate_profile_by_user(reviews: pd.DataFrame, user_id: str, use_cache=True, save_in_cache=True):
+    current_save_dir = Path(ConfigParser().get_value('data', 'user_profiles_path'))
+    if not current_save_dir.is_dir():
+        current_save_dir.mkdir()
+
+    save_path = current_save_dir.joinpath(f"{user_id}.parquet")
+
+    if use_cache:
+        try:
+            user_profiles = pd.read_parquet(save_path, engine='fastparquet')
+            return user_profiles
+        except OSError:
+            pass
+
+    reviews = reviews.loc[reviews['user_id'] == user_id]
+
+    scores = create_scores_from_online_model(reviews['text'], use_cache=False, save_in_cache=False, verbose=False)
+
+    user_profiles = calculate_basic_user_profiles(reviews, scores)
+    user_profiles.columns = [str(x) for x in user_profiles.columns]
+
+    if save_in_cache:
+        user_profiles.to_parquet(save_path, engine='fastparquet')
+
+    return user_profiles
 
 
 def main():
     print("hello world")
     _, reviews, _ = DataReader().read_data()
-    # print(DataPreparer.get_train_test_validate(businesses, reviews, tips))
 
     print('Finished reading in data, starting NLP...')
     # create a fitted online model with the data
     # create_model_online_BERTopic(reviews['text'], model_name="online_bert_big_model.bert")
-
     # gather the scores based of the current model
-    scores = create_scores_from_online_model(reviews['text'].head(1000), use_cache=False)
-    user_profiles = calculate_basic_user_profiles(reviews.head(1000), scores)
-    return user_profiles
+
+    logging.basicConfig(level=logging.WARNING)
+
+    for user in tqdm(reviews['user_id'].unique()):
+        calculate_profile_by_user(reviews, user)
+
+    # to memory heavy code:
+    # scores = create_scores_from_online_model(reviews['text'], use_cache=True, save_in_cache=False)
+    # print('creating user profiles...')
+    # user_profiles = calculate_basic_user_profiles(reviews, scores)
+    # user_profiles.columns = [str(x) for x in user_profiles.columns]
+    # user_profiles.to_parquet(Path('NLP/TEST_USER_PROFILES.parquet'), engine='fastparquet')
 
 
 if __name__ == '__main__':
