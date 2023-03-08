@@ -165,7 +165,7 @@ class DataReader:
             for column_name in column_names_to_normalise
         ]
         businesses = businesses.drop(columns=column_names_to_normalise)
-        businesses = pd.concat([businesses, *normalised_series], axis=1)
+        businesses = pd.concat([businesses, *normalised_series], axis=1)  # TODO: what if there are no reviews for a business?
 
         # PARSING CATEGORIES
         categories_whitelist = {
@@ -281,6 +281,7 @@ class DataReader:
         # ADD CHECK-INS
         checkins = DataReader._parse_checkins(self.file_paths[1])
         businesses = businesses.join(checkins, on='business_id')
+        businesses['average_checkins_per_week_normalised'] = businesses['average_checkins_per_week_normalised'].replace([np.nan], 0)
 
         return businesses
 
@@ -298,7 +299,7 @@ class DataReader:
         #  Amount of weeks between first check-in and last possible check-in
         amount_of_weeks = (last_checkin - first_checkins).map(lambda x: x.days / 7)
         amount_of_checkins = checkins['date'].transform(len)
-        avg_checkins_per_week = (amount_of_checkins / amount_of_weeks).replace([np.inf, -np.inf], 0)
+        avg_checkins_per_week = (amount_of_checkins / amount_of_weeks).replace([np.inf, -np.inf, np.nan], 0)
         avg_checkins_per_week_normalised = pd.Series(
             data=preprocessing.MinMaxScaler().fit_transform(avg_checkins_per_week.to_numpy().reshape(-1, 1)).flatten(),
             name="average_checkins_per_week_normalised"
