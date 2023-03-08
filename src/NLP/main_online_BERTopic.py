@@ -19,8 +19,10 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
     logging.info("Loading in model...")
     if current_model_save_path is None:
         current_save_dir = Path(ConfigParser().get_value('data', 'online_bert_model_path'))
+        if not current_save_dir.is_dir():
+            current_save_dir.mkdir()
         current_model_save_path = current_save_dir.joinpath(
-            Path(ConfigParser().get_value('data', 'online_bert_model_fname')))
+            Path(ConfigParser().get_value('data', 'use_bert_model_fname')))
 
     if not current_model_save_path.is_file():
         raise FileNotFoundError("No model found")
