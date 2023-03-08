@@ -71,14 +71,13 @@ def calculate_profile_by_user(reviews: pd.DataFrame, user_id: str, use_cache=Tru
 
 def main():
     print("hello world")
+    logging.basicConfig(level=logging.INFO)
     _, reviews, _ = DataReader().read_data()
 
-    print('Finished reading in data, starting NLP...')
+    logging.info('Finished reading in data, starting NLP...')
     # create a fitted online model with the data
     # create_model_online_BERTopic(reviews['text'], model_name="online_bert_big_model.bert")
     # gather the scores based of the current model
-
-    logging.basicConfig(level=logging.WARNING)
 
     # too slow
     # reviews = [(group['text'], name) for name, group in reviews.groupby('user_id')]
@@ -87,11 +86,11 @@ def main():
     #   calculate_profile_by_user_pool(review, user)
 
     # to memory heavy code:
-    # scores = create_scores_from_online_model(reviews['text'], use_cache=True, save_in_cache=False)
-    # print('creating user profiles...')
-    # user_profiles = calculate_basic_user_profiles(reviews, scores)
-    # user_profiles.columns = [str(x) for x in user_profiles.columns]
-    # user_profiles.to_parquet(Path('NLP/TEST_USER_PROFILES.parquet'), engine='fastparquet')
+    scores = create_scores_from_online_model(reviews['text'], use_cache=True, save_in_cache=False)
+    logging.info('creating user profiles...')
+    user_profiles = calculate_basic_user_profiles(reviews, scores)
+    user_profiles.columns = [str(x) for x in user_profiles.columns]
+    user_profiles.to_parquet(Path('NLP/TEST_USER_PROFILES.parquet'), engine='fastparquet')
 
 
 if __name__ == '__main__':
