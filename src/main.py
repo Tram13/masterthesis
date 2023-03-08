@@ -86,12 +86,12 @@ def main():
     # for review, user in tqdm(reviews):
     #   calculate_profile_by_user_pool(review, user)
 
-    # to memory heavy code:
-    # scores = create_scores_from_online_model(reviews['text'], use_cache=True, save_in_cache=False)
-    # print('creating user profiles...')
-    # user_profiles = calculate_basic_user_profiles(reviews, scores)
-    # user_profiles.columns = [str(x) for x in user_profiles.columns]
-    # user_profiles.to_parquet(Path('NLP/TEST_USER_PROFILES.parquet'), engine='fastparquet')
+    # too memory heavy code:
+    scores = create_scores_from_online_model(reviews['text'], use_cache=True, save_in_cache=True)
+    print('creating user profiles...')
+    user_profiles = calculate_basic_user_profiles(reviews, scores)
+    user_profiles.columns = [str(x) for x in user_profiles.columns]
+    user_profiles.to_parquet(Path('NLP/TEST_USER_PROFILES.parquet'), engine='fastparquet')
 
 
 if __name__ == '__main__':
