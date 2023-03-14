@@ -1,77 +1,25 @@
 import logging
 
+import numpy as np
 import pandas as pd
 from pathlib import Path
 
+from bertopic import BERTopic
 from tqdm import tqdm
 
-from src.NLP.main_online_BERTopic import create_model_online_BERTopic, create_scores_from_online_model
+from src.NLP.main_online_BERTopic import create_scores_from_online_model
+from src.NLP.scoring_functions import online_bertopic_scoring_func
 from src.NLP.sentence_splitter import SentenceSplitter
 from src.data.data_preparer import DataPreparer
 from src.data.data_reader import DataReader
 from src.tools.config_parser import ConfigParser
 from src.user_profile_creation import calculate_basic_user_profiles
-from multiprocessing import Pool
 
 
-def pool_func(param):
-    return calculate_profile_by_user_pool(param[0], param[1])
-
-
-def calculate_profile_by_user_pool(reviews: pd.Series, user_id: str, use_cache=True, save_in_cache=True):
-    current_save_dir = Path(ConfigParser().get_value('data', 'user_profiles_path'))
-    if not current_save_dir.is_dir():
-        current_save_dir.mkdir()
-
-    save_path = current_save_dir.joinpath(f"{user_id}.parquet")
-
-    if use_cache:
-        try:
-            user_profiles = pd.read_parquet(save_path, engine='fastparquet')
-            return user_profiles
-        except OSError:
-            pass
-
-    scores = create_scores_from_online_model(reviews, use_cache=False, save_in_cache=False, verbose=False)
-    user_profiles = scores.aggregate(['mean'], axis=0)
-    user_profiles.columns = [str(x) for x in user_profiles.columns]
-
-    if save_in_cache:
-        user_profiles.to_parquet(save_path, engine='fastparquet')
-
-    return user_profiles
-
-
-def calculate_profile_by_user(reviews: pd.DataFrame, user_id: str, use_cache=True, save_in_cache=True):
-    current_save_dir = Path(ConfigParser().get_value('data', 'user_profiles_path'))
-    if not current_save_dir.is_dir():
-        current_save_dir.mkdir()
-
-    save_path = current_save_dir.joinpath(f"{user_id}.parquet")
-
-    if use_cache:
-        try:
-            user_profiles = pd.read_parquet(save_path, engine='fastparquet')
-            return user_profiles
-        except OSError:
-            pass
-
-    reviews = reviews.loc[reviews['user_id'] == user_id]
-
-    scores = create_scores_from_online_model(reviews['text'], use_cache=False, save_in_cache=False, verbose=False)
-
-    user_profiles = calculate_basic_user_profiles(reviews, scores)
-    user_profiles.columns = [str(x) for x in user_profiles.columns]
-
-    if save_in_cache:
-        user_profiles.to_parquet(save_path, engine='fastparquet')
-
-    return user_profiles
-
-
-def main():
+def main_user_profile():
     print("hello world")
     logging.basicConfig(level=logging.INFO)
+
     _, reviews, _ = DataReader().read_data()
 
     logging.info('Finished reading in data, starting NLP...')
@@ -85,24 +33,52 @@ def main():
     # for review, user in tqdm(reviews):
     #   calculate_profile_by_user_pool(review, user)
 
-    # too memory heavy code:
-    scores = create_scores_from_online_model(reviews['text'], use_cache=True, save_in_cache=False)
-
     cache_path = Path(ConfigParser().get_value('data', 'nlp_cache_dir'))
     if not cache_path.is_dir():
         cache_path.mkdir()
 
-    logging.info('Saving all scores...')
-    # save state
-    scores.to_parquet(Path(cache_path, "full_scores.parquet"), engine='fastparquet')
+    amount_of_batches = 10
+    for index, batch in enumerate(tqdm(np.array_split(reviews, amount_of_batches), desc="Score Batches")):
+        scores = create_scores_from_online_model(batch['text'], use_cache=False, save_in_cache=False, early_return=True)
+        scores.columns = [str(x) for x in scores.columns]
+        scores.to_parquet(Path(cache_path, f"score_part_{index}.parquet"), engine='fastparquet')
+
+    scores = pd.read_parquet(Path(cache_path, f"score_part_{0}.parquet"), engine='fastparquet')
+    for index in range(1, amount_of_batches):
+        to_add = pd.read_parquet(Path(cache_path, f"score_part_{index}.parquet"), engine='fastparquet')
+        scores = pd.concat([scores, to_add])
+
+    # merge sentences back to one review
+    logging.info('Merging Reviews...')
+
+    scores = scores.groupby('review_id').aggregate(lambda item: item.tolist())
+    # convert elements to numpy array
+    scores[['topic_id', 'label_sentiment', 'score_sentiment']] = scores[
+        ['topic_id', 'label_sentiment', 'score_sentiment']].applymap(
+        np.array)
+
+    logging.info("Loading in model...")
+
+    current_save_dir = Path(ConfigParser().get_value('data', 'online_bert_model_path'))
+    if not current_save_dir.is_dir():
+        current_save_dir.mkdir()
+    current_model_save_path = current_save_dir.joinpath(
+        Path(ConfigParser().get_value('data', 'use_bert_model_fname')))
+    model_online_BERTopic: BERTopic = BERTopic.load(current_model_save_path)
+
+    logging.info("Calculating scores...")
+    logging.info("Calculating scores...")
+    bert_scores = scores[
+        ['topic_id', 'label_sentiment', 'score_sentiment']].apply(
+        online_bertopic_scoring_func, total_amount_topics=len(model_online_BERTopic.get_topic_info()['Topic']), axis=1)
 
     logging.info('creating user profiles...')
-    user_profiles = calculate_basic_user_profiles(reviews, scores)
+    user_profiles = calculate_basic_user_profiles(reviews, bert_scores)
     user_profiles.columns = [str(x) for x in user_profiles.columns]
 
     logging.info('Saving user profiles...')
-    user_profiles.to_parquet(Path('NLP/TEST_USER_PROFILES.parquet'), engine='fastparquet')
+    user_profiles.to_parquet(Path('NLP/FIRST_USER_PROFILES.parquet'), engine='fastparquet')
 
 
 if __name__ == '__main__':
-    main()
+    main_user_profile()

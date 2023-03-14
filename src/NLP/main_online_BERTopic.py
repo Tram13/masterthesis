@@ -15,7 +15,7 @@ from src.tools.config_parser import ConfigParser
 
 
 def create_scores_from_online_model(reviews: pd.Series, current_model_save_path: str = None, use_cache: bool = True,
-                                    save_in_cache: bool = False, verbose: bool = True):
+                                    save_in_cache: bool = False, verbose: bool = True, early_return: bool = False):
     logging.info("Loading in model...")
     if current_model_save_path is None:
         current_save_dir = Path(ConfigParser().get_value('data', 'online_bert_model_path'))
@@ -39,27 +39,20 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
     logging.info('Calculating Topics')
     topics, _ = model_online_BERTopic.transform(reviews['text'])
 
-    cache_path = Path(ConfigParser().get_value('data', 'nlp_cache_dir'))
-    if not cache_path.is_dir():
-        cache_path.mkdir()
-
-    logging.info('Saving topics...')
-    # save state
-    pd.DataFrame(topics).to_parquet(Path(cache_path, "topics.parquet"), engine='fastparquet')
-
     logging.info('Calculating sentiment...')
     # sentiment label+score for each sentence
     reviews = sentiment_analysis_sentences(reviews, verbose=verbose)
-
-    logging.info('Saving sentiment...')
-    # save state
-    reviews.to_parquet(Path(cache_path, "rev_with_sentiment.parquet"), engine='fastparquet')
 
     logging.info('Merging Dataframe...')
     # add them to the dataframe
     col_names = list(reviews.columns) + ['topic_id']
     reviews = pd.concat([reviews, pd.Series(topics)], axis=1)
     reviews.columns = col_names
+
+    if early_return:
+        # reviews = reviews.reset_index()
+        return reviews[['review_id', 'topic_id', 'label_sentiment', 'score_sentiment']]
+
     # merge sentences back to one review
     reviews = reviews.groupby('review_id').aggregate(lambda item: item.tolist())
     # convert elements to numpy array
