@@ -45,12 +45,14 @@ def main_user_profile():
             scores.columns = [str(x) for x in scores.columns]
             scores.to_parquet(Path(cache_path, f"score_part_{index}.parquet"), engine='fastparquet')
 
+    exit(0)
+
     scores = pd.read_parquet(Path(cache_path, f"score_part_{0}.parquet"), engine='fastparquet')
     for index in range(1, amount_of_batches):
         to_add = pd.read_parquet(Path(cache_path, f"score_part_{index}.parquet"), engine='fastparquet')
         scores = pd.concat([scores, to_add])
 
-    exit(0)
+
 
     # merge sentences back to one review
     logging.info('Merging Reviews...')
