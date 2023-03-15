@@ -39,16 +39,18 @@ def main_user_profile():
 
     amount_of_batches = 10
     for index, batch in enumerate(tqdm(np.array_split(reviews, amount_of_batches), desc="Score Batches")):
-        batch = batch.reset_index()
-        print()
-        scores = create_scores_from_online_model(batch['text'], use_cache=False, save_in_cache=False, early_return=True)
-        scores.columns = [str(x) for x in scores.columns]
-        scores.to_parquet(Path(cache_path, f"score_part_{index}.parquet"), engine='fastparquet')
+        if index >= 5:
+            print()
+            scores = create_scores_from_online_model(batch['text'], use_cache=False, save_in_cache=False, early_return=True)
+            scores.columns = [str(x) for x in scores.columns]
+            scores.to_parquet(Path(cache_path, f"score_part_{index}.parquet"), engine='fastparquet')
 
     scores = pd.read_parquet(Path(cache_path, f"score_part_{0}.parquet"), engine='fastparquet')
     for index in range(1, amount_of_batches):
         to_add = pd.read_parquet(Path(cache_path, f"score_part_{index}.parquet"), engine='fastparquet')
         scores = pd.concat([scores, to_add])
+
+    exit(0)
 
     # merge sentences back to one review
     logging.info('Merging Reviews...')
@@ -73,6 +75,8 @@ def main_user_profile():
     bert_scores = scores[
         ['topic_id', 'label_sentiment', 'score_sentiment']].apply(
         online_bertopic_scoring_func, total_amount_topics=len(model_online_BERTopic.get_topic_info()['Topic']), axis=1)
+
+    bert_scores = pd.DataFrame(bert_scores.to_list())
 
     logging.info('creating user profiles...')
     user_profiles = calculate_basic_user_profiles(reviews, bert_scores)

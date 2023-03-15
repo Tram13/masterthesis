@@ -50,7 +50,6 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
     reviews.columns = col_names
 
     if early_return:
-        # reviews = reviews.reset_index()
         return reviews[['review_id', 'topic_id', 'label_sentiment', 'score_sentiment']]
 
     # merge sentences back to one review
