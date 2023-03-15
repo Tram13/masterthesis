@@ -11,3 +11,9 @@ torch
 torchvision
 --extra-index-url https://download.pytorch.org/whl/cu117
 torchaudio
+transformers
+sentence-transformers
+spacy
+umap-learn
+matplotlib
+BERTopic
