@@ -96,7 +96,7 @@ class DataReader:
         return businesses, reviews, tips
 
     def _read_from_disk(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        with tqdm(total=3, desc="Reading files from disk") as p_bar:
+        with tqdm(total=4, desc="Reading files from disk") as p_bar:
             p_bar.set_postfix_str('(current: businesses)')
             businesses = self._parse_businesses(self.file_paths[0])
             p_bar.update()
@@ -109,6 +109,10 @@ class DataReader:
             # p_bar.set_postfix_str('current: users')
             # users = self._parse_users(self.file_paths[4])
             # p_bar.update()
+            p_bar.set_postfix_str('current: creating optimised indices')
+            businesses, reviews, tips = DataReader.fix_indices(businesses, reviews, tips)
+            p_bar.update()
+
         return businesses, reviews, tips
 
     def _read_from_cache(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -165,7 +169,7 @@ class DataReader:
             for column_name in column_names_to_normalise
         ]
         businesses = businesses.drop(columns=column_names_to_normalise)
-        businesses = pd.concat([businesses, *normalised_series], axis=1)  # TODO: what if there are no reviews for a business?
+        businesses = pd.concat([businesses, *normalised_series],axis=1)  # TODO: what if there are no reviews for a business?
 
         # PARSING CATEGORIES
         categories_whitelist = {
@@ -281,7 +285,9 @@ class DataReader:
         # ADD CHECK-INS
         checkins = DataReader._parse_checkins(self.file_paths[1])
         businesses = businesses.join(checkins, on='business_id')
-        businesses['average_checkins_per_week_normalised'] = businesses['average_checkins_per_week_normalised'].replace([np.nan], 0)
+        businesses['average_checkins_per_week_normalised'] = businesses['average_checkins_per_week_normalised'].replace(
+            [np.nan], 0
+        )
 
         return businesses
 
@@ -390,7 +396,29 @@ class DataReader:
         # return users
         raise NotImplementedError
 
-    def fix_indices(self, businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame, users: pd.DataFrame) -> \
-        tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        # TODO: fix
-        raise NotImplementedError
+    @staticmethod
+    def fix_indices(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame) -> \
+            tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+
+        # Transforming business IDs to integers
+        businesses_indices = pd.Series(range(len(businesses)), index=businesses.index).astype(np.uint16)
+        businesses = businesses.reset_index(drop=True)
+        businesses.index = businesses.index.rename('business_id')
+        reviews['business_id'] = reviews['business_id'].transform(lambda b_id: businesses_indices[b_id]).astype(
+            np.uint16)
+
+        # Transforming user IDs to integers
+        unique_users = reviews['user_id'].unique()
+        users_indices = pd.Series(range(len(unique_users)), index=unique_users).astype(np.uint32)
+        reviews['user_id'] = reviews['user_id'].transform(lambda u_id: users_indices[u_id]).astype(np.uint32)
+
+        # Transforming review IDs to integers
+        reviews = reviews.reset_index(drop=True)
+        reviews.index = reviews.index.rename('review_id')
+
+        # Applying changes to tips dataset as well
+        tips = tips.loc[tips['user_id'].isin(set(users_indices.index))].copy()
+        tips['user_id'] = tips['user_id'].transform(lambda u_id: users_indices[u_id]).astype(np.uint32)
+        tips['business_id'] = tips['business_id'].transform(lambda b_id: businesses_indices[b_id]).astype(np.uint16)
+
+        return businesses, reviews, tips
