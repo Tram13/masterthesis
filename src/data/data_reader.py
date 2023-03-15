@@ -389,3 +389,8 @@ class DataReader:
         # users = users.set_index('user_id')
         # return users
         raise NotImplementedError
+
+    def fix_indices(self, businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame, users: pd.DataFrame) -> \
+        tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        # TODO: fix
+        raise NotImplementedError
