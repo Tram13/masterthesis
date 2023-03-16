@@ -52,6 +52,8 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
     # sentiment label+score for each sentence
     reviews = sentiment_analysis_sentences(reviews, verbose=verbose)
 
+    reviews = reviews.drop('text', axis=1)
+
     logging.info('Saving Sentiment...')
     reviews.columns = [str(x) for x in reviews.columns]
     reviews.to_parquet(Path(cache_path, f"sentiment_tmp.parquet"), engine='fastparquet')
