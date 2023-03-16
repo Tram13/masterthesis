@@ -44,19 +44,22 @@ def create_scores_from_online_model(reviews: pd.Series, current_model_save_path:
     topics, _ = model_online_BERTopic.transform(reviews['text'])
 
     logging.info('Saving Topics...')
-    pd.DataFrame(topics).to_parquet(Path(cache_path, f"topics_tmp.parquet"), engine='fastparquet')
+    topics = pd.DataFrame(topics)
+    topics.columns = [str(x) for x in topics.columns]
+    topics.to_parquet(Path(cache_path, f"topics_tmp.parquet"), engine='fastparquet')
 
     logging.info('Calculating sentiment...')
     # sentiment label+score for each sentence
     reviews = sentiment_analysis_sentences(reviews, verbose=verbose)
 
     logging.info('Saving Sentiment...')
+    reviews.columns = [str(x) for x in reviews.columns]
     reviews.to_parquet(Path(cache_path, f"sentiment_tmp.parquet"), engine='fastparquet')
 
     logging.info('Merging Dataframe...')
     # add them to the dataframe
     col_names = list(reviews.columns) + ['topic_id']
-    reviews = pd.concat([reviews, pd.Series(topics)], axis=1)
+    reviews = pd.concat([reviews, topics], axis=1)
     reviews.columns = col_names
 
     if early_return:
