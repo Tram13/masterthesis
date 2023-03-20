@@ -21,10 +21,12 @@ _, reviews, _ = DataReader().read_data()
 
 print('hello gpu')
 
+print(len(reviews))
+
 text = list(reviews['text'].head(1280))
 print(len(text))
 list(tqdm(classifier.pipeline(ListDataset(text),
                               candidate_labels=["food", "service", "environment", "positive", "negative"],
                               multi_label=True,
-                              batch_size=32,
+                              batch_size=8,
                               truncation=True), total=len(text)))
