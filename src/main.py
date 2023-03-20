@@ -21,6 +21,7 @@ def main_user_profile():
     logging.basicConfig(level=logging.INFO)
 
     _, reviews, _ = DataReader().read_data()
+    reviews = reviews.head(1000)
 
     logging.info('Finished reading in data, starting NLP...')
     # create a fitted online model with the data
@@ -39,20 +40,15 @@ def main_user_profile():
 
     amount_of_batches = 10
     for index, batch in enumerate(tqdm(np.array_split(reviews, amount_of_batches), desc="Score Batches")):
-        if index >= 5:
-            print()
-            scores = create_scores_from_online_model(batch['text'], use_cache=False, save_in_cache=False, early_return=True)
-            scores.columns = [str(x) for x in scores.columns]
-            scores.to_parquet(Path(cache_path, f"score_part_{index}.parquet"), engine='fastparquet')
-
-    exit(0)
+        print()
+        scores = create_scores_from_online_model(batch['text'], use_cache=False, save_in_cache=False, early_return=True)
+        scores.columns = [str(x) for x in scores.columns]
+        scores.to_parquet(Path(cache_path, f"score_part_{index}.parquet"), engine='fastparquet')
 
     scores = pd.read_parquet(Path(cache_path, f"score_part_{0}.parquet"), engine='fastparquet')
     for index in range(1, amount_of_batches):
         to_add = pd.read_parquet(Path(cache_path, f"score_part_{index}.parquet"), engine='fastparquet')
         scores = pd.concat([scores, to_add])
-
-
 
     # merge sentences back to one review
     logging.info('Merging Reviews...')
