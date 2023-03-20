@@ -21,6 +21,7 @@ def main_user_profile():
     logging.basicConfig(level=logging.INFO)
 
     _, reviews, _ = DataReader().read_data()
+    reviews = reviews.head(1000)
 
     logging.info('Finished reading in data, starting NLP...')
     # create a fitted online model with the data
@@ -48,8 +49,6 @@ def main_user_profile():
     for index in range(1, amount_of_batches):
         to_add = pd.read_parquet(Path(cache_path, f"score_part_{index}.parquet"), engine='fastparquet')
         scores = pd.concat([scores, to_add])
-
-
 
     # merge sentences back to one review
     logging.info('Merging Reviews...')

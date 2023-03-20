@@ -1,5 +1,6 @@
 from torch.utils.data import Dataset
 
+
 # todo place this somewhere
 class ListDataset(Dataset):
 
