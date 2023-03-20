@@ -8,7 +8,7 @@ from src.NLP.zero_shot_classification import ZeroShotClassification
 from src.data.data_reader import DataReader
 from src.tools.config_parser import ConfigParser
 
-classifier = ZeroShotClassification(classes=["food", "service", "environment", "positive", "negative"])
+classifier = ZeroShotClassification(classes=["food", "service", "environment"])
 
 print('hello data')
 
@@ -26,7 +26,7 @@ print(len(reviews))
 text = list(reviews['text'].head(1280))
 print(len(text))
 list(tqdm(classifier.pipeline(ListDataset(text),
-                              candidate_labels=["food", "service", "environment", "positive", "negative"],
+                              candidate_labels=["food", "service", "environment"],
                               multi_label=True,
                               batch_size=8,
                               truncation=True), total=len(text)))
