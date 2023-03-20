@@ -6,20 +6,20 @@ from sklearn.model_selection import train_test_split
 class DataPreparer:
 
     @staticmethod
-    def get_train_test_validate(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame):
-        ml_data = DataPreparer.get_df_for_ml(businesses, reviews, tips).reset_index()
+    def get_train_test_validate(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame, user_profiles: pd.DataFrame):
+        ml_data = DataPreparer.get_df_for_ml(businesses, reviews, tips, user_profiles).reset_index()
         output_ml = ml_data['stars_normalised']
         input_ml = ml_data.drop(columns=['stars_normalised', 'review_id', 'user_id', 'business_id'])
         input_ml_train, input_ml_test, output_ml_train, output_ml_test = train_test_split(input_ml, output_ml, test_size=0.2)
         return input_ml_train, input_ml_test, output_ml_train, output_ml_test
 
     @staticmethod
-    def get_df_for_ml(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame) -> pd.DataFrame:
+    def get_df_for_ml(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame, user_profiles: pd.DataFrame) -> pd.DataFrame:
         """
         Get all combinations of business attributes and user attributes
         :return: A DataFrame where each row represents an input for the ML model
         """
-        # TODO: hier en daar is nog normalisatie nodig! zie test.ipynb
+        reviews = reviews.join(user_profiles, on='user_id', rsuffix="dropcolumn").drop(columns=['user_iddropcolumn'])  # Add user profiles to reviews
         businesses = businesses.drop(columns=['name', 'city'])
         # users = users.drop(columns=['name', 'friends'])  # TODO: hoe friends verwerken?
         user_reviewed_restaurant = reviews[['user_id', 'business_id', 'stars_normalised']]
