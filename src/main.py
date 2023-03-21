@@ -7,6 +7,7 @@ from pathlib import Path
 from bertopic import BERTopic
 from tqdm import tqdm
 
+from src.NLP.df_NLP_manipulation.df_zero_shot_class import zero_shot_class
 from src.NLP.main_online_BERTopic import create_scores_from_online_model
 from src.NLP.scoring_functions import online_bertopic_scoring_func
 from src.NLP.sentence_splitter import SentenceSplitter
@@ -84,5 +85,34 @@ def main_user_profile():
     user_profiles.to_parquet(Path('NLP/FIRST_USER_PROFILES.parquet'), engine='fastparquet')
 
 
+def main_zero_shot_classification():
+    print("hello world")
+    logging.basicConfig(level=logging.INFO)
+
+    _, reviews, _ = DataReader().read_data()
+    reviews = reviews.head(1000)
+
+    logging.info('Finished reading in data, starting NLP...')
+    cache_path = Path(ConfigParser().get_value('data', 'nlp_cache_dir'))
+    if not cache_path.is_dir():
+        cache_path.mkdir()
+
+    classes = ["food", "service", "environment"]
+
+    amount_of_batches = 10
+    for index, batch in enumerate(tqdm(np.array_split(reviews, amount_of_batches), desc="Score Batches")):
+        print()
+        zero_shot_features = zero_shot_class(batch['text'], classes=classes)
+        zero_shot_features.columns = [str(x) for x in zero_shot_features.columns]
+        zero_shot_features.to_parquet(Path(cache_path, f"zero_shot_classes_{index}.parquet"), engine='fastparquet')
+
+    zero_shot_features = pd.read_parquet(Path(cache_path, f"zero_shot_classes_{0}.parquet"), engine='fastparquet')
+    for index in range(1, amount_of_batches):
+        to_add = pd.read_parquet(Path(cache_path, f"zero_shot_classes_{index}.parquet"), engine='fastparquet')
+        zero_shot_features = pd.concat([zero_shot_features, to_add])
+
+    return zero_shot_features
+
+
 if __name__ == '__main__':
-    main_user_profile()
+    main_zero_shot_classification()
