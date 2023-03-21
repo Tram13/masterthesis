@@ -2,7 +2,7 @@ import torch
 from transformers import pipeline
 from tqdm import tqdm
 
-from src.NLP.ListDataset import ListDataset
+from src.NLP.utils.ListDataset import ListDataset
 
 
 class ZeroShotClassification:
@@ -21,11 +21,11 @@ class ZeroShotClassification:
             return list(tqdm(self.pipeline(ListDataset(text),
                                            candidate_labels=self.classes,
                                            multi_label=multi_label,
-                                           batch_size=32,
+                                           batch_size=8,
                                            truncation=True), total=len(text)))
         else:
             return list(self.pipeline(ListDataset(text),
                                       candidate_labels=self.classes,
                                       multi_label=multi_label,
-                                      batch_size=32,
+                                      batch_size=8,
                                       truncation=True))
