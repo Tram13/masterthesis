@@ -6,10 +6,10 @@ from bertopic import BERTopic
 from tqdm import tqdm
 from src.NLP.ModelsImplementations.CustomBERTopic import CustomBERTTopic
 from src.NLP.df_NLP_manipulation.df_sentiment_analysis import sentiment_analysis_sentences
-from src.NLP.nlp_cache_manager import NLPCache
-from src.NLP.nlp_model_manager import NLPModels
-from src.NLP.scoring_functions import online_bertopic_scoring_func
-from src.NLP.sentence_splitter import SentenceSplitter
+from src.NLP.managers.nlp_cache_manager import NLPCache
+from src.NLP.managers.nlp_model_manager import NLPModels
+from src.NLP.utils.scoring_functions import online_bertopic_scoring_func
+from src.NLP.utils.sentence_splitter import SentenceSplitter
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.decomposition import IncrementalPCA
 from bertopic.vectorizers import OnlineCountVectorizer
@@ -17,7 +17,6 @@ from bertopic.vectorizers import OnlineCountVectorizer
 
 def create_scores_from_online_model(reviews: pd.Series, model_name: str = None, use_cache: bool = True,
                                     save_in_cache: bool = False, verbose: bool = True, early_return: bool = False):
-
     logging.info("Loading in model...")
     model_manager = NLPModels()
 
@@ -38,7 +37,7 @@ def create_scores_from_online_model(reviews: pd.Series, model_name: str = None, 
     logging.info('Saving Topics...')
     topics = pd.DataFrame(topics)
     topics.columns = [str(x) for x in topics.columns]
-    topics.to_parquet(nlp_cache.bert_scores_path.joinpath(Path(f"topics_tmp.parquet"), engine='fastparquet'))
+    topics.to_parquet(nlp_cache.scores_path.joinpath(Path(f"topics_tmp.parquet"), engine='fastparquet'))
 
     logging.info('Calculating sentiment...')
     # sentiment label+score for each sentence
@@ -48,7 +47,7 @@ def create_scores_from_online_model(reviews: pd.Series, model_name: str = None, 
     # no need to save the text
     reviews = reviews.drop('text', axis=1)
     reviews.columns = [str(x) for x in reviews.columns]
-    reviews.to_parquet(nlp_cache.bert_scores_path.joinpath(Path(f"sentiment_tmp.parquet"), engine='fastparquet'))
+    reviews.to_parquet(nlp_cache.scores_path.joinpath(Path(f"sentiment_tmp.parquet"), engine='fastparquet'))
 
     logging.info('Merging Dataframe...')
     # add them to the dataframe

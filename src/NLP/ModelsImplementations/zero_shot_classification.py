@@ -2,7 +2,7 @@ import torch
 from transformers import pipeline
 from tqdm import tqdm
 
-from src.NLP.ListDataset import ListDataset
+from src.NLP.utils.ListDataset import ListDataset
 
 
 class ZeroShotClassification:

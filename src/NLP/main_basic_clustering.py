@@ -3,8 +3,8 @@ import numpy as np
 
 from src.NLP.df_NLP_manipulation.df_clustering import cluster_sentences
 from src.NLP.df_NLP_manipulation.df_sentiment_analysis import sentiment_analysis_sentences
-from src.NLP.scoring_functions import basic_clustering_scoring_func
-from src.NLP.sentence_splitter import SentenceSplitter
+from src.NLP.utils.scoring_functions import basic_clustering_scoring_func
+from src.NLP.utils.sentence_splitter import SentenceSplitter
 
 
 def main_basic_clustering(reviews: pd.Series):
