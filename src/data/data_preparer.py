@@ -19,10 +19,12 @@ class DataPreparer:
         Get all combinations of business attributes and user attributes
         :return: A DataFrame where each row represents an input for the ML model
         """
-        reviews = reviews.join(user_profiles, on='user_id', rsuffix="dropcolumn").drop(columns=['user_iddropcolumn'])  # Add user profiles to reviews
+        user_profiles = user_profiles.set_index('user_id')
+        user_profiles.columns = [f"user_profile_{column_id}" for column_id in user_profiles.columns]
+        reviews = reviews.join(user_profiles, on='user_id')
         businesses = businesses.drop(columns=['name', 'city'])
         # users = users.drop(columns=['name', 'friends'])  # TODO: hoe friends verwerken?
-        user_reviewed_restaurant = reviews[['user_id', 'business_id', 'stars_normalised']]
+        user_reviewed_restaurant = reviews[['user_id', 'business_id', 'stars_normalised', *user_profiles.columns]]
 
         user_reviewed_restaurant = user_reviewed_restaurant.join(businesses, on='business_id')
         # user_reviewed_restaurant = user_reviewed_restaurant.join(users, on='user_id')
