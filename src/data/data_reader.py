@@ -79,7 +79,7 @@ class DataReader:
             data_path = Path(ConfigParser().get_value('data', 'data_path'))
         self.data_path = data_path
         self.cache_path = Path(self.data_path, ConfigParser().get_value('data', 'cache_directory'))
-        self._assert_correct_data_dir()
+        self._assert_cache_dir_exists()
         self.file_paths = [Path(data_path, file) for file in self.EXPECTED_FILES]
 
     def read_data(self, use_cache: bool = True, save_as_cache: bool = True) -> tuple[
@@ -127,18 +127,10 @@ class DataReader:
         return businesses, reviews, tips
 
     # Check if ALL and NOTHING BUT the data files are present in the provided directory
-    def _assert_correct_data_dir(self):
+    def _assert_cache_dir_exists(self):
         cache_already_exists = os.path.isdir(self.cache_path)
         if not cache_already_exists:
             os.mkdir(self.cache_path)
-        if set(os.listdir(self.data_path)) != {self.cache_path.name, *self.EXPECTED_FILES}:
-            if not cache_already_exists:  # We just created the cache directory
-                os.rmdir(self.cache_path)
-            raise DataException(
-                f"\n\nInvalid files/directories found in {self.data_path}:\n"
-                f"\tFound: {os.listdir(self.data_path)}\n"
-                f"\tExpected: {self.cache_path.name, *self.EXPECTED_FILES}"
-            )
 
     @staticmethod
     def _get_entries_from_file(file_path: os.PathLike) -> list[dict[str, any]]:
