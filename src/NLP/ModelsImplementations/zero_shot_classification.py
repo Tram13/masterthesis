@@ -11,8 +11,11 @@ class ZeroShotClassification:
                  model: str = "Narsil/deberta-large-mnli-zero-cls") -> None:
         # "Narsil/deberta-large-mnli-zero-cls"
         model = "facebook/bart-large-mnli"
-        self.pipeline = pipeline(task="zero-shot-classification", model=model,
-                                 device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"), )
+        self.pipeline = pipeline(
+            task="zero-shot-classification",
+            model=model,
+            device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        )
         self.verbose = verbose
         self.classes = classes
 
