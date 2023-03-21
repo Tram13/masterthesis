@@ -108,4 +108,4 @@ def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 
         model_manager.save_model(BERTopic_online_model, "online_model_tmp.bert")
 
     logging.info("Saving model...")
-    model_manager.save_model(BERTopic_online_model)
+    model_manager.save_model(BERTopic_online_model, model_name)
