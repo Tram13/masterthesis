@@ -1,7 +1,7 @@
 import numpy as np
 
 from sklearn.metrics import silhouette_score, davies_bouldin_score
-from src.libs.jqmcvi_base import dunn_fast
+from libs.jqmcvi_base import dunn_fast
 
 
 class ClusteringMetrics:

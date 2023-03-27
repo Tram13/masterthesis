@@ -7,11 +7,11 @@ import pandas as pd
 from bertopic import BERTopic
 from tqdm import tqdm
 
-from src.NLP.main_online_BERTopic import create_scores_from_online_model
-from src.NLP.managers.nlp_cache_manager import NLPCache
-from src.NLP.managers.nlp_model_manager import NLPModels
-from src.NLP.utils.scoring_functions import online_bertopic_scoring_func
-from src.NLP.utils.user_profile_creation import calculate_basic_user_profiles
+from NLP.main_online_BERTopic import create_scores_from_online_model
+from NLP.managers.nlp_cache_manager import NLPCache
+from NLP.managers.nlp_model_manager import NLPModels
+from NLP.utils.scoring_functions import online_bertopic_scoring_func
+from NLP.utils.user_profile_creation import calculate_basic_user_profiles
 
 
 def main_user_profile(reviews: pd.DataFrame, amount_of_batches: int = 10,
