@@ -3,7 +3,6 @@ import pathlib
 import numpy as np
 import pandas as pd
 import torch
-from pathlib import Path
 
 from umap import UMAP
 from hdbscan import HDBSCAN
@@ -12,7 +11,7 @@ from bertopic import BERTopic
 from bertopic.representation import KeyBERTInspired
 from bertopic.vectorizers import ClassTfidfTransformer
 from sentence_transformers import SentenceTransformer
-from src.NLP.ModelsImplementations.SBERT_feature_extraction import SentenceBERT
+from NLP.ModelsImplementations.SBERT_feature_extraction import SentenceBERT
 
 
 class CustomBERTTopic:

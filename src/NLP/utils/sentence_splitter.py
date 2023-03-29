@@ -5,7 +5,7 @@ from pathlib import Path
 from spacy.lang.en import English
 from tqdm import tqdm
 
-from src.tools.config_parser import ConfigParser
+from tools.config_parser import ConfigParser
 
 tqdm.pandas()
 

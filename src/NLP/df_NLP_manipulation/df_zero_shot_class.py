@@ -1,5 +1,5 @@
 import pandas as pd
-from src.NLP.ModelsImplementations.zero_shot_classification import ZeroShotClassification
+from NLP.ModelsImplementations.zero_shot_classification import ZeroShotClassification
 
 
 # add sentiment label and score to the DataFrame

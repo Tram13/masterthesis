@@ -1,10 +1,10 @@
 import pandas as pd
 import numpy as np
 
-from src.NLP.df_NLP_manipulation.df_clustering import cluster_sentences
-from src.NLP.df_NLP_manipulation.df_sentiment_analysis import sentiment_analysis_sentences
-from src.NLP.utils.scoring_functions import basic_clustering_scoring_func
-from src.NLP.utils.sentence_splitter import SentenceSplitter
+from NLP.df_NLP_manipulation.df_clustering import cluster_sentences
+from NLP.df_NLP_manipulation.df_sentiment_analysis import sentiment_analysis_sentences
+from NLP.utils.scoring_functions import basic_clustering_scoring_func
+from NLP.utils.sentence_splitter import SentenceSplitter
 
 
 def main_basic_clustering(reviews: pd.Series):

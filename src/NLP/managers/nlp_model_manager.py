@@ -1,6 +1,6 @@
 from pathlib import Path
 from bertopic import BERTopic
-from src.tools.config_parser import ConfigParser
+from tools.config_parser import ConfigParser
 
 
 class NLPModels:

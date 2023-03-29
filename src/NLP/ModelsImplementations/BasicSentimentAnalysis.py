@@ -2,10 +2,9 @@ import torch
 from transformers import pipeline
 from tqdm.auto import tqdm
 
-from src.NLP.utils.ListDataset import ListDataset
+from NLP.utils.ListDataset import ListDataset
 
 
-# todo finetuning
 class BasicSentimentAnalysis:
 
     def __init__(self, verbose: bool = True) -> None:

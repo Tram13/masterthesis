@@ -1,5 +1,5 @@
 from pathlib import Path
-from src.tools.config_parser import ConfigParser
+from tools.config_parser import ConfigParser
 import pandas as pd
 import os
 
@@ -45,7 +45,7 @@ class NLPCache:
         scores = pd.read_parquet(Path(self.scores_path, f"score_part_{0}.parquet"), engine='fastparquet')
         for index in range(1, self._amount_of_scores_batches):
             to_add = pd.read_parquet(Path(self.scores_path, f"score_part_{index}.parquet"), engine='fastparquet')
-            scores = pd.concat([scores, to_add])
+            scores = pd.concat([scores, to_add], ignore_index=True)
         return scores
 
     def load_zero_shot_classes(self) -> pd.DataFrame:
@@ -54,7 +54,7 @@ class NLPCache:
         for index in range(1, self._amount_of_zero_shot_batches):
             to_add = pd.read_parquet(Path(self.zero_shot_classes_path, f"zero_shot_classes_{index}.parquet"),
                                      engine='fastparquet')
-            scores = pd.concat([scores, to_add])
+            scores = pd.concat([scores, to_add], ignore_index=True)
         return scores
 
     def is_available_scores(self) -> bool:

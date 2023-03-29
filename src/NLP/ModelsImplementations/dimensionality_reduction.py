@@ -12,9 +12,6 @@ class DimensionalityReduction:
                          n_components=n_components,
                          metric=metric)
 
-    # TODO PCA
-    # TODO TruncatedSVD
-
     def features_UMAP(self, n_neighbors: int = 30, n_components: int = 15, metric: str = 'cosine') -> pd.DataFrame:
         return pd.DataFrame(self.get_UMAP_model(n_neighbors=n_neighbors,
                                                 n_components=n_components,
