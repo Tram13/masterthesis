@@ -78,7 +78,7 @@ def create_scores_from_online_model(reviews: pd.Series, model_name: str = None, 
 
 
 def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 500_000, model_name: str = None,
-                                 max_topics: int = 100):
+                                 max_topics: int = 200):
     # split reviews into sentences
     logging.info("Splitting Sentences...")
     sentence_splitter = SentenceSplitter()
@@ -89,7 +89,7 @@ def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 
     # Prepare sub-models that support online learning
     # keep 15 features (for every 786 vector)
     online_dim_reduction = IncrementalPCA(n_components=15)
-    online_clustering = MiniBatchKMeans(n_clusters=50, random_state=0, batch_size=2048)
+    online_clustering = MiniBatchKMeans(n_clusters=400, random_state=0, batch_size=2048)
     # low decay because we want to keep as much data
     online_vectorizer = OnlineCountVectorizer(stop_words="english", decay=.01)
 
