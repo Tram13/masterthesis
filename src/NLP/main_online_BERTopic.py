@@ -15,14 +15,39 @@ from sklearn.decomposition import IncrementalPCA
 from bertopic.vectorizers import OnlineCountVectorizer
 
 
-def create_scores_from_online_model(reviews: pd.Series, model_name: str = None, use_cache: bool = True,
-                                    save_in_cache: bool = False, verbose: bool = True, early_return: bool = False):
+def _load_model(model_name: str, verbose: bool):
     logging.info("Loading in model...")
     model_manager = NLPModels()
 
     model_online_BERTopic: BERTopic = model_manager.load_model(model_name)
     model_online_BERTopic.verbose = verbose
     model_online_BERTopic.calculate_probabilities = False
+
+    return model_online_BERTopic
+
+
+def create_scores_by_approximate_distribution(reviews: pd.Series, model_name: str = None, use_cache: bool = True,
+                                              save_in_cache: bool = False, verbose: bool = True):
+    # load in model
+    model_online_BERTopic: BERTopic = _load_model(model_name, verbose)
+
+    # split reviews into sentences
+    logging.info('Splitting Sentences...')
+    sentence_splitter = SentenceSplitter(verbose=verbose)
+    reviews = sentence_splitter.split_reviews(reviews, read_cache=use_cache, save_in_cache=save_in_cache)
+
+    logging.info('Approximating topic distributions...')
+    topic_distributions, _ = model_online_BERTopic.approximate_distribution(reviews['text'])
+    topic_distributions = pd.DataFrame(topic_distributions)
+
+    return topic_distributions
+
+
+def create_scores_from_online_model_by_topic(reviews: pd.Series, model_name: str = None, use_cache: bool = True,
+                                             save_in_cache: bool = False, verbose: bool = True,
+                                             early_return: bool = False):
+    # load in model
+    model_online_BERTopic: BERTopic = _load_model(model_name, verbose)
 
     # split reviews into sentences
     logging.info('Splitting Sentences...')
