@@ -1,3 +1,5 @@
 TODO
 Onderzoektips checken voor het gebruik van data - gdrp
 Groeperen van maaltijden/keukens gebeurt manueel. Zou een model voor kunnen getrained worden, maar didn't bother. Probleem met gewone modellen is dat die te weinig onderscheid maken tussen verschillende eten-dingen, en niet kijken naar bvb afkomst of ingedrienten;
+verschillende testen doen, met en zonder 'restaurantprofiel', waarbij we kijken hoe goed de performance omhoog gaat door restaurantprofielen ook aan te maken met tekstuele data (zie ook arnoud zijn redenering over waarom sentiment analysis niet per se nuttig is bij user profiles, enkel bij restaurant profiles)
+
