@@ -1,19 +1,27 @@
 import logging
 
-from NLP.main_online_BERTopic import create_model_online_BERTopic
-from NLP.main_user_profiles import main_user_profile_approximation
+import pandas as pd
+from torch import optim
+
+from data.data_preparer import DataPreparer
 from data.data_reader import DataReader
+from predictor.multilayer_perceptron import MultiLayerPerceptronPredictor
+from predictor.neural_network_trainer import NeuralNetworkTrainer
 
 
 def main():
     print("hello world")
     logging.basicConfig(level=logging.INFO)
 
-    _, reviews, _ = DataReader().read_data()
-    # reviews = reviews.head(1000)
+    businesses, reviews, tips = DataReader().read_data()
+    user_profiles = pd.read_parquet("NLP/FIRST_USER_PROFILES.parquet")
+    train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, tips, user_profiles)
 
-    logging.info('Finished reading in data, starting NLP...')
-    main_user_profile_approximation(reviews)
+    model = MultiLayerPerceptronPredictor(input_size=train_test_data[0].columns.size, output_size=1)
+    optimizer = optim.Adam(model.parameters(), lr=0.002)
+
+    nn_trainer = NeuralNetworkTrainer(*train_test_data)
+    model, optimizer = nn_trainer.train(model, optimizer, epochs=10)
 
 
 if __name__ == '__main__':
