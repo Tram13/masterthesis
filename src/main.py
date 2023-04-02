@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import pandas as pd
 from torch import optim
@@ -21,7 +22,8 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=0.002)
 
     nn_trainer = NeuralNetworkTrainer(*train_test_data)
-    model, optimizer = nn_trainer.train(model, optimizer, epochs=10)
+    model, optimizer = nn_trainer.train(model, optimizer, epochs=50 * 4, save_to_disk=True)
+    model.plot_loss_progress(save_location=Path("predictor", "loss.png"))
 
 
 if __name__ == '__main__':

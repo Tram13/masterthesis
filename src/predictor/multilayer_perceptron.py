@@ -150,6 +150,6 @@ class MultiLayerPerceptronPredictor(nn.Module):
         ax.set_xlabel("Epoch")
 
         if save_location:
-            ax.savefig(save_location)
+            fig.savefig(save_location)
 
         return ax
