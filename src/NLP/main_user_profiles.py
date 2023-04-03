@@ -14,6 +14,8 @@ from NLP.utils.scoring_functions import online_bertopic_scoring_func
 from NLP.utils.sentence_splitter import SentenceSplitter
 from NLP.utils.user_profile_creation import calculate_basic_user_profiles, select_top_n, normalize_user_profile
 
+tqdm.pandas()
+
 
 def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for_approximations: int = 1,
                                     model_name: str = None,
@@ -53,7 +55,7 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
 
     logging.info('Selecting top N topics for each sentence...')
     # only keep the top n topics with the highest probability
-    user_profiles = topic_distributions.apply(select_top_n, n=top_n_topics, axis=1)
+    user_profiles = topic_distributions.progress_apply(select_top_n, n=top_n_topics, axis=1)
 
     logging.info('Aggregating sentences by review...')
     # add the review id to the data, so we can concatenate the sentences and aggregate (sum) them per review
@@ -67,7 +69,7 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
 
     logging.info('Normalizing user profiles...')
     # normalize the user profiles -> [0,1]
-    user_profiles = user_profiles.apply(normalize_user_profile, axis=1)
+    user_profiles = user_profiles.progress_apply(normalize_user_profile, axis=1)
 
     # if no topic is relevant for any review from a user, the userprofile will be [0,0,...,0]
     # should basically never happen
