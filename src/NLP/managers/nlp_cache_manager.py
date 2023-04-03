@@ -41,6 +41,9 @@ class NLPCache:
         if not self.zero_shot_classes_path.is_dir():
             self.zero_shot_classes_path.mkdir()
 
+    def save_user_profiles(self, user_profiles: pd.DataFrame, name: str = "BASIC_USER_PROFILES.parquet"):
+        user_profiles.to_parquet(Path(self.user_profiles_path, name), engine='fastparquet')
+
     def load_user_profiles(self, name: str = "BASIC_USER_PROFILES.parquet") -> pd.DataFrame:
         return pd.read_parquet(Path(self.user_profiles_path, name), engine='fastparquet')
 
@@ -77,12 +80,18 @@ class NLPCache:
         return scores
 
     def is_available_scores(self, model_dir: str = 'base') -> bool:
-        available_files = {file.name for file in os.scandir(self.scores_path.joinpath(Path(model_dir)))}
+        path = self.scores_path.joinpath(Path(model_dir))
+        if not path.is_dir():
+            path.mkdir()
+        available_files = {file.name for file in os.scandir(path)}
         required_files = {f"score_part_{index}.parquet" for index in range(self._amount_of_scores_batches)}
         return required_files.issubset(available_files)
 
     def is_available_approximation(self, model_dir: str = 'base') -> bool:
-        available_files = {file.name for file in os.scandir(self.approximation_path.joinpath(Path(model_dir)))}
+        path = self.approximation_path.joinpath(Path(model_dir))
+        if not path.is_dir():
+            path.mkdir()
+        available_files = {file.name for file in os.scandir(path)}
         required_files = {f"approximation_part_{index}.parquet" for index in range(self._amount_of_approximation_batches)}
         return required_files.issubset(available_files)
 
