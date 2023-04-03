@@ -17,9 +17,12 @@ from NLP.utils.user_profile_creation import calculate_basic_user_profiles, selec
 
 def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for_approximations: int = 1,
                                     model_name: str = None,
-                                    profile_name: str = "APPROX_USER_PROFILES.parquet", use_cache: bool = True,
+                                    profile_name: str = None, use_cache: bool = True,
                                     use_splitted_cache: bool = True, top_n_topics: int = 5,
                                     approx_save_dir: str = "base", prefilter_select: list[int] = None):
+    if profile_name is None:
+        profile_name = f"APPROX_USER_PROFILES_top_{top_n_topics}.parquet"
+
     logging.info('Finished reading in data, starting NLP...')
     nlp_cache = NLPCache()
 
