@@ -24,4 +24,6 @@ def select_top_n(row: pd.Series, n: int):
 
 
 def normalize_user_profile(row: pd.Series):
+    if row.max() < 0.000001:
+        return row
     return (row-row.min())/(row.max()-row.min())

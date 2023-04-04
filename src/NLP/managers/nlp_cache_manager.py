@@ -7,7 +7,7 @@ import os
 class NLPCache:
 
     def __init__(self, amount_of_scores_batches: int = 10, amount_of_zero_shot_batches: int = 30,
-                 amount_of_approximation_batches: int = 1):
+                 amount_of_approximation_batches: int = 1, amount_of_top_n_batches: int = 10):
         self.cache_path = Path(ConfigParser().get_value('cache', 'nlp_cache_dir'))
         self.user_profiles_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'user_profiles_dir')))
         self.scores_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'scores_dir')))
@@ -21,6 +21,7 @@ class NLPCache:
         self._amount_of_scores_batches = amount_of_scores_batches
         self._amount_of_zero_shot_batches = amount_of_zero_shot_batches
         self._amount_of_approximation_batches = amount_of_approximation_batches
+        self._amount_of_top_n_batches = amount_of_top_n_batches
 
     def _make_dirs(self):
         if not self.cache_path.is_dir():
@@ -43,6 +44,18 @@ class NLPCache:
 
     def save_user_profiles(self, user_profiles: pd.DataFrame, name: str = "BASIC_USER_PROFILES.parquet"):
         user_profiles.to_parquet(Path(self.user_profiles_path, name), engine='fastparquet')
+
+    def save_top_n_filter(self, top_n_selected: pd.DataFrame, index: int = 0, save_dir: str = 'base'):
+        top_n_selected.to_parquet(Path(self.approximation_path, save_dir, f"selected_top_n_part_{index}.parquet"), engine='fastparquet')
+
+    def load_top_n_filter(self, save_dir: str = 'base'):
+        base_path = Path(self.approximation_path, save_dir)
+
+        scores = pd.read_parquet(base_path.joinpath(Path(f"selected_top_n_part_{0}.parquet")), engine='fastparquet')
+        for index in range(1, self._amount_of_top_n_batches):
+            to_add = pd.read_parquet(base_path.joinpath(Path(f"selected_top_n_part_{index}.parquet")), engine='fastparquet')
+            scores = pd.concat([scores, to_add], ignore_index=True)
+        return scores
 
     def load_user_profiles(self, name: str = "BASIC_USER_PROFILES.parquet") -> pd.DataFrame:
         return pd.read_parquet(Path(self.user_profiles_path, name), engine='fastparquet')
