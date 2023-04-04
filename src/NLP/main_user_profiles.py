@@ -14,9 +14,11 @@ from NLP.utils.scoring_functions import online_bertopic_scoring_func
 from NLP.utils.sentence_splitter import SentenceSplitter
 from NLP.utils.user_profile_creation import calculate_basic_user_profiles, select_top_n, normalize_user_profile
 
+tqdm.pandas()
+
 
 def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for_approximations: int = 1,
-                                    model_name: str = None,
+                                    model_name: str = None, amount_of_batches_top_n: int = 10,
                                     profile_name: str = None, use_cache: bool = True,
                                     use_splitted_cache: bool = True, top_n_topics: int = 5,
                                     approx_save_dir: str = "base", prefilter_select: list[int] = None):
@@ -24,7 +26,8 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
         profile_name = f"APPROX_USER_PROFILES_top_{top_n_topics}.parquet"
 
     logging.info('Finished reading in data, starting NLP...')
-    nlp_cache = NLPCache()
+    nlp_cache = NLPCache(amount_of_approximation_batches=amount_of_batches_for_approximations,
+                         amount_of_top_n_batches=amount_of_batches_top_n)
 
     if not use_cache or not nlp_cache.is_available_approximation(approx_save_dir):
         logging.warning(
@@ -41,11 +44,11 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
                 engine='fastparquet')
 
     logging.info('Loading in approximations...')
-    topic_distributions = nlp_cache.load_approximation(approx_save_dir)
+    user_profiles = nlp_cache.load_approximation(approx_save_dir)
 
     # select only topics that are relevant and not too general
     if prefilter_select:
-        topic_distributions = topic_distributions[prefilter_select]
+        user_profiles = user_profiles[prefilter_select]
 
     logging.info('Loading in sentences...')
     # load in sentences, we need review id
@@ -53,7 +56,14 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
 
     logging.info('Selecting top N topics for each sentence...')
     # only keep the top n topics with the highest probability
-    user_profiles = topic_distributions.apply(select_top_n, n=top_n_topics, axis=1)
+
+    for index, batch in enumerate(tqdm(np.array_split(user_profiles, amount_of_batches_top_n), desc="Top N batches")):
+        top_n_selected = batch.progress_apply(select_top_n, n=top_n_topics, axis=1)
+        top_n_selected.columns = [str(x) for x in top_n_selected.columns]
+        nlp_cache.save_top_n_filter(top_n_selected, index, approx_save_dir)
+
+    logging.info('Collecting top_n_topics...')
+    user_profiles = nlp_cache.load_top_n_filter(approx_save_dir)
 
     logging.info('Aggregating sentences by review...')
     # add the review id to the data, so we can concatenate the sentences and aggregate (sum) them per review
@@ -67,7 +77,7 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
 
     logging.info('Normalizing user profiles...')
     # normalize the user profiles -> [0,1]
-    user_profiles = user_profiles.apply(normalize_user_profile, axis=1)
+    user_profiles = user_profiles.progress_apply(normalize_user_profile, axis=1)
 
     # if no topic is relevant for any review from a user, the userprofile will be [0,0,...,0]
     # should basically never happen
