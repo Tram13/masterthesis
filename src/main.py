@@ -21,7 +21,12 @@ def main_user_profile_approximation_400topics():
 
     logging.info('Finished reading in data, starting NLP...')
     # todo manual filtering of topics
-    # main_user_profile_approximation(reviews, amount_of_batches_for_approximations=8, model_name="online_model_400top_97.bert", amount_of_batches_top_n=80, profile_name="APPROX_USER_PROFILES_top_5_400filtered_topics")
+    main_user_profile_approximation(reviews,
+                                    amount_of_batches_for_approximations=8,
+                                    model_name="online_model_400top_97.bert",
+                                    amount_of_batches_top_n=80,
+                                    profile_name="APPROX_USER_PROFILES_top_5_400filtered_topics"
+                                    )
 
 
 def main_user_profile_400topics():
@@ -29,6 +34,7 @@ def main_user_profile_400topics():
     logging.basicConfig(level=logging.INFO)
 
     _, reviews, _ = DataReader().read_data()
+    reviews = reviews.head(100)
 
     logging.info('Finished reading in data, starting NLP...')
 

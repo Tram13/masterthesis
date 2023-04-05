@@ -21,7 +21,7 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
                                     model_name: str = None, amount_of_batches_top_n: int = 10,
                                     profile_name: str = None, use_cache: bool = True,
                                     use_splitted_cache: bool = True, top_n_topics: int = 5,
-                                    approx_save_dir: str = "base", prefilter_select: list[int] = None):
+                                    approx_save_dir: str = "base", filter_select: list[int] = None):
     if profile_name is None:
         profile_name = f"APPROX_USER_PROFILES_top_{top_n_topics}.parquet"
 
@@ -37,7 +37,7 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
                 tqdm(np.array_split(reviews, amount_of_batches_for_approximations), desc="Approximation batches")):
             print()
             approximation = create_scores_by_approximate_distribution(batch['text'], model_name=model_name,
-                                                                      use_cache=use_splitted_cache)
+                                                                      use_cache=amount_of_batches_for_approximations == 1)
             approximation.columns = [str(x) for x in approximation.columns]
             approximation.to_parquet(
                 nlp_cache.approximation_path.joinpath(Path(approx_save_dir, f"approximation_part_{index}.parquet")),
@@ -47,8 +47,8 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
     user_profiles = nlp_cache.load_approximation(approx_save_dir)
 
     # select only topics that are relevant and not too general
-    if prefilter_select:
-        user_profiles = user_profiles[prefilter_select]
+    if filter_select:
+        user_profiles = user_profiles[filter_select]
 
     logging.info('Loading in sentences...')
     # load in sentences, we need review id
@@ -91,9 +91,9 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
 
 def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
                             profile_name: str = "BASIC_USER_PROFILES.parquet", use_cache: bool = True,
-                            scores_save_dir: str = "base", model_name: str = None):
+                            scores_save_dir: str = "base", model_name: str = None, use_sentiment_in_scores:bool = False):
     logging.info('Finished reading in data, starting NLP...')
-    nlp_cache = NLPCache()
+    nlp_cache = NLPCache(amount_of_scores_batches=amount_of_batches)
     nlp_models = NLPModels()
 
     if model_name:
@@ -113,6 +113,11 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
     logging.info('Loading in all scores...')
     scores = nlp_cache.load_scores(scores_save_dir)
 
+    # sentiment is only included in the base scores
+    if scores_save_dir != "base":
+        sentiment = nlp_cache.load_sentiment()
+        scores = pd.concat([sentiment, scores["topic_id"]], axis=1)
+
     # merge sentences back to one review
     logging.info('Merging Reviews...')
 
@@ -124,12 +129,13 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
 
     logging.info("Loading in model...")
     model_manager = NLPModels()
-    model_online_BERTopic: BERTopic = model_manager.load_model()
+    model_online_BERTopic: BERTopic = model_manager.load_model(model_name)
 
     logging.info("Calculating bert_scores...")
     bert_scores = scores[
         ['topic_id', 'label_sentiment', 'score_sentiment']].apply(
-        online_bertopic_scoring_func, total_amount_topics=len(model_online_BERTopic.get_topic_info()['Topic']), axis=1)
+        online_bertopic_scoring_func, total_amount_topics=len(model_online_BERTopic.get_topic_info()['Topic']),
+        use_sentiment=use_sentiment_in_scores, axis=1)
 
     bert_scores = pd.DataFrame(bert_scores.to_list())
 
@@ -138,4 +144,4 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
     user_profiles.columns = [str(x) for x in user_profiles.columns]
 
     logging.info('Saving user profiles...')
-    user_profiles.to_parquet(nlp_cache.user_profiles_path.joinpath(Path(profile_name), engine='fastparquet'))
+    user_profiles.to_parquet(nlp_cache.user_profiles_path.joinpath(Path(profile_name)), engine='fastparquet')
