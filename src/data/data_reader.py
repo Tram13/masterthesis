@@ -11,8 +11,7 @@ import pandas as pd
 from sklearn import preprocessing
 from tqdm import tqdm
 
-from src.data.data_exception import DataException
-from src.tools.config_parser import ConfigParser
+from tools.config_parser import ConfigParser
 
 
 # This class works with the Yelp data set format. Download the data from https://www.yelp.com/dataset.
