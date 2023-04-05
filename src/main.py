@@ -38,8 +38,14 @@ def main_user_profile_400topics():
 
     logging.info('Finished reading in data, starting NLP...')
 
-    main_user_profile_topic(reviews, amount_of_batches=10, profile_name="BASIC_USER_PROFILES_400.parquet",
-                            use_cache=True, model_name="online_model_400top_97.bert")
+    main_user_profile_topic(reviews, amount_of_batches=10, profile_name="BASIC_USER_PROFILES_50_no_sentiment.parquet",
+                            use_cache=True, model_name="online_model_50top_85.bert", use_sentiment_in_scores=False)
+
+    logging.info(
+        '------------------------------------\n\n\n STARTING SECOND USER PROFILE \n\n\n------------------------------')
+
+    main_user_profile_topic(reviews, amount_of_batches=10, profile_name="BASIC_USER_PROFILES_400_no_sentiment.parquet",
+                            use_cache=True, model_name="online_model_400top_97.bert", use_sentiment_in_scores=False)
 
 
 def main():

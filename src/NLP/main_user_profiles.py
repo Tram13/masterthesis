@@ -91,7 +91,8 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
 
 def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
                             profile_name: str = "BASIC_USER_PROFILES.parquet", use_cache: bool = True,
-                            scores_save_dir: str = "base", model_name: str = None, use_sentiment_in_scores:bool = False):
+                            scores_save_dir: str = "base", model_name: str = None,
+                            use_sentiment_in_scores: bool = False):
     logging.info('Finished reading in data, starting NLP...')
     nlp_cache = NLPCache(amount_of_scores_batches=amount_of_batches)
     nlp_models = NLPModels()
@@ -114,33 +115,38 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
     scores = nlp_cache.load_scores(scores_save_dir)
 
     # sentiment is only included in the base scores
-    if scores_save_dir != "base":
+    if scores_save_dir != "base" and use_sentiment_in_scores:
         sentiment = nlp_cache.load_sentiment()
         scores = pd.concat([sentiment, scores["topic_id"]], axis=1)
+
+    columns_to_use = ['topic_id', 'label_sentiment', 'score_sentiment'] if use_sentiment_in_scores else ['topic_id']
 
     # merge sentences back to one review
     logging.info('Merging Reviews...')
 
     scores = scores.groupby('review_id').aggregate(lambda item: item.tolist())
     # convert elements to numpy array
-    scores[['topic_id', 'label_sentiment', 'score_sentiment']] = scores[
-        ['topic_id', 'label_sentiment', 'score_sentiment']].applymap(
-        np.array)
+    scores[columns_to_use] = scores[columns_to_use].applymap(np.array)
 
     logging.info("Loading in model...")
     model_manager = NLPModels()
     model_online_BERTopic: BERTopic = model_manager.load_model(model_name)
 
     logging.info("Calculating bert_scores...")
-    bert_scores = scores[
-        ['topic_id', 'label_sentiment', 'score_sentiment']].apply(
+    bert_scores = scores[columns_to_use].apply(
         online_bertopic_scoring_func, total_amount_topics=len(model_online_BERTopic.get_topic_info()['Topic']),
         use_sentiment=use_sentiment_in_scores, axis=1)
 
     bert_scores = pd.DataFrame(bert_scores.to_list())
 
     logging.info('creating user profiles from bert_scores...')
-    user_profiles = calculate_basic_user_profiles(reviews, bert_scores)
+    if use_sentiment_in_scores:
+        user_profiles = calculate_basic_user_profiles(reviews, bert_scores)
+    else:
+        user_profiles = calculate_basic_user_profiles(reviews, bert_scores, 'sum')
+        logging.info('Normalizing user profiles...')
+        user_profiles = user_profiles.progress_apply(normalize_user_profile, axis=1)
+
     user_profiles.columns = [str(x) for x in user_profiles.columns]
 
     logging.info('Saving user profiles...')

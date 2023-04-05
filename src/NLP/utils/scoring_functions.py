@@ -10,7 +10,9 @@ def online_bertopic_scoring_func(col, total_amount_topics, use_sentiment=True):
     if use_sentiment:
         np.add.at(output, col[0], col[1] * col[2])
     else:
-        np.add.at(output, col[0], col[2])
+        # don't use sentiment and normalize later globally, so we know what topics are the most important
+        np.add.at(output, col[0], 1)
+        return output
 
     # normalize data per topic
     normalize_values = Counter(col[0])
