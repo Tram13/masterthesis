@@ -114,7 +114,7 @@ def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 
     # Prepare sub-models that support online learning
     # keep 15 features (for every 786 vector)
     online_dim_reduction = IncrementalPCA(n_components=15)
-    online_clustering = MiniBatchKMeans(n_clusters=400, random_state=0, batch_size=2048)
+    online_clustering = MiniBatchKMeans(n_clusters=max_topics, random_state=0, batch_size=2048)
     # low decay because we want to keep as much data
     online_vectorizer = OnlineCountVectorizer(stop_words="english", decay=.01)
 

@@ -24,29 +24,32 @@ class NLPCache:
         self._amount_of_top_n_batches = amount_of_top_n_batches
 
     def _make_dirs(self):
-        if not self.cache_path.is_dir():
-            self.cache_path.mkdir()
+        self._create_path_if_not_exists(self.cache_path)
+        self._create_path_if_not_exists(self.user_profiles_path)
+        self._create_path_if_not_exists(self.scores_path)
+        self._create_path_if_not_exists(self.sentiment_path)
+        self._create_path_if_not_exists(self.approximation_path)
+        self._create_path_if_not_exists(self.zero_shot_classes_path)
 
-        if not self.user_profiles_path.is_dir():
-            self.user_profiles_path.mkdir()
-
-        if not self.scores_path.is_dir():
-            self.scores_path.mkdir()
-
-        if not self.sentiment_path.is_dir():
-            self.sentiment_path.mkdir()
-
-        if not self.approximation_path.is_dir():
-            self.approximation_path.mkdir()
-
-        if not self.zero_shot_classes_path.is_dir():
-            self.zero_shot_classes_path.mkdir()
+    @staticmethod
+    def _create_path_if_not_exists(path: Path):
+        if not path.is_dir():
+            path.mkdir()
 
     def save_user_profiles(self, user_profiles: pd.DataFrame, name: str = "BASIC_USER_PROFILES.parquet"):
         user_profiles.to_parquet(Path(self.user_profiles_path, name), engine='fastparquet')
 
     def save_top_n_filter(self, top_n_selected: pd.DataFrame, index: int = 0, save_dir: str = 'base'):
-        top_n_selected.to_parquet(Path(self.approximation_path, save_dir, f"selected_top_n_part_{index}.parquet"), engine='fastparquet')
+        base_path = Path(self.approximation_path, save_dir)
+        self._create_path_if_not_exists(base_path)
+
+        top_n_selected.to_parquet(Path(base_path, f"selected_top_n_part_{index}.parquet"), engine='fastparquet')
+
+    def save_scores(self, scores: pd.DataFrame, index: int = 0, model_dir: str = 'base'):
+        base_path = Path(self.scores_path, model_dir)
+        self._create_path_if_not_exists(base_path)
+
+        scores.to_parquet(Path(base_path, f"score_part_{index}.parquet"), engine='fastparquet')
 
     def load_top_n_filter(self, save_dir: str = 'base'):
         base_path = Path(self.approximation_path, save_dir)
@@ -65,6 +68,7 @@ class NLPCache:
 
     def load_scores(self, model_dir: str = 'base') -> pd.DataFrame:
         base_path = Path(self.scores_path, model_dir)
+        self._create_path_if_not_exists(base_path)
 
         scores = pd.read_parquet(base_path.joinpath(Path(f"score_part_{0}.parquet")), engine='fastparquet')
         for index in range(1, self._amount_of_scores_batches):

@@ -94,6 +94,10 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
                             scores_save_dir: str = "base", model_name: str = None):
     logging.info('Finished reading in data, starting NLP...')
     nlp_cache = NLPCache()
+    nlp_models = NLPModels()
+
+    if model_name:
+        scores_save_dir = nlp_models.get_dir_for_model(model_name)
 
     if not use_cache or not nlp_cache.is_available_scores(scores_save_dir):
         logging.warning(
@@ -101,11 +105,10 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
         logging.info('Calculating bert_scores...')
         for index, batch in enumerate(tqdm(np.array_split(reviews, amount_of_batches), desc="Score Batches")):
             print()
-            scores = create_scores_from_online_model_by_topic(batch['text'], use_cache=False, save_in_cache=False,
-                                                              early_return=True, model_name=model_name)
+            scores = create_scores_from_online_model_by_topic(batch['text'], use_cache=False, model_name=model_name,
+                                                              save_in_cache=False, early_return=True)
             scores.columns = [str(x) for x in scores.columns]
-            scores.to_parquet(nlp_cache.scores_path.joinpath(Path(scores_save_dir, f"score_part_{index}.parquet"),
-                                                             engine='fastparquet'))
+            nlp_cache.save_scores(scores, index, scores_save_dir)
 
     logging.info('Loading in all scores...')
     scores = nlp_cache.load_scores(scores_save_dir)
