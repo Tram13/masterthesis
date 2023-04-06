@@ -45,7 +45,7 @@ def create_scores_by_approximate_distribution(reviews: pd.Series, model_name: st
 
 def create_scores_from_online_model_by_topic(reviews: pd.Series, model_name: str = None, use_cache: bool = True,
                                              save_in_cache: bool = False, verbose: bool = True,
-                                             early_return: bool = False):
+                                             early_return: bool = False, calculate_sentiment: bool = False):
     # load in model
     model_online_BERTopic: BERTopic = _load_model(model_name, verbose)
 
@@ -62,27 +62,33 @@ def create_scores_from_online_model_by_topic(reviews: pd.Series, model_name: str
     logging.info('Saving Topics...')
     topics = pd.DataFrame(topics)
     topics.columns = [str(x) for x in topics.columns]
-    topics.to_parquet(nlp_cache.scores_path.joinpath(Path(f"topics_tmp.parquet"), engine='fastparquet'))
+    topics.to_parquet(nlp_cache.scores_path.joinpath(Path(f"topics_tmp.parquet")), engine='fastparquet')
 
-    logging.info('Calculating sentiment...')
-    # sentiment label+score for each sentence
-    reviews = sentiment_analysis_sentences(reviews, verbose=verbose)
+    if calculate_sentiment:
+        logging.info('Calculating sentiment...')
+        # sentiment label+score for each sentence
+        reviews = sentiment_analysis_sentences(reviews, verbose=verbose)
 
-    logging.info('Saving Sentiment...')
-    # no need to save the text
-    reviews = reviews.drop('text', axis=1)
-    reviews.columns = [str(x) for x in reviews.columns]
-    reviews.to_parquet(nlp_cache.scores_path.joinpath(Path(f"sentiment_tmp.parquet"), engine='fastparquet'))
+        logging.info('Saving Sentiment...')
+        # no need to save the text
+        reviews = reviews.drop('text', axis=1)
+        reviews.columns = [str(x) for x in reviews.columns]
+        reviews.to_parquet(nlp_cache.scores_path.joinpath(Path(f"sentiment_tmp.parquet"), engine='fastparquet'))
 
-    logging.info('Merging Dataframe...')
-    # add them to the dataframe
+    logging.info('Merging Dataframe with topics...')
+    # add topics them to the dataframe
     col_names = list(reviews.columns) + ['topic_id']
     reviews = pd.concat([reviews, topics], axis=1)
     reviews.columns = col_names
 
     # return before creating the actual bert_scores: Useful for saving data early to be reused
     if early_return:
-        return reviews[['review_id', 'topic_id', 'label_sentiment', 'score_sentiment']]
+        if calculate_sentiment:
+            return reviews[['review_id', 'topic_id', 'label_sentiment', 'score_sentiment']]
+        return reviews[['review_id', 'topic_id']]
+
+    assert calculate_sentiment, """sentiment must be calculated when directly calculating user_profile scores.
+                                Recommended is using an early return and using a precalculated sentiment in base"""
 
     # merge sentences back to one review
     reviews = reviews.groupby('review_id').aggregate(lambda item: item.tolist())
@@ -114,7 +120,7 @@ def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 
     # Prepare sub-models that support online learning
     # keep 15 features (for every 786 vector)
     online_dim_reduction = IncrementalPCA(n_components=15)
-    online_clustering = MiniBatchKMeans(n_clusters=400, random_state=0, batch_size=2048)
+    online_clustering = MiniBatchKMeans(n_clusters=max_topics, random_state=0, batch_size=2048)
     # low decay because we want to keep as much data
     online_vectorizer = OnlineCountVectorizer(stop_words="english", decay=.01)
 
