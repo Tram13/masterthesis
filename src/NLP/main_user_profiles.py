@@ -137,15 +137,17 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
         online_bertopic_scoring_func, total_amount_topics=len(model_online_BERTopic.get_topic_info()['Topic']),
         use_sentiment=use_sentiment_in_scores, axis=1)
 
-    bert_scores = pd.DataFrame(bert_scores.to_list())
-
     logging.info('creating user profiles from bert_scores...')
     if use_sentiment_in_scores:
+        logging.info("Exploding bert_scores...")
+        bert_scores = pd.DataFrame(bert_scores.to_list())
         user_profiles = calculate_basic_user_profiles(reviews, bert_scores)
     else:
         user_profiles = calculate_basic_user_profiles(reviews, bert_scores, 'sum')
-        logging.info('Normalizing user profiles...')
-        user_profiles = user_profiles.progress_apply(normalize_user_profile, axis=1)
+
+        logging.info("Exploding bert_scores (late) & normalizing user profiles...")
+        user_profiles = pd.concat([user_profiles['user_id'],
+                                   pd.DataFrame(user_profiles[0].to_list()).progress_apply(normalize_user_profile, axis=1)], axis=1)
 
     user_profiles.columns = [str(x) for x in user_profiles.columns]
 

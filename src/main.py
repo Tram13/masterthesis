@@ -44,7 +44,8 @@ def main_user_profile_400topics():
     logging.info(
         '------------------------------------\n\n\n STARTING SECOND USER PROFILE \n\n\n------------------------------')
 
-    main_user_profile_topic(reviews, amount_of_batches=10, profile_name="BASIC_USER_PROFILES_400_no_sentiment.parquet",
+    main_user_profile_topic(reviews, amount_of_batches=10,
+                            profile_name="BASIC_USER_PROFILES_400_no_sentiment_TEST.parquet",
                             use_cache=True, model_name="online_model_400top_97.bert", use_sentiment_in_scores=False)
 
 
