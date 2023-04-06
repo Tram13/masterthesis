@@ -34,7 +34,6 @@ def main_user_profile_400topics():
     logging.basicConfig(level=logging.INFO)
 
     _, reviews, _ = DataReader().read_data()
-    reviews = reviews.head(100)
 
     logging.info('Finished reading in data, starting NLP...')
 
