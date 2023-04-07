@@ -19,7 +19,6 @@ class DataPreparer:
         Get all combinations of business attributes and user attributes
         :return: A DataFrame where each row represents an input for the ML model
         """
-        user_profiles = user_profiles.set_index('user_id')
         user_profiles.columns = [f"user_profile_{column_id}" for column_id in user_profiles.columns]
         reviews = reviews.join(user_profiles, on='user_id')
         businesses = businesses.drop(columns=['name', 'city'])
