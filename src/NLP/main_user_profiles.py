@@ -24,7 +24,7 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
                                     approx_save_dir: str = "base", filter_select: list[int] = None,
                                     normalize_after_selection: bool = False):
     if profile_name is None:
-        profile_name = f"APPROX_USER_PROFILES_top_{top_n_topics}.parquet"
+        profile_name = f"APPROX_USER_PROFILES_top_{top_n_topics}_normalize_{normalize_after_selection}.parquet"
 
     logging.info('Finished reading in data, starting NLP...')
     nlp_cache = NLPCache(amount_of_approximation_batches=amount_of_batches_for_approximations,

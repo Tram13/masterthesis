@@ -157,7 +157,7 @@ def main_user_profile_approximation_400topics(normalize: bool = False):
                                     amount_of_batches_for_approximations=8,
                                     model_name=model_name,
                                     amount_of_batches_top_n=80,
-                                    profile_name="APPROX_USER_PROFILES_top_5_400filtered_topics",
+                                    profile_name=f"APPROX_USER_PROFILES_top_5_400filtered_topics_normalized_{normalize}",
                                     filter_select=useful_topics_users_400tops_model,
                                     approx_save_dir=nlp_models.get_dir_for_model(model_name),
                                     normalize_after_selection=normalize
@@ -175,7 +175,7 @@ def main_user_profile_approximation_50topics(normalize: bool = False, top_n: int
                                     amount_of_batches_for_approximations=1,
                                     model_name="online_model_50top_85.bert",
                                     amount_of_batches_top_n=10,
-                                    profile_name="APPROX_USER_PROFILES_top_5_prenormalization.parquet",
+                                    profile_name=None,
                                     normalize_after_selection=normalize,
                                     top_n_topics=top_n
                                     )
