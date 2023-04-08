@@ -1,4 +1,6 @@
 import logging
+import os
+from typing import Union
 
 import pandas as pd
 import torch
@@ -13,13 +15,15 @@ from tools.RestaurantReviewsDataset import RestaurantReviewsDataset
 
 
 class NeuralNetworkTrainer:
-    __slots__ = ['input_ml_train', 'input_ml_test', 'output_ml_train', 'output_ml_test']
+    __slots__ = ['input_ml_train', 'input_ml_test', 'output_ml_train', 'output_ml_test', 'user_profiles_location']
 
-    def __init__(self, input_ml_train: pd.DataFrame, input_ml_test: pd.DataFrame, output_ml_train: pd.DataFrame, output_ml_test: pd.DataFrame):
+    def __init__(self, user_profiles_path: Union[os.PathLike, str], input_ml_train: pd.DataFrame, input_ml_test: pd.DataFrame, output_ml_train: pd.DataFrame,
+                 output_ml_test: pd.DataFrame):
         self.input_ml_train = input_ml_train
         self.input_ml_test = input_ml_test
         self.output_ml_train = output_ml_train
         self.output_ml_test = output_ml_test
+        self.user_profiles_location = user_profiles_path
 
     @staticmethod
     def _get_parameters_string(model: Module, optimizer: Optimizer, epochs: int):
@@ -79,8 +83,9 @@ class NeuralNetworkTrainer:
         return mean_loss, accuracy
 
     def train(self, model: Module, optimizer: Optimizer, epochs: int = 100, plot_loss: bool = False, save_to_disk: bool = True) -> tuple[Module, Optimizer]:
-        model.note = self._get_parameters_string(model, optimizer, epochs)
-        logging.info(f"Training network with following parametes: {model.note}")
+        model.parameters_configuration = self._get_parameters_string(model, optimizer, epochs)
+        model.user_profiles_location = self.user_profiles_location
+        logging.info(f"Training network with following parametes: {model.parameters_configuration}")
         history = {
             'train_loss': [],
             'test_loss': [],
