@@ -29,6 +29,22 @@ def main_user_profile_approximation_400topics():
                                     )
 
 
+def main_user_profile_approximation_50topics_with_normalization():
+    print("hello world")
+    logging.basicConfig(level=logging.INFO)
+
+    _, reviews, _ = DataReader().read_data()
+
+    logging.info('Finished reading in data, starting NLP...')
+    main_user_profile_approximation(reviews,
+                                    amount_of_batches_for_approximations=1,
+                                    model_name="online_model_50top_85.bert",
+                                    amount_of_batches_top_n=10,
+                                    profile_name="APPROX_USER_PROFILES_top_5_prenormalization.parquet",
+                                    normalize_after_selection=True
+                                    )
+
+
 def main_user_profile_400topics():
     print("hello world")
     logging.basicConfig(level=logging.INFO)
@@ -45,7 +61,7 @@ def main_user_profile_400topics():
         '------------------------------------\n\n\n STARTING SECOND USER PROFILE \n\n\n------------------------------')
 
     main_user_profile_topic(reviews, amount_of_batches=10,
-                            profile_name="BASIC_USER_PROFILES_400_no_sentiment_TEST.parquet",
+                            profile_name="BASIC_USER_PROFILES_400_no_sentiment.parquet",
                             use_cache=True, model_name="online_model_400top_97.bert", use_sentiment_in_scores=False)
 
 
@@ -61,4 +77,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main_user_profile_400topics()
+    main_user_profile_approximation_50topics_with_normalization()
