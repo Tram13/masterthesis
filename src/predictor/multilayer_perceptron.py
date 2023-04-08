@@ -35,6 +35,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
         self.current_epoch = 0
         self.loss_history = []
         self.note = ""
+        self.user_profiles_location = ""
+        self.parameters_configuration = ""
 
     def forward(self, x):
         x = self.flatten(x)
@@ -44,15 +46,14 @@ class MultiLayerPerceptronPredictor(nn.Module):
         self.loss_history.append(loss)
         self.current_epoch += 1
 
-    @staticmethod
-    def get_default_save_location(use_inference_model: bool = False) -> Path:
+    def get_default_save_location(self, use_inference_model: bool = False) -> Path:
         save_dir = ConfigParser().get_value('predictor_model', 'model_dir')
         if use_inference_model:
             file_name = ConfigParser().get_value('predictor_model', 'mlp_inference_model_name').split('.')
         else:
             file_name = ConfigParser().get_value('predictor_model', 'mlp_full_model_name').split('.')
         uuid = datetime.now().strftime("%Y-%m-%d_%Hh%M")
-        return Path(save_dir, f'{file_name[0]}_{uuid}.{file_name[1]}')
+        return Path(save_dir, f'{file_name[0]}_{uuid}__{"".join(self.user_profiles_location.split(".")[:-1])}.{file_name[1]}')
 
     @staticmethod
     def get_latest_model_from_default_location(use_inference_model: bool = False) -> Path:  # Only for full model
@@ -63,10 +64,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
             file_name = ConfigParser().get_value('predictor_model', 'mlp_full_model_name').split('.')
         # Search disk for models in that location
         found_models = [str(model.name) for model in list(os.scandir(save_dir))]
-        # Find only correct type of model (bit of a hack) (1 for the '.' and 16 for the uuid)
-        found_models = [model for model in found_models if model.startswith(file_name[0]) and len(model) == len(file_name[0]) + len(file_name[1]) + 1 + 17]
         # Just some date parsing to find the most recent model
-        found_models = [(model_name[len(file_name[0]) + 1: -len(file_name[1]) - 1], model_name) for model_name in found_models]
+        found_models = [(model_name[len(file_name[0]) + 1: len(file_name[0]) + 17], model_name) for model_name in found_models]
         found_models = [(datetime.strptime(ts, "%Y-%m-%d_%Hh%M"), model_name) for ts, model_name in found_models]
         found_models.sort(reverse=True)
 
@@ -93,7 +92,9 @@ class MultiLayerPerceptronPredictor(nn.Module):
             "model_state_dict": self.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
             "loss": self.loss_history,
-            "note": self.note
+            "note": self.note,
+            "user_profiles_location": self.user_profiles_location,
+            "parameters_configuration": self.parameters_configuration
         }, path)
         logging.info(f"Model saved at {path}.")
 
@@ -126,6 +127,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
         self.current_epoch = checkpoint['epoch']
         self.loss_history = checkpoint['loss']
         self.note = checkpoint['note']
+        self.user_profiles_location = checkpoint['user_profiles_location']
+        self.parameters_configuration = checkpoint['parameters_configuration']
         logging.info(f"Model loaded from {path}.")
 
         return self, optimizer
