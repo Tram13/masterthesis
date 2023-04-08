@@ -21,9 +21,10 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
                                     model_name: str = None, amount_of_batches_top_n: int = 10,
                                     profile_name: str = None, use_cache: bool = True,
                                     use_splitted_cache: bool = True, top_n_topics: int = 5,
-                                    approx_save_dir: str = "base", filter_select: list[int] = None):
+                                    approx_save_dir: str = "base", filter_select: list[int] = None,
+                                    normalize_after_selection: bool = False):
     if profile_name is None:
-        profile_name = f"APPROX_USER_PROFILES_top_{top_n_topics}.parquet"
+        profile_name = f"APPROX_USER_PROFILES_top_{top_n_topics}_normalize_{normalize_after_selection}.parquet"
 
     logging.info('Finished reading in data, starting NLP...')
     nlp_cache = NLPCache(amount_of_approximation_batches=amount_of_batches_for_approximations,
@@ -64,6 +65,10 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
 
     logging.info('Collecting top_n_topics...')
     user_profiles = nlp_cache.load_top_n_filter(approx_save_dir)
+
+    if normalize_after_selection:
+        logging.info('Normalizing top_n_topics...')
+        user_profiles = user_profiles.progress_apply(normalize_user_profile, axis=1)
 
     logging.info('Aggregating sentences by review...')
     # add the review id to the data, so we can concatenate the sentences and aggregate (sum) them per review
