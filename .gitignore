@@ -9,3 +9,7 @@
 # Data files
 /data
 *.parquet
+
+src/predictor/Models
+src/NLP/cache
+src/NLP/Models
