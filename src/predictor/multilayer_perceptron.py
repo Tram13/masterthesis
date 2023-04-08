@@ -73,7 +73,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
 
     def save(self, optimizer: torch.optim.Optimizer, path: os.PathLike = None, overwrite: bool = True):
         if path is None:
-            path = MultiLayerPerceptronPredictor.get_default_save_location()
+            path = self.get_default_save_location()
             logging.info(f"Using default save location: {path}")
 
         if os.path.exists(path) and os.path.isfile(path):  # Model already exists
@@ -100,7 +100,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
 
     def save_for_inference(self, path: os.PathLike, overwrite: bool = True):
         if path is None:
-            path = MultiLayerPerceptronPredictor.get_default_save_location(use_inference_model=True)
+            path = self.get_default_save_location(use_inference_model=True)
             logging.info(f"Using default save location: {path}")
 
         if os.path.exists(path) and os.path.isfile(path):  # Model already exists
@@ -119,7 +119,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
 
     def load(self, optimizer: torch.optim.Optimizer, path: os.PathLike = None) -> tuple[nn.Module, torch.optim.Optimizer]:
         if path is None:
-            path = MultiLayerPerceptronPredictor.get_latest_model_from_default_location()
+            path = self.get_latest_model_from_default_location()
             logging.info(f"Using default save location: {path}")
         checkpoint = torch.load(path)
         self.load_state_dict(checkpoint['model_state_dict'])
@@ -135,7 +135,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
 
     def load_for_inference(self, path: os.PathLike = None) -> nn.Module:
         if path is None:
-            path = MultiLayerPerceptronPredictor.get_latest_model_from_default_location(use_inference_model=True)
+            path = self.get_latest_model_from_default_location(use_inference_model=True)
             logging.info(f"Using default save location: {path}")
         if not os.path.exists(path) or not os.path.isfile(path):  # Model not found
             logging.error(f"Model not found at {path}. Aborting!")
