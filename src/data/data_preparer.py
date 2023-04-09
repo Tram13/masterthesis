@@ -6,7 +6,8 @@ from sklearn.model_selection import train_test_split
 class DataPreparer:
 
     @staticmethod
-    def get_train_test_validate(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame, user_profiles: pd.DataFrame):
+    def get_train_test_validate(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame, user_profiles: pd.DataFrame) \
+            -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         ml_data = DataPreparer.get_df_for_ml(businesses, reviews, tips, user_profiles).reset_index()
         output_ml = ml_data['stars_normalised']
         input_ml = ml_data.drop(columns=['stars_normalised', 'review_id', 'user_id', 'business_id'])
@@ -19,7 +20,6 @@ class DataPreparer:
         Get all combinations of business attributes and user attributes
         :return: A DataFrame where each row represents an input for the ML model
         """
-        user_profiles = user_profiles.set_index('user_id')
         user_profiles.columns = [f"user_profile_{column_id}" for column_id in user_profiles.columns]
         reviews = reviews.join(user_profiles, on='user_id')
         businesses = businesses.drop(columns=['name', 'city'])
