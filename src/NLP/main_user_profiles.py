@@ -55,16 +55,18 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
     # load in sentences, we need review id
     sentences = SentenceSplitter().split_reviews(reviews['text'], read_cache=use_splitted_cache, save_in_cache=False)
 
-    logging.info('Selecting top N topics for each sentence...')
     # only keep the top n topics with the highest probability
-
-    for index, batch in enumerate(tqdm(np.array_split(user_profiles, amount_of_batches_top_n), desc="Top N batches")):
-        top_n_selected = batch.progress_apply(select_top_n, n=top_n_topics, axis=1)
-        top_n_selected.columns = [str(x) for x in top_n_selected.columns]
-        nlp_cache.save_top_n_filter(top_n_selected, index, approx_save_dir)
+    if not use_cache or not nlp_cache.is_available_top_n(top_n_topics, approx_save_dir):
+        logging.warning(
+            f'Cache is not being used for selecting top n with n={top_n_topics}: allowed: {use_cache} - available: {nlp_cache.is_available_top_n(top_n_topics, approx_save_dir)}')
+        logging.info('Selecting top N topics for each sentence...')
+        for index, batch in enumerate(tqdm(np.array_split(user_profiles, amount_of_batches_top_n), desc="Top N batches")):
+            top_n_selected = batch.progress_apply(select_top_n, n=top_n_topics, axis=1)
+            top_n_selected.columns = [str(x) for x in top_n_selected.columns]
+            nlp_cache.save_top_n_filter(top_n_selected, n=top_n_topics, index=index, save_dir=approx_save_dir)
 
     logging.info('Collecting top_n_topics...')
-    user_profiles = nlp_cache.load_top_n_filter(approx_save_dir)
+    user_profiles = nlp_cache.load_top_n_filter(n=top_n_topics, save_dir=approx_save_dir)
 
     if normalize_after_selection:
         logging.info('Normalizing top_n_topics...')
