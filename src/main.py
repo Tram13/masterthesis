@@ -214,7 +214,7 @@ def main():
 if __name__ == '__main__':
     logging.info(
         '------------------------------------\n\n\n ALGO 1: approx 50 with normalization \n\n\n------------------------------')
-    main_user_profile_approximation_50topics(True, 6)
+    main_user_profile_approximation_50topics(True, 5)
     logging.info(
         '------------------------------------\n\n\n ALGO 2: approx 400 tops with preselection, no normalization \n\n\n------------------------------')
     main_user_profile_approximation_400topics(False)
@@ -223,7 +223,7 @@ if __name__ == '__main__':
     main_user_profile_approximation_50topics(False, 10)
     logging.info(
         '------------------------------------\n\n\n ALGO 4: approx 50 tops with normalization top 3 topics\n\n\n------------------------------')
-    main_user_profile_approximation_50topics(True, 4)
+    main_user_profile_approximation_50topics(True, 3)
     logging.info(
         '------------------------------------\n\n\n ALGO 5: approx 400 tops with preselection, with extra normalization \n\n\n------------------------------')
     main_user_profile_approximation_400topics(True)
