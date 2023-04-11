@@ -1,4 +1,7 @@
 from pathlib import Path
+
+import numpy as np
+
 from tools.config_parser import ConfigParser
 import pandas as pd
 import os
@@ -80,10 +83,10 @@ class NLPCache:
         base_path = Path(self.approximation_path, model_dir)
 
         approximations = pd.read_parquet(base_path.joinpath(Path(f"approximation_part_{0}.parquet")),
-                                         engine='fastparquet')
+                                         engine='fastparquet').astype(np.float16)
         for index in range(1, self._amount_of_approximation_batches):
             to_add = pd.read_parquet(base_path.joinpath(Path(f"approximation_part_{index}.parquet")),
-                                     engine='fastparquet')
+                                     engine='fastparquet').astype(np.float16)
             approximations = pd.concat([approximations, to_add], ignore_index=True)
         return approximations
 
