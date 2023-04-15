@@ -10,6 +10,7 @@ class NLPCache:
                  amount_of_approximation_batches: int = 1, amount_of_top_n_batches: int = 10):
         self.cache_path = Path(ConfigParser().get_value('cache', 'nlp_cache_dir'))
         self.user_profiles_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'user_profiles_dir')))
+        self.business_profile_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'business_profiles_dir')))
         self.scores_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'scores_dir')))
         self.sentiment_path = self.scores_path
         self.approximation_path = self.scores_path
@@ -26,6 +27,7 @@ class NLPCache:
     def _make_dirs(self):
         self._create_path_if_not_exists(self.cache_path)
         self._create_path_if_not_exists(self.user_profiles_path)
+        self._create_path_if_not_exists(self.business_profile_path)
         self._create_path_if_not_exists(self.scores_path)
         self._create_path_if_not_exists(self.sentiment_path)
         self._create_path_if_not_exists(self.approximation_path)
@@ -35,6 +37,9 @@ class NLPCache:
     def _create_path_if_not_exists(path: Path):
         if not path.is_dir():
             path.mkdir()
+
+    def save_business_profiles(self, business_profiles: pd.DataFrame, name: str = "BASIC_BUSINESS_PROFILES.parquet"):
+        business_profiles.to_parquet(Path(self.business_profile_path, name), engine='fastparquet')
 
     def save_user_profiles(self, user_profiles: pd.DataFrame, name: str = "BASIC_USER_PROFILES.parquet"):
         user_profiles.to_parquet(Path(self.user_profiles_path, name), engine='fastparquet')
@@ -59,6 +64,9 @@ class NLPCache:
             to_add = pd.read_parquet(base_path.joinpath(Path(f"selected_top_{n}{'_normalized' if normalized else ''}_part_{index}.parquet")), engine='fastparquet')
             scores = pd.concat([scores, to_add], ignore_index=True)
         return scores
+
+    def load_business_profiles(self, name: str = "BASIC_BUSINESS_PROFILES.parquet"):
+        return pd.read_parquet(Path(self.business_profile_path, name), engine='fastparquet')
 
     def load_user_profiles(self, name: str = "BASIC_USER_PROFILES.parquet") -> pd.DataFrame:
         return pd.read_parquet(Path(self.user_profiles_path, name), engine='fastparquet')

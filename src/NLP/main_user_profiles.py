@@ -22,7 +22,7 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
                                     profile_name: str = None, use_cache: bool = True,
                                     use_splitted_cache: bool = True, top_n_topics: int = 5,
                                     approx_save_dir: str = "base", filter_select: list[int] = None,
-                                    normalize_after_selection: bool = False):
+                                    normalize_after_selection: bool = False, profile_mode: str = "user_id"):
     if profile_name is None:
         profile_name = f"APPROX_USER_PROFILES_top_{top_n_topics}_normalize_{normalize_after_selection}.parquet"
 
@@ -81,10 +81,10 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
     user_profiles = pd.concat([sentences['review_id'], user_profiles], axis=1)
     user_profiles = user_profiles.groupby('review_id').aggregate('sum')
 
-    logging.info('Aggregating reviews by user...')
+    logging.info('Aggregating reviews by user_id or business_id...')
     # add the user id to the data, so we can concatenate the reviews and aggregate (sum) them per user
-    user_profiles = pd.concat([reviews['user_id'], user_profiles], axis=1)
-    user_profiles = user_profiles.groupby('user_id').aggregate('sum')
+    user_profiles = pd.concat([reviews[profile_mode], user_profiles], axis=1)
+    user_profiles = user_profiles.groupby(profile_mode).aggregate('sum')
 
     logging.info('Normalizing user profiles...')
     # normalize the user profiles -> [0,1]
@@ -96,14 +96,17 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
 
     # save the user_profile for later use
     logging.info('Saving user profiles...')
-    nlp_cache.save_user_profiles(user_profiles, name=profile_name)
+    if profile_mode == 'user_id':
+        nlp_cache.save_user_profiles(user_profiles, profile_name)
+    else:
+        nlp_cache.save_business_profiles(user_profiles, profile_name)
     logging.info(f'Saved user profiles with name: {profile_name}')
 
 
 def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
                             profile_name: str = "BASIC_USER_PROFILES.parquet", use_cache: bool = True,
                             scores_save_dir: str = "base", model_name: str = None,
-                            use_sentiment_in_scores: bool = False):
+                            use_sentiment_in_scores: bool = False, profile_mode: str = 'user_id'):
     logging.info('Finished reading in data, starting NLP...')
     nlp_cache = NLPCache(amount_of_scores_batches=amount_of_batches)
     nlp_models = NLPModels()
@@ -152,16 +155,20 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
     if use_sentiment_in_scores:
         logging.info("Exploding bert_scores...")
         bert_scores = pd.DataFrame(bert_scores.to_list())
-        user_profiles = calculate_basic_user_profiles(reviews, bert_scores)
+        user_profiles = calculate_basic_user_profiles(reviews, bert_scores, mode=profile_mode)
     else:
-        user_profiles = calculate_basic_user_profiles(reviews, bert_scores, 'sum')
+        user_profiles = calculate_basic_user_profiles(reviews, bert_scores, 'sum', mode=profile_mode)
 
         logging.info("Exploding bert_scores (late) & normalizing user profiles...")
-        user_profiles = pd.concat([user_profiles['user_id'],
+        user_profiles = pd.concat([user_profiles[profile_mode],
                                    pd.DataFrame(user_profiles[0].to_list()).progress_apply(normalize_user_profile,
                                                                                            axis=1)], axis=1)
 
     user_profiles.columns = [str(x) for x in user_profiles.columns]
 
     logging.info('Saving user profiles...')
-    user_profiles.to_parquet(nlp_cache.user_profiles_path.joinpath(Path(profile_name)), engine='fastparquet')
+    if profile_mode == 'user_id':
+        nlp_cache.save_user_profiles(user_profiles, profile_name)
+    else:
+        nlp_cache.save_business_profiles(user_profiles, profile_name)
+    logging.info(f'Saved user profiles with name: {profile_name}')
