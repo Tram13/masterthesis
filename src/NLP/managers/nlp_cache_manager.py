@@ -15,6 +15,7 @@ class NLPCache:
         self.sentiment_path = self.scores_path
         self.approximation_path = self.scores_path
         self.zero_shot_classes_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'zero_shot_dir')))
+        self.guided_topics_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'guided_topics')))
 
         self._make_dirs()
 
@@ -32,11 +33,16 @@ class NLPCache:
         self._create_path_if_not_exists(self.sentiment_path)
         self._create_path_if_not_exists(self.approximation_path)
         self._create_path_if_not_exists(self.zero_shot_classes_path)
+        self._create_path_if_not_exists(self.guided_topics_path)
 
     @staticmethod
     def _create_path_if_not_exists(path: Path):
         if not path.is_dir():
             path.mkdir()
+
+    def read_guided_topics(self, name: str = "NLP_categories.txt"):
+        with open(self.guided_topics_path.joinpath(Path(name)), 'r') as f:
+            return [line.strip().split(';') for line in f.readlines()]
 
     def save_business_profiles(self, business_profiles: pd.DataFrame, name: str = "BASIC_BUSINESS_PROFILES.parquet"):
         business_profiles.to_parquet(Path(self.business_profile_path, name), engine='fastparquet')
