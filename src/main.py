@@ -338,6 +338,7 @@ def main_user_profile_approximation_400topics(normalize: bool = False, top_n: in
     ]
 
     preselect = useful_topics_users_400tops_model if profile_mode == "user_id" else useful_topics_business_400tops_model
+    preselect = [str(topic) for topic in preselect]
     nlp_models = NLPModels()
     model_name = "online_model_400top_97.bert"
     main_user_profile_approximation(reviews,

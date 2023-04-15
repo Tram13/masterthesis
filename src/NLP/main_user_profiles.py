@@ -21,7 +21,7 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
                                     model_name: str = None, amount_of_batches_top_n: int = 10,
                                     profile_name: str = None, use_cache: bool = True,
                                     use_splitted_cache: bool = True, top_n_topics: int = 5,
-                                    approx_save_dir: str = "base", filter_select: list[int] = None,
+                                    approx_save_dir: str = "base", filter_select: list[str] = None,
                                     normalize_after_selection: bool = False, profile_mode: str = "user_id"):
     if profile_name is None:
         profile_name = f"APPROX_USER_PROFILES_top_{top_n_topics}_normalize_{normalize_after_selection}.parquet"
