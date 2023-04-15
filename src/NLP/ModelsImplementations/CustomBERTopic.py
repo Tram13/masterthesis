@@ -17,7 +17,8 @@ from NLP.ModelsImplementations.SBERT_feature_extraction import SentenceBERT
 class CustomBERTTopic:
 
     def __init__(self, embedding_model=None, dim_reduction_model=None, cluster_model=None, vectorizer_model=None,
-                 ctfidf_model=None, fine_tuning_representation_model=KeyBERTInspired(), max_topics="auto", batch_size: int = 32):
+                 ctfidf_model=None, fine_tuning_representation_model=KeyBERTInspired(), max_topics="auto", batch_size: int = 32,
+                 guided_topics=None):
         self.batch_size = batch_size
         # Extract embeddings
         # see docs for other models
@@ -43,6 +44,8 @@ class CustomBERTTopic:
         # any `bertopic.representation` model
         self.fine_tuning_representation_model = fine_tuning_representation_model
 
+        self.guided_topics = guided_topics
+
         # All steps together to create the model
         self.model = BERTopic(
             verbose=True,
@@ -52,7 +55,8 @@ class CustomBERTTopic:
             hdbscan_model=cluster_model,
             vectorizer_model=vectorizer_model,
             ctfidf_model=ctfidf_model,
-            representation_model=fine_tuning_representation_model
+            representation_model=fine_tuning_representation_model,
+            seed_topic_list=guided_topics
         )
 
         self.model.embedding_model = self.embedding_model

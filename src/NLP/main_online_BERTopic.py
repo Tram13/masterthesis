@@ -109,7 +109,7 @@ def create_scores_from_online_model_by_topic(reviews: pd.Series, model_name: str
 
 
 def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 500_000, model_name: str = None,
-                                 max_topics: int = 200):
+                                 max_topics: int = 200, guided_topics: list[list[str]] = None):
     # split reviews into sentences
     logging.info("Splitting Sentences...")
     sentence_splitter = SentenceSplitter()
@@ -125,7 +125,8 @@ def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 
     online_vectorizer = OnlineCountVectorizer(stop_words="english", decay=.01)
 
     BERTopic_online = CustomBERTTopic(max_topics=max_topics, dim_reduction_model=online_dim_reduction,
-                                      cluster_model=online_clustering, vectorizer_model=online_vectorizer)
+                                      cluster_model=online_clustering, vectorizer_model=online_vectorizer,
+                                      guided_topics=guided_topics)
     BERTopic_online_model = BERTopic_online.model
 
     model_manager = NLPModels()

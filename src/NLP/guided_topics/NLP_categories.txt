@@ -1,0 +1,48 @@
+Service;Waiters;Rude;Fast service
+Busy;Crowded
+Hygiene;Cleanliness
+Atmosphere;Mood;Cozy
+Noodles;Ramen
+Chinese;Hong Kong Style Cafe;Shanghainese;Taiwanese;Hot Pot;Fuzhou;Szechuan;Cantonese
+Japanese;Sushi Bars;Poke;Teppanyaki;Japanese Curry
+Filipino;Singaporean;Tonkatsu;Asian Fusion;Vietnamese;Himalayan/Nepalese;Dumplings;Korean;Donburi;Hainan;Dim Sum
+Cocktail Bars;Tiki Bars;Juice Bars & Smoothies
+Wine Tasting Room;Wine Bars;Meaderies
+Gluten-Free
+Breakfast & Brunch;Bed & Breakfast
+Gay Bars;Beer Bar;Themed Cafes;Beach Bars;Bartenders;Champagne Bars;Sports Bars;Cafes;Hotel bar;Pubs;Coffee & Tea;Irish Pub;Tea Rooms;Cideries;Dive Bars;Parent Cafes;Bars;Whiskey Bars
+Steakhouses;BBQ;Meat
+Cheesesteaks;Sandwiches
+Gastropubs;Brasseries
+Austrian;German
+Arabic;Middle Eastern;Halal;Syrian;Afghan;Lebanese;Pakistani;Persian/Iranian;Falafel
+Vegetarian;Salad
+Scandinavian
+Mediterranean;Tuscan;Egyptian;Tapas/Small Plates;Tapas Bars;Spanish;Iberian;Greek;Portuguese;Moroccan;Sicilian;Italian;Empanadas;Cucina campana;Sardinian
+Ice Cream & Frozen Yogurt;Gelato;Bubble Tea;Shaved Ice
+Pizza
+Pasta Shops
+Seafood
+Live/Raw Food
+Soup
+Delicatessen;Delis;Specialty Food
+British;Scottish;Irish
+Bangladeshi;Malaysian;Indian;Sri Lankan;Thai;Oriental;Cambodian;Burmese;Laotian
+Turkish;Pita;Kebab;Lahmacun
+African;Ethiopian;South African;Somali;Senegalese
+Donuts;Bagels;Pancakes;Waffles;Desserts;Macarons;Cupcakes;Creperies
+Chicken Wings
+Buffets;Diners
+Tex-Mex;Wraps;Tacos
+Kosher
+Poutineries;Canadian (New);Donairs
+Georgian;Armenian;Uzbek
+French;Belgian
+Fast Food;Burgers;Fish & Chips;American (Traditional)
+Comfort Food
+Vegan
+Colombian;Argentine;Peruvian;Latin American;Brazilian;Venezuelan;Acai Bowls;Southern
+Food Stands;Hot Dogs
+Australian;Guamanian
+Eastern European;Russian;Hungarian;Ukrainian;Polish;Serbo Croatian;Kombucha;Czech
+Dominican;Honduran;Caribbean;Nicaraguan;Cuban;Hawaiian;Salvadoran;Haitian;Puerto Rican
