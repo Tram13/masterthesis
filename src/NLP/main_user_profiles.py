@@ -48,7 +48,9 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
     user_profiles = nlp_cache.load_approximation(approx_save_dir)
 
     # select only topics that are relevant and not too general
+    filter_string = ""
     if filter_select:
+        filter_string = "_USER" if profile_mode == "user_id" else "_BUSINESS"
         user_profiles = user_profiles[filter_select]
 
     logging.info('Loading in sentences...')
@@ -57,9 +59,10 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
 
     # only keep the top n topics with the highest probability
     if not use_cache or not nlp_cache.is_available_top_n(top_n_topics, approx_save_dir,
-                                                         normalized=normalize_after_selection):
+                                                         normalized=normalize_after_selection,
+                                                         filter_string=filter_string):
         logging.warning(
-            f'Cache is not being used for selecting top n with n={top_n_topics}: allowed: {use_cache} - available: {nlp_cache.is_available_top_n(top_n_topics, approx_save_dir, normalized=normalize_after_selection)}')
+            f'Cache is not being used for selecting top n with n={top_n_topics}: allowed: {use_cache} - available: {nlp_cache.is_available_top_n(top_n_topics, approx_save_dir, normalized=normalize_after_selection, filter_string=filter_string)}')
         logging.info('Selecting top N topics for each sentence...')
         if normalize_after_selection:
             logging.info('+ Normalizing top_n_topics...')
@@ -70,11 +73,11 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
                 top_n_selected = top_n_selected.progress_apply(normalize_user_profile, axis=1)
             top_n_selected.columns = [str(x) for x in top_n_selected.columns]
             nlp_cache.save_top_n_filter(top_n_selected, n=top_n_topics, index=index, save_dir=approx_save_dir,
-                                        normalized=normalize_after_selection)
+                                        normalized=normalize_after_selection, filter_string=filter_string)
 
     logging.info('Collecting top_n_topics...')
     user_profiles = nlp_cache.load_top_n_filter(n=top_n_topics, save_dir=approx_save_dir,
-                                                normalized=normalize_after_selection)
+                                                normalized=normalize_after_selection, filter_string=filter_string)
 
     logging.info('Aggregating sentences by review...')
     # add the review id to the data, so we can concatenate the sentences and aggregate (sum) them per review
