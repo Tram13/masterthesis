@@ -3,14 +3,102 @@
 % TODO: overzicht van wat al bestaat
 \section{Aanbevelingssystemen}
 \label{sec:huidige_technieken_aanbevelingssystemen}
+In essentie probeert een aanbevelingssysteem te voorspellen welke producten een gebruiker nuttig zal vinden. Dit gebeurt in de meeste toepassingen \cite{overzicht_technieken} door te voorspellen welke score een gebruiker aan ieder item zou toekennen, en dan de best scorende producten terug te geven. 
 
+We kunnen dit formeel noteren als
+\begin{equation}
+U \times I \rightarrow \hat{R}
+\label{def:chap2_aanbevelingssysteem_formeel}    
+\end{equation}
+waarbij $U$ een vector is die de gebruikers voorstelt, $I$ een vector is die de items voorstelt en $\hat{R}$ de verwachte scores zijn. \cite{cursus_hs2} $\hat{R}$ is dan een matrix, waarbij iedere kolom overeenkomt met een item en iedere rij overeenkomt met een gebruiker.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{c|ccc}
+        & $Item_0$ & $Item_1$ & $Item_2$ \\ \hline
+$User_0$ & 0.5     & 0.6     & 0.7     \\
+$User_1$ & 0.8     & 0.8     & 0.9     \\
+$User_2$ & 0.3     & 0.9     & 0.8    
+\end{tabular}
+\caption{Voorbeeld voor $\hat{R}$ met fictieve data}
+\end{table}
+
+Hieruit volgt dat een top $N$ beste producten voor een gebruiker neerkomt op de volgende berekening:
+\begin{lstlisting}
+    scores = []
+    for item in items:
+        scores.append(score(user, item))
+    scores.sort_desc()
+    scores[0:N]
+\end{lstlisting}
+
+Het design van een aanbevelingssysteem kan gezien worden als een optimalisatieprobleem waarbij we $|(R - \hat{R})|$ minimaliseren, met $R$ de effectieve scores zijn die de gebruikers zouden toekennen aan de items.
+
+Er zijn dus 3 factoren die invloed hebben op de accuraatheid $|(R - \hat{R})|$ van een aanbevelingssysteem: $U$, $I$ en de operator $\times$, die $U$ en $I$ verwerkt tot een score. $U$ en $I$ zijn gebaseerd op de oorspronkelijke data, en worden met feature engineering-technieken omgezet tot numerieke features. De $\times$-operator kan op veel verschillende manieren deze features combineren tot een voorspelling $\hat{R}$. Bij het ontwerp van een aanbevelingssysteem is het dus belangrijk om deze 3 parameters te bestuderen.
+
+% TODO: praten over non-personalised recommenders, maar dat we dat negeren door te slechte performance obviously
 % TODO: Bespreking van verschillende technieken: basis tem SotA. Vrijwel enkel de werking, niet de voor-nadelen
+% TODO: intro hier
+\subsection{Niet-gepersonaliseerde systemen}
+Niet-gepersonaliseerde aanbevelingssystemen gebruiken geen gegevens over de gebruiker om aanbevelingen te maken. Met andere woorden, $U$ is de eenheidsvector. Er wordt enkel beroep gedaan op data van de producten, zoals het aantal verkochte exemplaren of het aantal positieve reviews. Verschillende metrieken kunnen met feature engineering gecombineerd worden om zo betere resultaten te bekomen.
+
+\subsection{Gebruikersprofielen}
+Het is voor een aanbevelingssysteem uitermate belangrijk om de voorkeuren van een gebruiker goed in te kunnen schatten. Bij veel methoden wordt er per gebruiker een 'gebruikersprofiel' opgesteld: dit profiel is een vector waarvan iedere dimensie een eigenschap van een product of gebruiker voorstelt. Het opstellen van een gebruikersprofiel gebeurt impliciet aan de hand van de aankoopgeschiedenis/reviews... van de gebruiker. Het is ook mogelijk om de gebruiker in een vragenlijst expliciet om zijn voorkeuren te vragen.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{c|ccc}
+         & $Property_0$ & $Property_1$ & $Property_2$ \\ \hline
+$User_0$ & 0.2          & 0            & 0.7          \\
+$User_1$ & 0.1          & 0.8          & 0.6          \\
+$User_2$ & 0.9          & 0.9          & 0.2         
+\end{tabular}
+\caption{Voorbeeld voor $U$ met fictieve data}
+\label{tab:chap2_user_profiles}
+\end{table}
+
+Door \autoref{tab:chap2_user_profiles} is het duidelijk dat in de praktijk $U$ een matrix is in definitie \ref{def:chap2_aanbevelingssysteem_formeel}. Dit zal zo zijn voor iedere techniek die gebruikersprofielen gebruikt, ongeacht hoe die profielen worden opgesteld.
+
 \subsection{Traditionele methoden}
+Er bestaan verschillende technieken om aanbevelingssystemen te implementeren. Traditionele algoritmen zoals Content-Based Filtering (CB) en Collaborative Filtering (CF) zijn wijd toepasbaar in verschillende contexten. "CB en CF werken door prioriteiten toe te kennen aan de beschikbare informatie en hierop te filteren." \cite{overzicht_technieken} Voor al deze technieken is er steeds een éénduidig gedefinieerde operator $\times$.
+
+
+\subsubsection{Content-Based Filtering}
+Deze techniek is gebaseerd op de metadata van de producten. Er wordt per gebruiker een profiel aangemaakt, dat de voorkeuren voor eigenschappen van producten weerspiegeld. Toegepast op een aanbevelingssysteem voor restaurants zijn deze eigenschappen bijvoorbeeld de prijsklasse, keuken en kindvriendelijkheid. Hoe meer metadata beschikbaar is, hoe preciezer de voorkeuren van de gebruiker gemodelleerd kunnen worden. Het gebruikersprofiel wordt dan vergeleken met alle beschikbare items, om zo de items die het dichtste aansluiten bij het gebruikersprofiel aan te bieden. Formeel geldt bij Content-Based Filtering voor gebruiker $i$:
+
+
+\begin{equation}
+    U_i = \sum_{n=1}^{N} I_n
+    \label{eq:chap2_cb_user_profile}
+\end{equation}
+met $N$ het aantal producten en $I_n$ een vector die de aanwezigheid van iedere mogelijke eigenschap aanduidt. Dit gebruikersprofiel kan dan vergeleken worden met ieder product via de cosinusgelijkenis $S_C$:
+\begin{equation}
+    S_C(U_i, I_j) = \frac{U_i \cdot I_j}{\Vert U_i \Vert \Vert I_j \Vert}
+    \label{eq:chap2_cb_cosine_similarity}
+\end{equation}
+
+Er bestaan heel veel alternatieve formules voor het opstellen van gebruikersprofielen. Er kan op verschillende plaatsen genormaliseerd worden en technieken zoals Term Frequenqy - Inverse Document Frequency (TF-IDF) kunnen toegepast worden op de eigenschappen. Scores kunnen herschaald worden om negatieve waarden toe te kennen aan eigenschappen of producten met negatieve scores kunnen lagere gewichten krijgen. De optimale combinatie van technieken hangt steeds af van het probleem.
+
+\subsubsection{Collaborative Filtering}
+Bij Collaborative Filtering maken we geen gebruik van metadata. Bij User User Collaborative Filtering (UUCF) kijken we in de plaats naar het gedrag van andere gebruikers. Hierbij worden opnieuw gebruikersprofielen opgesteld, zoals in definitie \ref{eq:chap2_cb_user_profile}. Hierna worden deze met elkaar vergeleken met de cosinusgelijkenis (\ref{eq:chap2_cb_cosine_similarity}). De aanbevelingen voor gebruiker $i$ komen dan uit gebruiker $j$, waarvoor geldt:
+$$S_C(U_i, U_j) = \max_{k \in U}(S_C(U_i, U_k))$$
+We noemen $I_j$ dan een buur van $I_i$. UUCF veronderstelt dat gelijk gedrag in het verleden wijst op gelijk gedrag in de toekomst. Ook stelt UUCF dat dat de niet-overlappende interessedomeinen van twee buren toch interessant zijn voor elkaar. UUCF gaat er dus impliciet van uit dat de overlap van interesses volledig is (\autoref{fig:chap2_user_profiles_overlap}).
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/user_profiles_overlap.png}{Visualisatie overlap interesses van twee buren}{fig:chapt2_user_profiles_overlap}
+
+% TODO: formules om uit te rekenen, zie practica?
+% TODO: uitleg over pearson correlatie, en verschil met cosinus similarity
+% TODO: opmerking over varianten/alternatieven, zoals aantal neighbours en normalisatie etc etc. Zie PPT
+
+% TODO: IICF hieronder
+
 
 \subsection{Methoden gebaseerd op machine learning}
 
+\subsection{Combinaties en hybride modellen}
+
 \subsection{Problemen}
-% TODO: voor nadelen van iedere implementatie, inclusief de problemen die er zijn bij recsys (bvb cold start, vertrouwen, explainable, serendipity) en hoe die algoritmen dat probleem wel of niet oplossen. Eventueel een samenvattende tabel op het einde?
+% TODO: voor nadelen van iedere implementatie, inclusief de problemen die er zijn bij recsys (bvb cold start, vertrouwen, explainable, serendipity, (rekenkracht), beschikbaarheid van de labels) en hoe die algoritmen dat probleem wel of niet oplossen. Eventueel een samenvattende tabel op het einde?
 
 \section{Natural Language Processing}
 % TODO: Hoe werkt NLP? Focus hoofdzakelijk op transformers. Note dat transformers beter presteren dan '''traditionele''' methoden, zoals doc2vec. Toon dit aan met een bron+grafiek/.. Waarom we NLP nodig hebben, moet hier nog niet uitgelegd worden denk ik.
