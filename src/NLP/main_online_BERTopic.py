@@ -136,7 +136,11 @@ def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 
     for batch in tqdm(np.array_split(input_data, amount_of_batches), desc="BERT Batches"):
         print()
         batch = batch.reset_index()['text']
-        BERTopic_online_model.partial_fit(batch)
+        try:
+            BERTopic_online_model.partial_fit(batch)
+        except ValueError as ex:
+            logging.info(f"SKIPPED BATCH: {ex}")
+            continue
         model_manager.save_model(BERTopic_online_model, "online_model_tmp.bert")
 
     logging.info("Saving model...")
