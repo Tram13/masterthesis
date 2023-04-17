@@ -179,7 +179,7 @@ def main_user_profile_approximation_400topics(normalize: bool = False, top_n: in
         30,
         33,
         34,
-        26,
+        36,
         38,
         42,
         43,
