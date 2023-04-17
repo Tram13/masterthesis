@@ -412,9 +412,7 @@ def main():
 
 
 if __name__ == '__main__':
-    logging.info(
-        '------------------------------------\n\n\n TRAINING BERTOPIC WITH GUIDED TOPICS \n\n\n------------------------------')
-    main_bert_guided()
+    logging.basicConfig(level=logging.INFO)
     logging.info(
         '------------------------------------\n\n\n ALGO 1: approx 50 top 5 for business profile \n\n\n------------------------------')
     main_user_profile_approximation_50topics(False, profile_mode='business_id',
