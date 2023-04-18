@@ -349,7 +349,8 @@ def main_user_profile_approximation_400topics(normalize: bool = False, top_n: in
                                     profile_name=f"APPROX_{'USER' if profile_mode == 'user_id' else 'BUSINESS'}_PROFILE_top_{top_n}_400filtered_topics_normalized_{normalize}",
                                     filter_select=preselect,
                                     approx_save_dir=nlp_models.get_dir_for_model(model_name),
-                                    normalize_after_selection=normalize
+                                    normalize_after_selection=normalize,
+                                    profile_mode=profile_mode
                                     )
 
 
