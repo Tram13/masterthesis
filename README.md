@@ -8,6 +8,6 @@ Aan gebruikersprofiel een extra waarde toevoegen die de spreiding van de scores 
 sentiment analysis enkel op restaurant profile en NIET op user profile:
 - restaurant heeft steak -> user zegt goed of niet goed => sentiment is belangrijk
 - user zegt steak is niet legger bij restaurant X => user wil graag steak (dus wel recommenden), het was gewoon niet lekker bij dat restaurant
-
+- Studie over hoeveel reviews nodig zijn om accurate results te hebben -> cold start problem
 
 TODO is our recommender vulnerable to fake reviews (ja zeker, maar out of scope. Wel goed om te vermelden)
