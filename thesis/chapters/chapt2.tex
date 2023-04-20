@@ -40,6 +40,7 @@ Er zijn dus 3 factoren die invloed hebben op de accuraatheid $|(R - \hat{R})|$ v
 % TODO: Bespreking van verschillende technieken: basis tem SotA. Vrijwel enkel de werking, niet de voor-nadelen
 % TODO: intro hier
 \subsection{Niet-gepersonaliseerde systemen}
+\label{sec:chapt2_non_persionalised}
 Niet-gepersonaliseerde aanbevelingssystemen gebruiken geen gegevens over de gebruiker om aanbevelingen te maken. Met andere woorden, $U$ is de eenheidsvector. Er wordt enkel beroep gedaan op data van de producten, zoals het aantal verkochte exemplaren of het aantal positieve reviews. Verschillende metrieken kunnen met feature engineering gecombineerd worden om zo betere resultaten te bekomen.
 
 \subsection{Gebruikersprofielen}
@@ -60,6 +61,7 @@ $User_2$ & 0.9          & 0.9          & 0.2
 Door \autoref{tab:chap2_user_profiles} is het duidelijk dat in de praktijk $U$ een matrix is in definitie \ref{def:chap2_aanbevelingssysteem_formeel}. Dit zal zo zijn voor iedere techniek die gebruikersprofielen gebruikt, ongeacht hoe die profielen worden opgesteld.
 
 \subsection{Traditionele methoden}
+\label{sec:chapt2_traditionele_methoden}
 Er bestaan verschillende technieken om aanbevelingssystemen te implementeren. Traditionele algoritmen zoals Content-Based Filtering (CB) en Collaborative Filtering (CF) zijn wijd toepasbaar in verschillende contexten. "CB en CF werken door prioriteiten toe te kennen aan de beschikbare informatie en hierop te filteren." \cite{overzicht_technieken} Voor al deze technieken is er steeds een éénduidig gedefinieerde operator $\times$.
 
 
@@ -80,25 +82,292 @@ met $N$ het aantal producten en $I_n$ een vector die de aanwezigheid van iedere 
 Er bestaan heel veel alternatieve formules voor het opstellen van gebruikersprofielen. Er kan op verschillende plaatsen genormaliseerd worden en technieken zoals Term Frequenqy - Inverse Document Frequency (TF-IDF) kunnen toegepast worden op de eigenschappen. Scores kunnen herschaald worden om negatieve waarden toe te kennen aan eigenschappen of producten met negatieve scores kunnen lagere gewichten krijgen. De optimale combinatie van technieken hangt steeds af van het probleem.
 
 \subsubsection{Collaborative Filtering}
-Bij Collaborative Filtering maken we geen gebruik van metadata. Bij User User Collaborative Filtering (UUCF) kijken we in de plaats naar het gedrag van andere gebruikers. Hierbij worden opnieuw gebruikersprofielen opgesteld, zoals in definitie \ref{eq:chap2_cb_user_profile}. Hierna worden deze met elkaar vergeleken met de cosinusgelijkenis (\ref{eq:chap2_cb_cosine_similarity}). De aanbevelingen voor gebruiker $i$ komen dan uit gebruiker $j$, waarvoor geldt:
-$$S_C(U_i, U_j) = \max_{k \in U}(S_C(U_i, U_k))$$
-We noemen $I_j$ dan een buur van $I_i$. UUCF veronderstelt dat gelijk gedrag in het verleden wijst op gelijk gedrag in de toekomst. Ook stelt UUCF dat dat de niet-overlappende interessedomeinen van twee buren toch interessant zijn voor elkaar. UUCF gaat er dus impliciet van uit dat de overlap van interesses volledig is (\autoref{fig:chap2_user_profiles_overlap}).
+\label{sec:chapt2_cf}
+Bij Collaborative Filtering maken we geen gebruik van metadata. Bij User-User Collaborative Filtering (UUCF) kijken we in de plaats naar het gedrag van andere gebruikers. Hierbij worden opnieuw gebruikersprofielen opgesteld, zoals in definitie \ref{eq:chap2_cb_user_profile}. Hierna worden deze met elkaar vergeleken met Pearsons correlatiecoëfficiënt $C_p$:
+
+\begin{equation}
+    C_p(U_i, U_j) = \frac{\sum_{k = 1}^{m}(r_{i, k} - \overline{r_i})(r_{j, k} - \overline{r_j})}{\sqrt{\sum_{k = 1}^{m}(r_{i, k} - \overline{r_i})^2} \sqrt{\sum_{k = 1}^{m}(r_{j, k} - \overline{r_j})^2}}
+    \label{eq:chapt2_pearson_corr}
+\end{equation}
+\cite{UUCF_original_paper}, waarbij $r_{i, k}$ de score voorstelt die gebruiker $i$ gaf aan product $k$.
+Pearsons correlatiecoëfficiënt is een veralgemening van de cosinusgelijkenis (\ref{eq:chap2_cb_cosine_similarity}). Er bestaan nog verschillende variaties \cite{UUCF_alternative_implementations} op deze formule die bijvoorbeeld gebruik maken van normalisatie en significance weighting \cite{CF_significance_weighting}. Dit laatste is een techniek waarbij twee gebruikers die weinig gemeenschappelijke items hebben een lagere score krijgen.
+
+Na het berekenen van Pearsons correlatiecoëfficiënt kunnen nu aanbevelingen gegenereerd worden. De aanbevelingen voor gebruiker $i$ komen dan uit gebruiker(s) $j$, waarvoor geldt:
+\begin{equation}
+    C_p(U_i, U_j) = \max_{k \in U}(C_p(U_i, U_k))    
+    \label{eq:chapt2_neighbour_calculation}
+\end{equation}
+
+We noemen $I_j$ dan een buur van $I_i$. UUCF veronderstelt dat gelijk gedrag in het verleden wijst op gelijk gedrag in de toekomst. Ook stelt UUCF dat dat de niet-overlappende interessedomeinen van twee buren toch interessant zijn voor elkaar. UUCF gaat er dus impliciet van uit dat de overlap van interesses volledig is (\autoref{fig:chapt2_user_profiles_overlap}).
 
 \mijnfiguur[H]{width=12cm}{fig/chapt2/user_profiles_overlap.png}{Visualisatie overlap interesses van twee buren}{fig:chapt2_user_profiles_overlap}
 
-% TODO: formules om uit te rekenen, zie practica?
-% TODO: uitleg over pearson correlatie, en verschil met cosinus similarity
-% TODO: opmerking over varianten/alternatieven, zoals aantal neighbours en normalisatie etc etc. Zie PPT
+Het aantal buren dat in rekening wordt gebracht kan variëren tussen implementaties. Het is mogelijk om een top $K$ buren te nemen en dan de verwachte score voor een product $p$ als volgt te berekenen:
+\begin{equation}
+    \hat{r}_{i, p} = \overline{r_i} + \frac{\sum_{u=1}^{K}(r_{u, p} - \overline{r_u}) \cdot C_p(U_i, U_u)}{\sum_{u=1}^{K} C_p(U_i, U_u)}
+    \label{eq:chapt2_uucf_finding_predictions_from_neighbours}
+\end{equation}
+In definitie \ref{eq:chapt2_neighbour_calculation} is het aantal buren $K = 1$. Een groter aantal buren zorgt voor een stabieler maar minder specifiek resultaat door het toevoegen van ruis in het beslissingsproces. \cite{cursus_hs8}
 
-% TODO: IICF hieronder
+Een andere variant van Collaborative Filtering is Item-Item Collaborative Filtering (IICF). Waar UUCF gelijkaardige gebruikers met elkaar verbindt, zal IICF gelijkaardige items zoeken. In tegenstelling tot CF (\autoref{sec:chapt2_cf}) gebruiken we hiervoor geen metadata \cite{IICF_original_paper}. We kijken in de plaats naar de andere items die ook gekozen werden door gebruikers die het oorspronkelijke item kozen. Als een item door veel andere gebruikers ook gekozen werd, noemen we dat item een buur van het oorspronkelijke item. Net zoals UUCF, gaat IICF er van uit dat de voorkeuren van een gebruiker stabiel blijven, zodanig dat de buren steeds relevant blijven \cite{cursus_hs9}. In de praktijk bestaan er 'seizoensgebonden' items, zoals een kerstbar, maar deze zijn eerder uitzonderlijk.
 
+Om producten met elkaar te vergelijken, maken we opnieuw gebruik van Pearsons correlatiecoëfficiënt, analoog als in formule \ref{eq:chapt2_pearson_corr}. We vervangen dan de paren van gebruikers naar paren van items.
+Intuïtief komt UUCF overeen met het zoeken naar vergelijkbare rijen en IICF met het zoeken naar vergelijkbare kolommen in \autoref{tab:chapt2_uucf_iicf_example}:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{c|ccc}
+         & $Item_0$ & $Item_1$ & $Item_2$ \\ \hline
+$User_0$ & 0.2      & 0        & 0.7      \\
+$User_1$ & 0.1      & 0.8      & 0.6      \\
+$User_2$ & 0.9      & 0.9      & 0.2     
+\end{tabular}
+\caption{Voorbeeld voor $R$ met fictieve data}
+\label{tab:chapt2_uucf_iicf_example}
+\end{table}
+
+In de praktijk hebben niet alle gebruikers alle items een score gegeven, en zullen dus niet alle elementen van $R$ ingevuld zijn. Ook bij IICF bestaan er verschillende varianten op Pearsons correlatiecoëfficiënt om de gelijkheid tussen twee items te bepalen. Analoog aan definities \ref{eq:chapt2_neighbour_calculation} en \ref{eq:chapt2_uucf_finding_predictions_from_neighbours} kunnen het vereist aantal buren gevonden worden en de verwachte scores voor nieuwe producten berekend worden \cite{IICF_original_paper}.
+
+Een groot voordeel van IICF aanbevelingssystemen is de schaalbaarheid bij grote itemsets. Als er veel verschillende items zijn, is het bij UUCF niet altijd mogelijk om een buur te vinden die dat specifieke item al een score heeft gegeven. In dat geval is het dus niet mogelijk om een score voor de huidige gebruiker te voorspellen. Als itemset $\gg$ userset, dan stelt dit probleem zich niet bij IICF. In de praktijk is dit een vaker voorkomend scenario \cite{recsys_handbook}.
 
 \subsection{Methoden gebaseerd op machine learning}
+De afgelopen jaren is er een explosie aan nieuwe technieken voor aanbevelingssystemen gebaseerd op machine learning (ML). Dit is ook zichtbaar in \autoref{fig:chapt2_research_trend_recsys_ml}.
 
-\subsection{Combinaties en hybride modellen}
+\mijnfiguur[H]{width=12cm}{fig/chapt2/recommender-system-machine-learning_edit.png}{Stijgend aantal publicaties over Recommender Systems en ML \cite{recsys_ml_popularity}}{fig:chapt2_research_trend_recsys_ml}
 
-\subsection{Problemen}
-% TODO: voor nadelen van iedere implementatie, inclusief de problemen die er zijn bij recsys (bvb cold start, vertrouwen, explainable, serendipity, (rekenkracht), beschikbaarheid van de labels) en hoe die algoritmen dat probleem wel of niet oplossen. Eventueel een samenvattende tabel op het einde?
+ Deze nieuwe technieken zijn vaak in staat om significant accuratere nieuwe scores te voorspellen. Dit gaat echter ten koste van 'explainability', of de mogelijkheid om te verklaren waarom het aanbevelingssysteem een specifieke score voorspelt \cite{overzicht_technieken}. Machine learning-technieken zijn vaak ook geoptimaliseerd voor een specifiek probleem met een specifieke dataset, en vereisen dat tot tientallen hyperparameters worden gefinetuned bij een implementatie in een nieuwe context. Het zijn ook de enigste technieken die ongestructureerde data zoals tekst of afbeeldingen kunnen verwerken en omzetten naar kennis. Zo bestaat er bijvoorbeeld een aanbevelingssysteem dat zich toespitst op het aanbevelen van social media posts, gebaseerd op de tekst van de post en de inhoud van de bijhorende foto \cite{recsys_afbeeldingen_social_network}.
+
+ Uit tientallen papers kozen we twee state-of-the-art algoritmen om te bespreken. We kozen deze op basis van volgende criteria:
+\begin{itemize}
+     \item Recente datum van publicatie
+     \item Goede performantie over verschillende datasets
+     \item Gebruik van machine learning
+     \item Implementatie in code beschikbaar
+     \item Link met eigen onderzoek (op basis van tekst of labels)
+\end{itemize}
+
+De eerste paper is 'Joint Deep Modeling of Users and Items Using Reviews for Recommendation' (2017) waarin de DeepCoNN-architectuur wordt voorgesteld \cite{deepconn}. DeepCoNN gebruikt enkel geschreven reviews om aanbevelingen op te stellen. De architectuur bestaat uit twee parallelle neurale netwerken. Het ene netwerk verwerkt de reviews, gegroepeerd per gebruiker. Op die manier wordt een gebruikersprofiel gemaakt. Analoog verwerkt het tweede neurale netwerk alle reviews, gegroepeerd per item. Zo wordt dan een itemprofiel gemaakt. Slechts in de laatste laag van het DeepCoNN-netwerk worden de parallelle netwerken met elkaar verbonden via een fully-connected layer en wordt de loss berekend.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/deepconn_architectuur.png}{DeepCoNN Architectuur \cite{deepconn}}{fig:chapt2_deepconn_architecture}
+
+De tweede paper die we bestuderen is 'Wide \& Deep Learning for Recommender Systems' (2016) \cite{wide_deep_learning_paper}. De input van het Wide \& Deep-netwerk zijn gewone labels. Het 'wide' gedeelte verwijst naar een simpel lineair neuraal netwerk. Dit netwerk kan eenvoudige, expliciete feature-interacties modelleren. Aan de andere kant bestaat het 'deep'-component: hiermee kunnen de complexere, non-lineaire interacties tussen features gemodelleerd worden. 
+
+Op het einde worden de 'Wide' en 'Deep' netwerken gecombineerd in een fully-connected layer om een score te berekenen en een aanbeveling te maken. De architectuur staat visueel weergegeven in \autoref{fig:chapt2_deep_wide_architecture}
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/wide_deep_architectuur.png}{Wide \& Deep Architectuur \cite{wide_deep_learning_paper}}{fig:chapt2_deep_wide_architecture}
+
+\subsection{Hybride modellen}
+
+Hybride modellen, of ensemble modellen, implementeren meerdere technieken in één model. Er bestaat zes hybridisatiemodellen:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\multicolumn{1}{l|}{Hybridisatiemodel} & Beschrijving \\ \hline
+\multicolumn{1}{l|}{} &  \\
+\multicolumn{1}{l|}{Gewichten} & \begin{tabular}[c]{@{}l@{}}De scores van verschillende technieken combineren\\ met een gewicht voor één product\end{tabular} \\
+\multicolumn{1}{l|}{} &  \\
+\multicolumn{1}{l|}{Wisselen} & \begin{tabular}[c]{@{}l@{}}Om de beurt een andere techniek gebruiken per\\ product\end{tabular} \\
+\multicolumn{1}{l|}{} &  \\
+\multicolumn{1}{l|}{Features combineren} & \begin{tabular}[c]{@{}l@{}}De werkwijze van de ene techniek nabootsen\\ in de andere techniek\end{tabular} \\
+\multicolumn{1}{l|}{} &  \\
+\multicolumn{1}{l|}{Feature augmentatie} & \begin{tabular}[c]{@{}l@{}}De score van de ene techniek wordt gebruikt\\ toegevoegd aan de input van een andere techniek\end{tabular} \\
+\multicolumn{1}{l|}{} &  \\
+\multicolumn{1}{l|}{Cascade} & \begin{tabular}[c]{@{}l@{}}De ene techniek toepassen op een subset van de\\ items gegenereerd door de andere techniek\end{tabular} \\
+\multicolumn{1}{l|}{} &  \\
+\multicolumn{1}{l|}{Meta-level} & \begin{tabular}[c]{@{}l@{}}Het aangeleerde model van de ene techniek wordt\\ gebruikt als input bij de andere techniek\end{tabular} \\
+ & 
+\end{tabular}                                                 
+\caption{Verschillende hybridisatiemodellen voor aanbevelingssystemen \cite{hybrid_recsys_models, cursus_hs11}}
+\label{tab:chapt2_hybridisatiemodellen}
+\end{table}
+
+Het doel van een hybridemodel is zwaktes elimineren van alleenstaande modellen. Stel een voorbeeld van een hybride aanbevelingssysteem met gewichten 0.7 voor IICF en 0.3 voor CB. We weten dat in de meeste gevallen IICF beter zal presteren. Daarom krijgt het een hogere score. Echter, we hebben gemeten dat in sommige gevallen IICF een compleet foute aanbeveling maakt. Door het gebruik van een hybride aanbevelingssysteem kan deze fout opgevangen worden door de CB recommender die dan een zeer lage score zal toewijzen, waardoor de gewogen eindscore van dit slechte product toch laag zal zijn en niet aanbevolen zal worden.
+
+Het is duidelijk dat het gebruik van hybridemodellen zowel de accuraatheid als consistentie van een aanbevelingssysteem kan verbeteren. Een hybridemodel correct toepassen vereist wel een zeer goed begrip in de alleenstaande technieken en een goed inzicht in de omstandigheden waarin deze technieken soms falen. In de praktijk zijn hybridemodellen op basis van gewichten de meest voorkomende implementatie. \cite{hybrid_recsys_literature_overview}
+
+De Netflix Prize competitie daagde onderzoekers uit om het inhouse aanbevelingsalgoritme Cinematch te verslaan in RMSE. Het winnende team kon zo 1 miljoen USD binnenhalen. BigChaos, een hybride model dat bestond uit meer dan 100 verschillende algoritmen, won deze competitie met een  10\% lagere RSME dan Cinematch. \cite{netflix_hybrid}
+
+\subsection{Uitdagingen}
+De technieken in \autoref{sec:huidige_technieken_aanbevelingssystemen} staan beschreven in chronologische volgorde. Iedere techniek is steeds een evolutie op de vorige door de accuraatheid, snelheid, schaalbaarheid... te verbeteren. Echter kunnen we niet zeggen dat in alle gevallen de nieuwste methode de beste is. Aanbevelingssytemen zijn vaak zeer gevoelig aan de context waarin ze gebruikt worden, en het doel dat voor ogen is.
+
+
+\subsubsection{Cold-Startprobleem}
+\label{sec:chapt2_cold_start}
+"Het Cold-Startprobleem beschrijft de problematiek van het maken van aanbevelingen wanneer de gebruiker of het item nieuw is." \cite{coldstart_cf} We kunnen dit probleem dus in twee subproblemen opdelen: nieuwe gebruikers en nieuwe items.
+
+Bij nieuwe items zullen CB-technieken weinig problemen ondervinden, daar deze onmiddellijk aan de hand van de metadata kunnen gelinkt worden aan bestaande items. Bij UUCF is dit moeilijker: daar wordt een item pas aanbevolen indien het geconsumeerd wordt door buren van een gebruiker. Doordat het een nieuw item is, heeft geen enkele gebruiker het item geconsumeerd, en wordt het dus ook bij geen enkele buur aanbevolen. Er kan een analoog besluit gevormd worden voor IICF. Collaborative Filtering heeft traditioneel dus geen oplossing voor het Cold-Startprobleem \cite{recsys_diversity}.  Bij machine learning-modellen hangt de invloed van het Cold-Startprobleem vast aan de gebruikte features bij de input. Hoe meer features afhangen van het aantal reviews/scores over het item, hoe slechter het zal presteren. Doordat DeepCoNN meer informatie uit weinig geschreven reviews kan halen dan de Wide \& Deep Learning-architectuur, is het DeepCoNN hier minder gevoelig aan. \cite{deepconn}
+
+Nieuwe gebruikers vormen een groter probleem: als we niets weten over de voorkeuren van een gebruiker, is het moeilijk om een persoonlijke aanbeveling te maken. Om dit op te lossen, kan een hybride aanbevelingssysteem ingezet worden. Dit hybride model bevat dan onder andere een niet-gepersonaliseerde techniek, zoals beschreven in \autoref{sec:chapt2_non_persionalised}. Dit hybride model zorgt dan voor een vloeiende overgang van niet-gepersonaliseerde technieken zolang er te weinig gebruikersgegevens zijn, tot volledig gepersonaliseerde aanbevelingen eens de voorkeuren van de gebruiker gekend zijn. Een alternatieve aanpak is de gebruiker expliciet vragen om zijn voorkeuren in een korte enquête. Hoewel dit ervoor zorgt dat de aanbevelingen vanaf het begin gepersonaliseerd zijn, gaat het afnemen wel ten koste van de gebruikerservaring (UX).
+
+Aanbevelingssystemen kunnen helpen om gebruikers kennis te laten maken met dikkestaart-items. Echter stelt Fleder et al. \cite{recsys_diversity} dat doordat CF-algoritmen producten aanraadt op basis van consumpties en reviews, ze niet om kunnen met producten met beperkte beschikbare data. Hierdoor kan een Mattheüs-effect optreden waarbij populaire items nog populairder worden en onbekende items nooit aanbevolen worden. Het is dus belangrijk om het effect van het Cold-Startprobleem te minimaliseren.
+
+\subsubsection{Datakwaliteit}
+Het spreekt voor zich dat hoe preciezer de gebruikers en producten beschreven staan in de data, hoe makkelijker het is om correcte conclusies te trekken. Echter zijn niet alle algoritmen hier even gevoelig voor: Content-Based Filtering baseert zich enkel op de labels die bij de producten staan om aanbevelingen te maken. De correctheid, consistentie en precisie van deze labels is dus uitermate belangrijk voor CB. Om een dataset te laten voldoen aan deze eigenschappen is een significante investering nodig. Bij sommige datasets is het zelfs niet mogelijk om de items te verdelen in groepen en categorieën. Dit was de reden waarom in 1992 de eerste Collaborative Filtering-methode werd ontwikkeld. \cite{UUCF_original_paper} Bij machine learning-algoritmen is de gevoeligheid aan datakwaliteit implementatieafhankelijk. In tegenstelling tot Wide \& Deep Learning, verwacht DeepCoNN geen gelabelde dataset. De performantie van DeepCoNN blijft wel verbonden aan de kwaliteit van de ongestructureerde data: de geschreven reviews.
+\subsubsection{Grootte dataset}
+De performantie van machine learning-technieken schaalt logaritmisch met de grootte van de dataset. \cite{dataset_size_for_deep_learning} Het is dus belangrijk voor deze technieken om een zo groot mogelijke dataset te verzamelen zodat het model voldoende getraind kan worden.
+
+Bij CB en CF is het niet nodig om een model te trainen. Deze zijn dus minder gevoelig aan de grootte van de dataset. Merk wel op er een schaarsheidprobleem kan optreden bij UUCF: als er veel items zijn, en gebruikers geven weinig feedback over deze items, dan is het mogelijk dat sommige gebruikers geen buren vinden of dat deze buren het doelitem nog niet beoordeeld hebben. \cite{cursus_hs9}
+\subsubsection{Contextspecifiek}
+De context is de combinatie van de dataset en het domein met diens specifieke eisen voor aanbevelingen. Een contextspecifieke techniek is een techniek waarbij een andere configuratie noodzakelijk is bij een wissel van context. Zo is in het domein van muziekaanbevelingen vaak de bedoeling om variëteit aan te brengen, zonder een scherpe verandering van genre/mood. Bij webwinkels is het dan weer anders: als een gebruiker daar een nieuwe laptop zoekt, zal een aanbevelingssysteem bijvoorbeeld alternatieven tonen die zo dicht mogelijk aansluiten bij de huidige keuze.
+
+Traditionele methoden zijn weinig contextspecifiek. Er zijn weinig parameters (zoals het aantal buren in UUCF) om te optimaliseren. De gebruikte formules hebben slechts enkele varianten, zoals beschreven in \autoref{sec:chapt2_traditionele_methoden}. Dit staat lijnrecht tegenover de machine learning-technieken. Om de hoogste performantie te halen bij deze technieken is het noodzakelijk het effect van alle hyperparameters goed te begrijpen. DeepCoNN heeft bijvoorbeeld 14 hyperparameters die samen de volledige architectuur bepalen. \cite{deepconn_github}
+\subsubsection{Explainability}
+De explainability, of 'uitlegbaarheid' van een techniek is de mogelijkheid om te verklaren waarom die techniek een specifiek item aan een specifieke gebruiker heeft aanbevolen. Doordat de formules bij de traditionele methoden gekend zijn, is het quasi triviaal om dit te achterhalen. Zo kan men bij een UUCF-aanbevelingssysteem de buren van een gebruiker opvragen en zo uitrekenen waarom een item aanbevolen werd. Opnieuw staat dit lijnrecht tegenover de machine learning-methoden, waarbij zeker de technieken die gebruik maken van neurale netwerken beschreven worden als 'black box'. Het is mogelijk explainability in te bouwen in deze modellen, maar dit gaat ten koste van precisie. \cite{explainable_ai_recsys, explainable_recsys_autoencoders}
+
+Explainability is belangrijk om gebruikers vertrouwen te laten hebben in het systeem. Zonder vertrouwen zal de gebruiker de aanbevelingen negeren. Dit kan een directe impact hebben op KPI van de diensten die men aanbiedt: als de gebruiker het systeem kan vertrouwen verhoogt de user experience en zal de gebruiker de dienst meer/langer gebruiken. Zo voorspelde een aanbevelingssysteem van Target (Amerikaanse warenhuiswinkelketen) dat een tienermeisje zwanger was. De vader reageerde hierop met 'Are you trying to encourage her to get pregnant?'. Het aanbevelingssysteem zag dat de dochter veel geurloze lotion kocht, wat typisch is voor zwangere vrouwen. Hierdoor bood het systeem meer artikels aan die zwangere vrouwen vaak kopen. \cite{recsys_baby_lotion_target} Deze reactie zou kunnen vermeden zijn, moest er een uitleg bij de aanbevelingen aangeboden werden.
+
+Als de gebruiker weet waarom een item aanbevolen wordt, kan die ook rechtstreeks waardevolle feedback geven aan het aanbevelingssysteem. Zo gaf onder andere YouTube recent de mogelijkheid om diens aanbevelingen rechtstreeks te beïnvloeden door items te verwijderen uit de feed en feedback te geven waarom. \cite{youtube_on_recommendations} Deze feedback wordt dan gebruikt om de nieuwe aanbevelingen nog beter te kunnen personaliseren.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/youtube_recs.png}{Gebruikersfeedback op een aanbeveling op YouTube}{fig:chapt2_youtube_feedback_recsys}
+
+\subsubsection{Diversiteit}
+Fleder et al. \cite{recsys_diversity} stelt dat het gebruik van aanbevelingssystemen kan zorgen voor een toename van diversiteit op individueel niveau, maar een daling in de geaggregeerde diversiteit. Hoofdzakelijk algoritmen die zich baseren op labels, zoals CB filtering, zijn hier vatbaar voor. Deze algoritmen kunnen een 'echo-kamer' maken doordat steeds items met vergelijkbare labels worden aangeraden. Indien deze items geconsumeerd worden, wordt het gebruikersprofiel nog verder in die trend versterkt en ontstaat er een feedbackloop. Er zijn gevallen bekend waar gebruikers van YouTube geradicaliseerd zijn door het aanbevelingssysteem dat steeds extremere video's aanbiedt.
+
+\cite{youtube_radicalisation} Onderzoek toont dat consumenten services als Spotify en Apple Music gebruiken om nieuwe muziek te leren kennen en daarvoor vertrouwen op aanbevelingssystemen. \cite{recsys_serendipity_music} Muzieksmaak evolueert per gebruiker verschillend. Providers moeten daarom ook proberen 'serendipity' te introduceren in hun aanbevelingen: nieuwe items die ver liggen van het gebruikersprofiel maar dat toch positief ontvangen worden. Het is echter niet triviaal om dergelijke items te voorspellen zonder vertrouwen te verliezen van de gebruiker: de 'serendipity' van een item meten werkt het best met (dure) expliciete feedback van een gebruiker.
+
+Een oplossing hiervoor is willekeurige items toevoegen aan de aanbevelingen of expliciete feeds maken voor 'nieuwe' content. \cite{youtube_randomness, youtube_new_to_you} Zo heeft Spotify een 'Discover Weekly' playlist met deels nieuwe muziek voor de gebruiker en heeft YouTube een tabblad met 'New to you' video's over nieuwe onderwerpen (\autoref{fig:chapt2_youtube_new_to_you}).
+
+\mijnfiguur[H]{width=5cm}{fig/chapt2/new_to_you_youtube.png}{'New to you' feed op YouTube}{fig:chapt2_youtube_new_to_you}
+
+% TODO BRONNEN
+% https://www.techtarget.com/searchcio/definition/transfer-learning
+% https://www.datacamp.com/tutorial/an-introduction-to-using-transformers-and-hugging-face
 
 \section{Natural Language Processing}
-% TODO: Hoe werkt NLP? Focus hoofdzakelijk op transformers. Note dat transformers beter presteren dan '''traditionele''' methoden, zoals doc2vec. Toon dit aan met een bron+grafiek/.. Waarom we NLP nodig hebben, moet hier nog niet uitgelegd worden denk ik.
+% todo thesis bert
+In het gebied van NLP zal de computer de menselijk taal proberen te beheersen. Idealiter  kan een computer de taal begrijpen, verwerken en vervolgens correct genereren. NLP is toepasbaar in meerdere gebieden zoals vertalen, sentiment analysis, teksten samenvatten, spraakherkenning, etc.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/trend_NLP.png}{Stijgend aantal publicaties over Natural Language Processing \cite{NLP_popularity}}{fig:chapt2_research_trend_NLP}
+
+Een sterke groei is duidelijk aanwezig binnen het gebied van NLP, dit is zichtbaar in \autoref{fig:chapt2_research_trend_NLP}. Dit komt onder andere door enkele recente ontdekkingen zoals bijvoorbeeld transformers (2017) en chatGPT (2022). Deze vooruitgang is ook een gevolg van de verbeteringen in het gebied van machine learning, zoals neurale netwerken en deep learning.
+
+\subsection{Basistechnieken}
+%todo basics such as preprocessing, splitting, ...
+In deze sectie zullen we enkele TODO
+
+\subsection{Transformers}
+% todo grafiek dat het outperformed?
+Transformers zijn een type neurale netwerken, ze werden voor het eerst geïntroduceerd in 2017 via de paper "Attention Is All You Need"\cite{attention_is_all_you_need}.
+De modellen werden initieel gebruikt binnen het gebied van NLP om Engelse teksten te vertalen naar onder andere Duits en Frans. Nu zijn ze opgenomen als state of the art en worden ze gebruikt in diverse NLP taken.
+
+% todo REF Recurrent neural networks, long short-term memory [13] and gated recurrent [7] neural networks
+% https://www.datacamp.com/tutorial/an-introduction-to-using-transformers-and-hugging-face
+% https://blog.knoldus.com/what-are-transformers-in-nlp-and-its-advantages
+
+\subsubsection{Het netwerk}
+De transformer neurale netwerken hebben een encoder-decoder structuur gebaseerd op het self-attention mechanisme. Aangezien het verwerken van woorden of tokens parallel kan, zal dit een significante verbetering in performantie geven. In definitie \ref{def:chapt2_transformers_encoder_decoder} gaan we van input sequentie X naar hidden representatie Y tot uiteindelijke output sequentie Z.
+
+\begin{equation}
+\begin{split}
+X = [x_1, x_2, ..., x_n]  \\
+\Downarrow \;\;\;\;\;\;\;\;\;\;\;\;\;\;\; \\
+Y = [y_1, y_2, ..., y_n] \\
+\Downarrow \;\;\;\;\;\;\;\;\;\;\;\;\;\;\; \\
+Z = [z_1, z_2, ..., z_n]
+\end{split}
+\end{equation}
+\label{def:chapt2_transformers_encoder_decoder}    
+
+
+Het encoder-decoder gedeelte bestaat uit twee delen. Het eerste deel is het encoder gedeelte, met deze stap zullen we een gegeven input X opzetten in een hidden representatie Y. Dit zal gebeuren door de betekenis van woorden (of tokens) in de input X te encoderen gebaseerd op een approximatie van het belang van deze woorden (of tokens). Het verkrijgen van deze informatie zal gebeuren door meerdere lagen. Elke encoding laag bestaat uit een multi-head self-attention mechanisme gevolgd door een fully connected feed-forward laag.     
+
+In bijhorend voorbeeld \ref{verb:chapt2_encoding_diff} zal de encodering van het vetgedrukt woord `het` significant veranderen. Dit komt omdat het belang van het woord waar `het` naar refereert, anders gezegd de woorden `glas` in de eerste zin en `kan` in de tweede zin, gewijzigd is.
+
+\begin{Verbatim}[commandchars=\\\{\}]
+    Hij giet water van de kan in het \verbatimbold{glas} todat \verbatimbold{het} vol is.
+    Hij giet water van de \verbatimbold{kan} in het glas todat \verbatimbold{het} leeg is.
+\end{Verbatim}
+\label{verb:chapt2_encoding_diff}    
+
+Het laatste gedeelte is de decoder. Deze zal de hidden representatie Y omzetten naar de output sequentie Z. Deze bestaat net zoals de encoder uit meerdere lagen. Een decoding laag zal bestaat uit een masked multi-head self-attention mechanisme gevolgd door multi-head self-attention die de encoding als input gebruikt. Ten slotte volgt nog een fully connected feed-forward laag.
+
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/transformer_network_layout.jpg}{Encoder-decoder architectuur van een transformer neuraal netwerk. (encoder: links, decoder: rechts)\cite{attention_is_all_you_need}}{fig:chapt2_transformer_network_layout} % todo cite https://arxiv.org/pdf/1706.03762.pdf
+
+\subsubsection{Self-attention mechanisme}
+%TODO
+Door dit mechanisme kan het model, gebaseerd op de waarde van bepaalde woorden, verschillende gewichten geven aan bepaalde delen van de input. Het maakt gebruik van een query matrix Q, key matrix K en een value matrix V. Deze worden verkregen door een vermenigvuldiging van de input sequentie met leerbare gewichten (learnable weights). Merk op dat deze matrices eigenlijk bestaan uit N vectoren van een bepaalde lengte D.
+
+Voor dit voorbeeld zullen we een 'scaled dot-product attention' berekenen, merk op dat dat er andere varianten van attention bestaan. Om de attention gewichten G te berekenen gebruiken we vergelijking \ref{eq:chap2_attention_gewichten} gebruiken. Hier zullen we eerste een matrix vermenigvuldiging (dot product) toepassen op de query en key matrix. Vervolgens zullen we een schaalfactor S toepassen (in de paper \cite{attention_is_all_you_need} wordt S gelijk gesteld aan de $\sqrt{D_k}$, waarbij $D_k$ de lengte van een vector in de key matrix is). Om de attention gewichten te bekomen wordt de softmax functie nog toegepast.
+
+\begin{equation}
+G = softmax(QK^T / S)
+\label{eq:chap2_attention_gewichten}
+\end{equation}
+
+waarbij:
+\begin{conditions}
+Q & Query matrix \\
+K^T & Getransponeerde key matrix \\
+S & schaalfactor \\
+\end{conditions}
+
+Vervolgens worden de attention gewichten G gebruikt om een gewogen som van de key matrix V te nemen zoals in vergelijking \ref{eq:chap2_attention_output}. Deze gewogen som W is dan de output van attention mechanisme en zal dus vervolgens worden doorgegeven aan de fully connected feed-forward laag.
+
+\begin{equation}
+W = GV
+\label{eq:chap2_attention_output}
+\end{equation}
+
+
+De uiteindelijke architectuur beschreven in \autoref{fig:chapt2_transformer_network_layout} maakt gebruik van multi-head attention. Deze zal het self-attention mechanisme in parallel uitvoeren met H groepen van kleinere matrices $Q_i$, $V_i$ en $K_i$ met $i=1,2,...,H$. Deze groepen worden verkregen door de originele matrices lineair te projecteren. De output van het attention mechanisme wordt ten slotte weer samengevoegd om zo de uiteindelijke output te bekomen. Dit proces wordt ook gevisualiseerd in \autoref{fig:chapt2_scaled_dot_multi_head}. Door het gebruik van multi-head attention zal het model sneller werken.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/scaled_dot_and_multi_head_attention.jpg}{Visualisatie van scaled dot-product attention (links). Visualisatie van multi-head attention met h attention lagen op basis van scaled dot-product attention (rechts)\cite{attention_is_all_you_need}}{fig:chapt2_scaled_dot_multi_head} % todo cite https://arxiv.org/pdf/1706.03762.pdf
+
+\subsubsection{Trainen van een model}
+Het trainen van een nieuw model is een lastige taak. Dit komt door de hoeveelheid vereiste data. Na het verzamelen van de data moet het model nog getrained worden, hiervoor is een grote hoeveelheid computationele kracht nodig.
+
+In realiteit wordt het concept van transfer learning vaak toegepast. Dit is een techniek die eerst een model zal trainen op een gigantische dataset en vervolgens hetzelfde model finetunen met een kleinere dataset.
+
+Binnen de context van NLP zullen modellen tijdens het trainen de relaties tussen de verschillende woorden en zinnen leren. Hierdoor kunnen ze de woorden uit een taal of zelfs meerdere talen geëncodeerd voorstellen. Vervolgens zal het model gefinetuned worden op een kleinere dataset voor één specifiek taak zoals bijvoorbeeld sentiment analysis. Indien we het model voor een nieuwe taak, zoals bijvoorbeeld vertalen, willen gebruiken zullen we het pre-trained LLM hergebruiken en finetunen met een andere dataset en taak. Dit concept is visueel voorgesteld in \autoref{fig:chapt2_transfer_learning_LLM}.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/transfer_learning_LLM.jpg}{Transfer learning waarbij een pre-trained LLM hergebruikt wordt voor verschillende taken}{fig:chapt2_transfer_learning_LLM} 
+
+\subsection{BERT}
+% todo ref https://www.techtarget.com/searchenterpriseai/definition/BERT-language-model
+% todo ref https://arxiv.org/pdf/1810.04805.pdf
+BERT, wat staat voor Bidirectional Encoder Representations from Transformers, is een open source deep learning model gebaseerd op transformers gecreëerd door Google.
+
+Het is een pre-trained model, getrained op grote hoeveelheden ongelabelde tekstuele data zonder specifieke taak. Hierdoor kan het principe van transfer learning toegepast worden. Daarom kan BERT gebruikt worden voor verschillende taken zoals vertalen, sentiment analysis, teksten samenvatten, etc.
+
+Wat BERT onderscheid van vorige transformer modellen is zijn begrip van de context waarin een woord gebruikt wordt. Dit komt omdat BERT gebruikt maakt van een bidirectionele transformer.  Dat wil zeggen dat elke input sequentie in beide richtingen zal verwerken worden, met andere woorden zowel van links naar rechts als van rechts naar links.
+
+
+% todo enkele voorbeelden van wat we met NLP kunnen doen
+\subsection{Topic modelling}
+
+Topic modelling binnen NLP is een techniek om uit verschillende tekstuele documenten verborgen onderwerpen te halen. Deze onderwerpen noemen topics en bestaan uit meerdere woorden die semantisch dicht bij elkaar liggen. Een voorbeeld van een topic die dieren voorstelt is onderstaande verzameling van woorden.
+
+\[
+topic\_n = \{leeuw, aap, varken, koe, olifant, kat, hond, goudvis\}
+\]
+
+Merk op dat deze verzameling niet uniek is en sterkt afhangt van meerdere factoren zoals onder andere de trainingsdata en het aantal topics. Indien de trainingsdata verschillende documenten over huisdieren en wilde dieren bevat zal de verdeling anders zijn. Een mogelijke verdeling voor respectievelijk huisdieren tegenover wilde dieren is hieronder te vinden.
+
+\[
+topic\_1 = \{kat, hond, goudvis\}
+\]
+\[
+topic\_2 =\{leeuw, poema, olifant\}
+\]
+
+Deze machine learning algoritmen zijn unsupervised en hebben dus geen gelabelde trainingsdata nodig. Er is dus geen enkele voorkennis over de onderwerpen nodig, dit geldt voor zowel de documenten als de topics zelf. 
+
+Topic modelling kan op diverse manieren gebruikt worden. Een voorbeeld is om beoordelingen van klanten te analyseren. Indien men kan identificeren waarom een bepaalde klant een positieve of negatieve score achterlaat kan een bedrijf doelgericht hun diensten of producten verbeteren. Een andere toepassing is het maken van aanbevelingen. In dit geval kan men de teksten, gelezen door een bepaalde gebruiken, analyseren en vervolgens gelijkaardige teksten aanbevelen.
+
+\subsection{BERTopic}
+
+BERTopic is een krachtig topic modelling algoritme, het maakt gebruik van onder andere clustering en dimensionaliteit reductie. Het algoritme werd BERTopic genoemd aangezien de tekstuele data initieel werd omgezet in vectoren aan de hand van BERT, nu zijn er diverse mogelijkheden om deze stap te voltooien. Hierdoor zal de contextuele informatie ook verwerkt worden en vervolgens ook omvat zijn in de uiteindelijk topics. Dit is een van de grootste voordelen tegenover andere topic modelling algoritmen zoals LDA (Latent Dirichlet Allocation).
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/bertopic_algo.jpg}{\cite{todo bertopic}}{fig:chapt2_bertopic_algo} % https://maartengr.github.io/BERTopic/algorithm/algorithm.html
+
+De opbouw van BERTopic bestaat uit 6 stappen zoals aangetoond in \autoref{fig:chapt2_bertopic_algo}, hiervan is de laatste stap optioneel is. In de volgende secties zullen bespreken wat de stappen inhouden, inclusief mogelijk implementaties.
+
+\subsubsection{Genereren van een embedding}
+
+\subsubsection{Dimensionaliteit reductie}
+
+\subsubsection{Clustering}
+
+

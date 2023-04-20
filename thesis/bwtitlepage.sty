@@ -164,6 +164,8 @@
     }{
       {\fontsize{12}{15} \selectfont Promotoren: \insertpromotor}
     }
+
+    \fontsize{12}{15} \selectfont Begeleider: prof. dr. ir. Toon De Pessemier
     
     
     % Check for the correct degree
@@ -185,13 +187,15 @@
     
     \vskip 1em
     
-    \@proef ~voorgelegd voor het behalen van de graad~\@degree~in de  \@richting .
+    \@proef ~ingediend tot het behalen van de academische graad van Master of Science in de  \@richting
     
    % Only insert if academic year is specified
     \@ifundefined{insertacademicyear}{
       \ClassError{bwthesis}{academicyear should be specified}
     }{
-      Academiejaar: \insertacademicyear
+
+     \vskip 1em
+     Academiejaar 2022-2023
     }
     
     \end{minipage}%
