@@ -1,436 +1,50 @@
 import logging
+from pathlib import Path
 
-import numpy as np
-import pandas as pd
+from torch import optim
 from tqdm import tqdm
 
-from NLP.main_online_BERTopic import create_model_online_BERTopic, create_scores_from_online_model_by_topic
-from NLP.main_user_profiles import main_user_profile_approximation, main_user_profile_topic
-from NLP.managers.nlp_cache_manager import NLPCache
-from NLP.managers.nlp_model_manager import NLPModels
-from NLP.utils.sentence_splitter import SentenceSplitter
+from data.data_preparer import DataPreparer
 from data.data_reader import DataReader
-
-
-def main_user_profile_approximation_400topics(normalize: bool = False, top_n: int = 5, profile_mode: str = "user_id"):
-    print("hello world")
-    logging.basicConfig(level=logging.INFO)
-
-    _, reviews, _ = DataReader().read_data()
-    # reviews = reviews.head(1000)
-
-    logging.info('Finished reading in data, starting NLP...')
-    # todo manual filtering of topics
-    useful_topics_users_400tops_model = [
-        1,
-        2,
-        4,
-        9,
-        11,
-        12,
-        14,
-        15,
-        17,
-        18,
-        23,
-        26,
-        28,
-        29,
-        30,
-        34,
-        35,
-        36,
-        37,
-        42,
-        43,
-        44,
-        45,
-        51,
-        59,
-        60,
-        62,
-        64,
-        66,
-        67,
-        70,
-        72,
-        75,
-        79,
-        81,
-        82,
-        89,
-        90,
-        91,
-        95,
-        96,
-        97,
-        99,
-        103,
-        104,
-        105,
-        107,
-        110,
-        112,
-        115,
-        128,
-        130,
-        132,
-        133,
-        134,
-        135,
-        137,
-        143,
-        145,
-        146,
-        148,
-        154,
-        155,
-        162,
-        165,
-        166,
-        176,
-        177,
-        179,
-        180,
-        187,
-        191,
-        192,
-        193,
-        200,
-        207,
-        209,
-        210,
-        212,
-        213,
-        217,
-        218,
-        228,
-        235,
-        237,
-        239,
-        242,
-        246,
-        248,
-        250,
-        257,
-        263,
-        264,
-        272,
-        273,
-        274,
-        275,
-        284,
-        285,
-        286,
-        288,
-        305,
-        306,
-        307,
-        310,
-        311,
-        323,
-        324,
-        325,
-        326,
-        327,
-        330,
-        335,
-        338,
-        341,
-        342,
-        345,
-        346,
-        347,
-        355,
-        356,
-        357,
-        365,
-        366,
-        376,
-        384,
-        394,
-        398
-    ]
-    useful_topics_business_400tops_model = [
-        0,
-        1,
-        2,
-        3,
-        4,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        22,
-        23,
-        25,
-        26,
-        28,
-        29,
-        30,
-        33,
-        34,
-        36,
-        38,
-        42,
-        43,
-        44,
-        45,
-        46,
-        51,
-        52,
-        54,
-        56,
-        59,
-        60,
-        61,
-        62,
-        63,
-        64,
-        66,
-        72,
-        75,
-        78,
-        79,
-        80,
-        81,
-        83,
-        85,
-        86,
-        89,
-        90,
-        91,
-        92,
-        93,
-        94,
-        95,
-        96,
-        97,
-        98,
-        99,
-        100,
-        105,
-        106,
-        108,
-        109,
-        110,
-        112,
-        115,
-        116,
-        118,
-        120,
-        121,
-        125,
-        128,
-        130,
-        135,
-        138,
-        142,
-        143,
-        144,
-        145,
-        146,
-        148,
-        154,
-        155,
-        158,
-        162,
-        164,
-        165,
-        166,
-        170,
-        176,
-        177,
-        182,
-        185,
-        186,
-        187,
-        191,
-        192,
-        193,
-        198,
-        199,
-        201,
-        204,
-        206,
-        207,
-        209,
-        210,
-        211,
-        212,
-        213,
-        222,
-        226,
-        228,
-        231,
-        234,
-        235,
-        236,
-        242,
-        243,
-        246,
-        249,
-        250,
-        253,
-        257,
-        258,
-        259,
-        264,
-        265,
-        266,
-        267,
-        271,
-        273,
-        274,
-        275,
-        276,
-        277,
-        278,
-        284,
-        285,
-        286,
-        288,
-        291,
-        296,
-        298,
-        304,
-        305,
-        306,
-        307,
-        310,
-        311,
-        314,
-        323,
-        325,
-        326,
-        327,
-        330,
-        332,
-        333,
-        335,
-        342,
-        345,
-        347,
-        350,
-        355,
-        356,
-        362,
-        365,
-        366,
-        369,
-        381,
-        382,
-        383,
-        384,
-        394,
-        396,
-        398,
-        399
-    ]
-
-    preselect = useful_topics_users_400tops_model if profile_mode == "user_id" else useful_topics_business_400tops_model
-    preselect = [str(topic) for topic in preselect]
-    nlp_models = NLPModels()
-    model_name = "online_model_400top_97.bert"
-    main_user_profile_approximation(reviews,
-                                    amount_of_batches_for_approximations=8,
-                                    model_name=model_name,
-                                    top_n_topics=top_n,
-                                    amount_of_batches_top_n=80,
-                                    profile_name=f"APPROX_{'USER' if profile_mode == 'user_id' else 'BUSINESS'}_PROFILE_top_{top_n}_400filtered_topics_normalized_{normalize}",
-                                    filter_select=preselect,
-                                    approx_save_dir=nlp_models.get_dir_for_model(model_name),
-                                    normalize_after_selection=normalize,
-                                    profile_mode=profile_mode
-                                    )
-
-
-def main_user_profile_approximation_50topics(normalize: bool = False, top_n: int = 5, profile_mode: str = "user_id",
-                                             profile_name: str = None):
-    print("hello world")
-    logging.basicConfig(level=logging.INFO)
-
-    _, reviews, _ = DataReader().read_data()
-
-    logging.info('Finished reading in data, starting NLP...')
-    main_user_profile_approximation(reviews,
-                                    amount_of_batches_for_approximations=1,
-                                    model_name="online_model_50top_85.bert",
-                                    amount_of_batches_top_n=10,
-                                    profile_name=profile_name,
-                                    normalize_after_selection=normalize,
-                                    top_n_topics=top_n,
-                                    profile_mode=profile_mode
-                                    )
-
-
-def main_business_profile_50topics(sentiment: bool = True):
-    print("hello world")
-    logging.basicConfig(level=logging.INFO)
-
-    _, reviews, _ = DataReader().read_data()
-
-    logging.info('Finished reading in data, starting NLP...')
-
-    main_user_profile_topic(reviews, amount_of_batches=10,
-                            profile_name=f"BUSINESS_PROFILE_50_sentiment={sentiment}.parquet",
-                            use_cache=True, model_name="online_model_50top_85.bert", use_sentiment_in_scores=True,
-                            profile_mode="business_id")
-
-
-def main_bert_guided():
-    print("hello world")
-    logging.basicConfig(level=logging.INFO)
-
-    _, reviews, _ = DataReader().read_data()
-    nlp_cache = NLPCache()
-    topics = nlp_cache.read_guided_topics()
-    max_top = 10 + len(topics)
-
-    logging.info('Finished reading in data, starting NLP...')
-    create_model_online_BERTopic(reviews['text'], model_name=f"BERTopic_guided_maxtop_{max_top}", max_topics=max_top,
-                                 guided_topics=topics)
+from predictor.multilayer_perceptron import MultiLayerPerceptronPredictor
+from predictor.neural_network_trainer import NeuralNetworkTrainer
+from tools.profiles_manager import ProfilesManager
 
 
 def main():
-    print("hello world")
-    logging.basicConfig(level=logging.INFO)
+    businesses, reviews, tips = DataReader().read_data()
 
-    _, reviews, _ = DataReader().read_data()
-    # reviews = reviews.head(1000)
+    logging.info("Starting training: with user profiles and business profiles")
+    for user_profiles_name in tqdm(ProfilesManager().get_user_profiles_names(), desc="User Profiles"):
+        for business_profiles_name in tqdm(ProfilesManager().get_business_profiles_names(), desc="Business Profiles", leave=False):
 
-    logging.info('Finished reading in data, starting NLP...')
-    main_user_profile_approximation(reviews)
+            user_profiles = ProfilesManager().get_user_profiles(user_profiles_name)
+            business_profiles = ProfilesManager().get_business_profiles(business_profiles_name)
+
+            train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, tips, user_profiles, business_profiles)
+
+            model = MultiLayerPerceptronPredictor(input_size=train_test_data[0].columns.size, output_size=1)
+            optimizer = optim.Adam(model.parameters(), lr=0.002)
+
+            nn_trainer = NeuralNetworkTrainer(user_profiles_name, *train_test_data)
+            model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True)
+            model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_{business_profiles_name}.png"))
+            exit(2)
+
+    logging.info("Starting training: with user profiles, NO business profiles")
+    for user_profiles_name in tqdm(ProfilesManager().get_user_profiles_names(), desc="User Profiles, No business profiles"):
+        user_profiles = ProfilesManager().get_user_profiles(user_profiles_name)
+
+        train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, tips, user_profiles)
+
+        model = MultiLayerPerceptronPredictor(input_size=train_test_data[0].columns.size, output_size=1)
+        optimizer = optim.Adam(model.parameters(), lr=0.002)
+
+        nn_trainer = NeuralNetworkTrainer(user_profiles_name, *train_test_data)
+        model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True)
+        model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_None.png"))
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    logging.info(
-        '------------------------------------\n\n\n ALGO 1: approx 50 top 5 for business profile \n\n\n------------------------------')
-    main_user_profile_approximation_50topics(False, profile_mode='business_id',
-                                             profile_name="business_profile_approx_50_top5.parquet")
-    logging.info(
-        '------------------------------------\n\n\n ALGO 2: approx 50 top 10 for business profile \n\n\n------------------------------')
-    main_user_profile_approximation_50topics(False, profile_mode='business_id', top_n=10,
-                                             profile_name="business_profile_approx_50_top10.parquet")
-    logging.info(
-        '------------------------------------\n\n\n ALGO 3: business approx 400 tops with normalize \n\n\n------------------------------')
-    main_user_profile_approximation_400topics(True, profile_mode='business_id')
-    logging.info(
-        '------------------------------------\n\n\n ALGO 4: business approx 400 tops \n\n\n------------------------------')
-    main_user_profile_approximation_400topics(False, profile_mode='business_id')
-    logging.info(
-        '------------------------------------\n\n\n ALGO 5: business approx 400 tops with normalize top 10 \n\n\n------------------------------')
-    main_user_profile_approximation_400topics(True, profile_mode='business_id', top_n=10)
-    logging.info(
-        '------------------------------------\n\n\n ALGO 6: business approx 400 tops top 10 \n\n\n------------------------------')
-    main_user_profile_approximation_400topics(False, profile_mode='business_id', top_n=10)
+    main()
