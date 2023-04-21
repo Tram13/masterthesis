@@ -35,7 +35,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
         self.current_epoch = 0
         self.loss_history = []
         self.note = ""
-        self.user_profiles_location = ""
+        self.user_profiles_location = "None"
+        self.business_profiles_location = "None"
         self.parameters_configuration = ""
 
     def forward(self, x):
@@ -53,7 +54,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
         else:
             file_name = ConfigParser().get_value('predictor_model', 'mlp_full_model_name').split('.')
         uuid = datetime.now().strftime("%Y-%m-%d_%Hh%M")
-        return Path(save_dir, f'{file_name[0]}_{uuid}__{"".join(self.user_profiles_location.split(".")[:-1])}.{file_name[1]}')
+        return Path(save_dir, f'{file_name[0]}_{uuid}__{"".join(self.user_profiles_location.split(".")[:-1])}_{"".join(self.business_profiles_location.split(".")[:-1])}.{file_name[1]}')
 
     @staticmethod
     def get_latest_model_from_default_location(use_inference_model: bool = False) -> Path:  # Only for full model
@@ -94,6 +95,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
             "loss": self.loss_history,
             "note": self.note,
             "user_profiles_location": self.user_profiles_location,
+            "business_profiles_location": self.business_profiles_location,
             "parameters_configuration": self.parameters_configuration
         }, path)
         logging.info(f"Model saved at {path}.")
@@ -128,6 +130,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
         self.loss_history = checkpoint['loss']
         self.note = checkpoint['note']
         self.user_profiles_location = checkpoint['user_profiles_location']
+        self.business_profiles_location = checkpoint['business_profiles_location']
         self.parameters_configuration = checkpoint['parameters_configuration']
         logging.info(f"Model loaded from {path}.")
 
