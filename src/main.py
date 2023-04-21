@@ -16,7 +16,7 @@ def main():
 
     logging.info("Starting training: with user profiles and business profiles")
     for user_profiles_name in tqdm(ProfilesManager().get_user_profiles_names(), desc="User Profiles"):
-        for business_profiles_name in tqdm(ProfilesManager().get_business_profiles_names(), desc="Business Profiles", leave=False):
+        for business_profiles_name in tqdm(ProfilesManager().get_business_profiles_names(), desc="Business Profiles"):
 
             user_profiles = ProfilesManager().get_user_profiles(user_profiles_name)
             business_profiles = ProfilesManager().get_business_profiles(business_profiles_name)
@@ -27,9 +27,8 @@ def main():
             optimizer = optim.Adam(model.parameters(), lr=0.002)
 
             nn_trainer = NeuralNetworkTrainer(user_profiles_name, business_profiles_name, *train_test_data)
-            model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True)
+            model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True, verbose=False)
             model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_{business_profiles_name}.png"))
-            exit(2)
 
     logging.info("Starting training: with user profiles, NO business profiles")
     for user_profiles_name in tqdm(ProfilesManager().get_user_profiles_names(), desc="User Profiles, No business profiles"):
@@ -41,7 +40,7 @@ def main():
         optimizer = optim.Adam(model.parameters(), lr=0.002)
 
         nn_trainer = NeuralNetworkTrainer(user_profiles_name, 'None', *train_test_data)
-        model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True)
+        model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True, verbose=False)
         model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_None.png"))
 
 

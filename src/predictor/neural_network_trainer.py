@@ -43,7 +43,7 @@ class NeuralNetworkTrainer:
         # Prepare statistics
         total_loss = 0
         num_batches = len(dataloader)
-        for restaurant_reviews, ratings in tqdm(dataloader, desc=f"Training network in batches", leave=None):
+        for restaurant_reviews, ratings in tqdm(dataloader, desc=f"Training network in batches", leave=False):
             # Prepare data
             restaurant_reviews, ratings = DataPreparer.get_tensor_for_ml(restaurant_reviews, ratings)
             # Compute predictions and loss
@@ -83,11 +83,12 @@ class NeuralNetworkTrainer:
         accuracy = correct / size
         return mean_loss, accuracy
 
-    def train(self, model: Module, optimizer: Optimizer, epochs: int = 100, plot_loss: bool = False, save_to_disk: bool = True) -> tuple[Module, Optimizer]:
+    def train(self, model: Module, optimizer: Optimizer, epochs: int = 100, plot_loss: bool = False, save_to_disk: bool = True, verbose=True) -> tuple[Module, Optimizer]:
         model.parameters_configuration = self._get_parameters_string(model, optimizer, epochs)
         model.user_profiles_location = self.user_profiles_location
         model.business_profiles_location = self.business_profiles_location
-        logging.info(f"Training network with following parametes: {model.parameters_configuration}")
+        if verbose:
+            logging.info(f"Training network with following parametes: {model.parameters_configuration}")
         history = {
             'train_loss': [],
             'test_loss': [],
