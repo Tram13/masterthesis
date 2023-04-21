@@ -26,7 +26,7 @@ def main():
             model = MultiLayerPerceptronPredictor(input_size=train_test_data[0].columns.size, output_size=1)
             optimizer = optim.Adam(model.parameters(), lr=0.002)
 
-            nn_trainer = NeuralNetworkTrainer(user_profiles_name, *train_test_data)
+            nn_trainer = NeuralNetworkTrainer(user_profiles_name, business_profiles_name, *train_test_data)
             model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True)
             model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_{business_profiles_name}.png"))
             exit(2)
@@ -40,7 +40,7 @@ def main():
         model = MultiLayerPerceptronPredictor(input_size=train_test_data[0].columns.size, output_size=1)
         optimizer = optim.Adam(model.parameters(), lr=0.002)
 
-        nn_trainer = NeuralNetworkTrainer(user_profiles_name, *train_test_data)
+        nn_trainer = NeuralNetworkTrainer(user_profiles_name, 'None', *train_test_data)
         model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True)
         model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_None.png"))
 
