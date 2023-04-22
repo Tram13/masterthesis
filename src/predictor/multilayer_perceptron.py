@@ -150,8 +150,10 @@ class MultiLayerPerceptronPredictor(nn.Module):
         logging.info(f"Inference Model loaded from {path}.")
         return self
 
-    def plot_loss_progress(self, title: str = "MLP", display_note: bool = True, save_location: os.PathLike = None):
-        fig, ax = plt.subplots()
+    def plot_loss_progress(self, title: str = "MLP", display_note: bool = True, save_location: os.PathLike = None) -> plt.Axes:
+        subplot = plt.subplots()
+        fig: plt.Figure = subplot[0]
+        ax: plt.Axes = subplot[1]
         ax.plot(range(self.current_epoch), self.loss_history)
         if display_note:
             title = f"{title} Loss: {self.note}"
@@ -161,4 +163,5 @@ class MultiLayerPerceptronPredictor(nn.Module):
         if save_location:
             fig.savefig(save_location)
 
+        plt.close(fig)
         return ax
