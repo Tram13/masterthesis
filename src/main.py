@@ -39,8 +39,10 @@ def main():
 
     user_profile_names_all = ProfilesManager().get_user_profiles_names()
     user_profile_names = []
+    print(user_profile_names_all)
     for user_profiles_name in user_profile_names_all:
         save_dir = ConfigParser().get_value('predictor_model', 'model_dir')
+        user_profiles_name = "".join(user_profiles_name.split(".")[:-1])
         if len([file.name for file in os.scandir(Path(save_dir)) if user_profiles_name in file.name and "None" in file.name]) == 0:
             user_profile_names.append(user_profiles_name)
 
