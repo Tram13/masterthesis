@@ -13,3 +13,4 @@
 src/predictor/Models
 src/NLP/cache
 src/NLP/Models
+src/predictor/*.png
