@@ -37,22 +37,24 @@ def main():
     #         else:
     #             logging.info(f"Skipped model {model.get_default_save_location()}, another version already exists")
 
-    for user_profiles_name in tqdm(ProfilesManager().get_user_profiles_names(), desc="User Profiles"):
+    user_profile_names_all = ProfilesManager().get_user_profiles_names()
+    user_profile_names = []
+    for user_profiles_name in user_profile_names_all:
+        save_dir = ConfigParser().get_value('predictor_model', 'model_dir')
+        if len([file.name for file in os.scandir(Path(save_dir)) if user_profiles_name in file.name and "None" in file.name]) == 0:
+            user_profile_names.append(user_profiles_name)
+
+    for user_profiles_name in tqdm(user_profile_names, desc="User Profiles"):
         user_profiles = ProfilesManager().get_user_profiles(user_profiles_name)
 
         train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, tips, user_profiles)
 
         model = MultiLayerPerceptronPredictor(input_size=train_test_data[0].columns.size, output_size=1)
-        # Check if model already exists
-        save_dir = ConfigParser().get_value('predictor_model', 'model_dir')
-        if len([file.name for file in os.scandir(Path(save_dir)) if user_profiles_name in file.name and "None" in file.name]) == 0:  # if not found
-            optimizer = optim.Adam(model.parameters(), lr=0.002)
+        optimizer = optim.Adam(model.parameters(), lr=0.002)
 
-            nn_trainer = NeuralNetworkTrainer(user_profiles_name, None, *train_test_data)
-            model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True, verbose=False)
-            model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_None.png"))
-        else:
-            logging.info(f"Skipped model {model.get_default_save_location()}, another version already exists")
+        nn_trainer = NeuralNetworkTrainer(user_profiles_name, None, *train_test_data)
+        model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True, verbose=False)
+        model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_None.png"))
 
 
 if __name__ == '__main__':
