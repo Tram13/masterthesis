@@ -54,7 +54,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
         else:
             file_name = ConfigParser().get_value('predictor_model', 'mlp_full_model_name').split('.')
         uuid = datetime.now().strftime("%Y-%m-%d_%Hh%M")
-        return Path(save_dir, f'{file_name[0]}_{uuid}__{"".join(self.user_profiles_location.split(".")[:-1])}_{"".join(self.business_profiles_location.split(".")[:-1])}.{file_name[1]}')
+        has_business_profile = self.business_profiles_location not in {"None", "", "none", None}
+        return Path(save_dir, f'{file_name[0]}_{uuid}__{"".join(self.user_profiles_location.split(".")[:-1])}_{"".join(self.business_profiles_location.split(".")[:-1]) if has_business_profile else "None"}.{file_name[1]}')
 
     @staticmethod
     def get_latest_model_from_default_location(use_inference_model: bool = False) -> Path:  # Only for full model
