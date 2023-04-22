@@ -17,14 +17,14 @@ from tools.RestaurantReviewsDataset import RestaurantReviewsDataset
 class NeuralNetworkTrainer:
     __slots__ = ['input_ml_train', 'input_ml_test', 'output_ml_train', 'output_ml_test', 'user_profiles_location', 'business_profiles_location']
 
-    def __init__(self, user_profiles_path: Union[os.PathLike, str], business_profiles_path: Union[os.PathLike, str], input_ml_train: pd.DataFrame, input_ml_test: pd.DataFrame, output_ml_train: pd.DataFrame,
+    def __init__(self, user_profiles_path: Union[os.PathLike, str], business_profiles_path: Union[os.PathLike, str, None], input_ml_train: pd.DataFrame, input_ml_test: pd.DataFrame, output_ml_train: pd.DataFrame,
                  output_ml_test: pd.DataFrame):
         self.input_ml_train = input_ml_train
         self.input_ml_test = input_ml_test
         self.output_ml_train = output_ml_train
         self.output_ml_test = output_ml_test
         self.user_profiles_location = user_profiles_path
-        self.business_profiles_location = business_profiles_path
+        self.business_profiles_location = business_profiles_path if business_profiles_path not in {"None", "", "none", None} else "None"
 
     @staticmethod
     def _get_parameters_string(model: Module, optimizer: Optimizer, epochs: int):
