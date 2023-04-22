@@ -118,7 +118,7 @@ class NeuralNetworkTrainer:
                 plt.show()
 
         if save_to_disk:
-            model.save(optimizer)
+            model.save(optimizer, verbose=verbose)
         if plot_loss:
             model.plot_loss_progress()
         return model, optimizer

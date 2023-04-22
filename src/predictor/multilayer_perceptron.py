@@ -72,10 +72,11 @@ class MultiLayerPerceptronPredictor(nn.Module):
 
         return Path(save_dir, found_models[0][1])
 
-    def save(self, optimizer: torch.optim.Optimizer, path: os.PathLike = None, overwrite: bool = True):
+    def save(self, optimizer: torch.optim.Optimizer, path: os.PathLike = None, overwrite: bool = True, verbose=True):
         if path is None:
             path = self.get_default_save_location()
-            logging.info(f"Using default save location: {path}")
+            if verbose:
+                logging.info(f"Using default save location: {path}")
 
         if os.path.exists(path) and os.path.isfile(path):  # Model already exists
             if overwrite:
@@ -98,7 +99,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
             "business_profiles_location": self.business_profiles_location,
             "parameters_configuration": self.parameters_configuration
         }, path)
-        logging.info(f"Model saved at {path}.")
+        if verbose:
+            logging.info(f"Model saved at {path}.")
 
     def save_for_inference(self, path: os.PathLike, overwrite: bool = True):
         if path is None:
