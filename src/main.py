@@ -28,6 +28,10 @@ def main():
     #         model = MultiLayerPerceptronPredictor(input_size=train_test_data[0].columns.size, output_size=1)
     #         # Check if model already exists
     #         save_dir = ConfigParser().get_value('predictor_model', 'model_dir')
+    #
+    #         # To skip duplicate work
+    #         short_name_user_profile =
+    #         short_name_business_profile =
     #         if len([file.name for file in os.scandir(Path(save_dir)) if user_profiles_name in file.name and business_profiles_name in file.name]) == 0:  # if not found
     #             optimizer = optim.Adam(model.parameters(), lr=0.002)
     #
@@ -42,8 +46,8 @@ def main():
     print(user_profile_names_all)
     for user_profiles_name in user_profile_names_all:
         save_dir = ConfigParser().get_value('predictor_model', 'model_dir')
-        user_profiles_name = "".join(user_profiles_name.split(".")[:-1])
-        if len([file.name for file in os.scandir(Path(save_dir)) if user_profiles_name in file.name and "None" in file.name]) == 0:
+        user_profiles_name_short = "".join(user_profiles_name.split(".")[:-1])
+        if len([file.name for file in os.scandir(Path(save_dir)) if user_profiles_name_short in file.name and "None" in file.name]) == 0:
             user_profile_names.append(user_profiles_name)
 
     for user_profiles_name in tqdm(user_profile_names, desc="User Profiles"):
