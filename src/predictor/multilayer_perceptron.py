@@ -139,6 +139,11 @@ class MultiLayerPerceptronPredictor(nn.Module):
 
         return self, optimizer
 
+    @staticmethod
+    def get_profile_names(path: os.PathLike) -> tuple[str, str]:
+        checkpoint = torch.load(path)
+        return checkpoint['user_profiles_location'], checkpoint['business_profiles_location']
+
     def load_for_inference(self, path: os.PathLike = None) -> nn.Module:
         if path is None:
             path = self.get_latest_model_from_default_location(use_inference_model=True)
@@ -150,7 +155,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
         logging.info(f"Inference Model loaded from {path}.")
         return self
 
-    def plot_loss_progress(self, title: str = "MLP", display_note: bool = True, save_location: os.PathLike = None) -> plt.Axes:
+    def plot_loss_progress(self, title: str = "MLP", display_note: bool = True, save_location: os.PathLike = None) -> tuple[plt.Figure, plt.Axes]:
         subplot = plt.subplots()
         fig: plt.Figure = subplot[0]
         ax: plt.Axes = subplot[1]
@@ -164,4 +169,4 @@ class MultiLayerPerceptronPredictor(nn.Module):
             fig.savefig(save_location)
 
         plt.close(fig)
-        return ax
+        return fig, ax
