@@ -91,7 +91,7 @@ class DataReader:
         return businesses, reviews, tips, users
 
     def _read_from_disk(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        with tqdm(total=5, desc="Reading files from disk") as p_bar:
+        with tqdm(total=5, desc="Reading files from disk", leave=False) as p_bar:
             p_bar.set_postfix_str('(current: businesses)')
             businesses = self._parse_businesses(self.file_paths[0])
             p_bar.update()
@@ -113,7 +113,7 @@ class DataReader:
 
     def _read_from_cache(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         try:
-            with tqdm(total=4, desc="Reading files from cache") as p_bar:
+            with tqdm(total=4, desc="Reading files from cache", leave=False) as p_bar:
                 p_bar.set_postfix_str('(current: businesses)')
                 businesses = pd.read_parquet(Path(self.cache_path, 'businesses.parquet'), engine='fastparquet')
                 p_bar.update()
