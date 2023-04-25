@@ -410,6 +410,7 @@ class DataReader:
             user_label_profiles[column_name] = user_label_profiles.apply(lambda row: row[column_name] / row['user_review_count'], axis=1).astype(np.float16)
         users = users.join(user_label_profiles, on='user_id')
         users = users.drop(columns=['user_review_count'])
+        users = users.astype(np.float16)
 
         return users
 
