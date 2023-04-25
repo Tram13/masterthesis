@@ -15,14 +15,18 @@ from tools.RestaurantReviewsDataset import RestaurantReviewsDataset
 
 
 class NeuralNetworkTrainer:
-    __slots__ = ['input_ml_train', 'input_ml_test', 'output_ml_train', 'output_ml_test', 'user_profiles_location', 'business_profiles_location']
+    __slots__ = ['train_loader', 'test_loader', 'user_profiles_location', 'business_profiles_location']
+    BATCH_SIZE = 1024
 
     def __init__(self, user_profiles_path: Union[os.PathLike, str], business_profiles_path: Union[os.PathLike, str, None], input_ml_train: pd.DataFrame, input_ml_test: pd.DataFrame, output_ml_train: pd.DataFrame,
                  output_ml_test: pd.DataFrame):
-        self.input_ml_train = input_ml_train
-        self.input_ml_test = input_ml_test
-        self.output_ml_train = output_ml_train
-        self.output_ml_test = output_ml_test
+
+        train_data = RestaurantReviewsDataset(input_ml_train.to_numpy(), output_ml_train.to_numpy())
+        test_data = RestaurantReviewsDataset(input_ml_test.to_numpy(), output_ml_test.to_numpy())
+
+        self.train_loader = DataLoader(train_data, batch_size=self.BATCH_SIZE)
+        self.test_loader = DataLoader(test_data, batch_size=self.BATCH_SIZE)
+
         self.user_profiles_location = user_profiles_path
         self.business_profiles_location = business_profiles_path if business_profiles_path not in {"None", "", "none", None} else "None"
 
@@ -94,19 +98,12 @@ class NeuralNetworkTrainer:
             'test_loss': [],
             'test_acc': []
         }
-        batch_size = 1024
         criterion = MSELoss()  # Root mean squared miss?
-
-        train_data = RestaurantReviewsDataset(self.input_ml_train.to_numpy(), self.output_ml_train.to_numpy())
-        test_data = RestaurantReviewsDataset(self.input_ml_test.to_numpy(), self.output_ml_test.to_numpy())
-
-        train_loader = DataLoader(train_data, batch_size=batch_size)
-        test_loader = DataLoader(test_data, batch_size=batch_size)
 
         epochs_with_progressbar = tqdm(range(epochs), desc="Epochs")
         for epoch in epochs_with_progressbar:
-            train_loss = self.train_epoch(model, optimizer, train_loader, criterion)
-            test_loss, test_acc = self.validate_epoch(model, test_loader, criterion)
+            train_loss = self.train_epoch(model, optimizer, self.train_loader, criterion)
+            test_loss, test_acc = self.validate_epoch(model, self.test_loader, criterion)
 
             history['train_loss'].append(train_loss)
             history['test_loss'].append(test_loss)
