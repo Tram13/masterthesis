@@ -14,53 +14,45 @@ from tools.profiles_manager import ProfilesManager
 
 
 def main():
-    businesses, reviews, tips, users = DataReader().read_data()
 
     logging.info("Starting training: with user profiles and business profiles")
-    for user_profiles_name in tqdm(ProfilesManager().get_user_profiles_names(), desc="User Profiles"):
-        for business_profiles_name in tqdm(ProfilesManager().get_business_profiles_names(), desc="Business Profiles"):
+    user_profiles_name = "BASIC_USER_PROFILES_400_no_sentiment.parquet"
+    for business_profiles_name in tqdm(ProfilesManager().get_business_profiles_names(), desc="Business Profiles"):
+        # To skip duplicate work
+        short_name_user_profile = "".join(user_profiles_name.split(".")[:-1])
+        short_name_business_profile = "".join(business_profiles_name.split(".")[:-1])
+        # Check if model already exists
+        save_dir = ConfigParser().get_value('predictor_model', 'model_dir')
+        if len([file.name for file in os.scandir(Path(save_dir)) if short_name_user_profile in file.name and short_name_business_profile in file.name]) == 0:  # if not found
 
+            businesses, reviews, tips, users = DataReader().read_data()
             user_profiles = ProfilesManager().get_user_profiles(user_profiles_name)
             business_profiles = ProfilesManager().get_business_profiles(business_profiles_name)
 
+            logging.info("Processing original data")
             train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, tips, users, user_profiles, business_profiles)
 
-            model = MultiLayerPerceptronPredictor(input_size=train_test_data[0].columns.size, output_size=1)
-            # Check if model already exists
-            save_dir = ConfigParser().get_value('predictor_model', 'model_dir')
+            # Cleanup memory
+            logging.info("Cleaning up original data")
+            del businesses
+            del reviews
+            del tips
+            del users
+            del user_profiles
+            del business_profiles
 
-            # To skip duplicate work
-            short_name_user_profile = "".join(user_profiles_name.split(".")[:-1])
-            short_name_business_profile = "".join(business_profiles_name.split(".")[:-1])
-            if len([file.name for file in os.scandir(Path(save_dir)) if short_name_user_profile in file.name and short_name_business_profile in file.name]) == 0:  # if not found
+            nn_trainer = NeuralNetworkTrainer(user_profiles_name, business_profiles_name, *train_test_data)
 
-                optimizer = optim.Adam(model.parameters(), lr=0.002)
-                nn_trainer = NeuralNetworkTrainer(user_profiles_name, business_profiles_name, *train_test_data)
-                model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True, verbose=False)
-                model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_{business_profiles_name}.png"))
-            else:
-                logging.info(f"Skipped model {model.get_default_save_location()}, another version already exists")
+            logging.info("Cleaning up memory on CPU")
+            del train_test_data
 
-    # To skip duplicate work, again
-    user_profile_names_all = ProfilesManager().get_user_profiles_names()
-    user_profile_names = []
-    for user_profiles_name in user_profile_names_all:
-        save_dir = ConfigParser().get_value('predictor_model', 'model_dir')
-        user_profiles_name_short = "".join(user_profiles_name.split(".")[:-1])
-        if len([file.name for file in os.scandir(Path(save_dir)) if user_profiles_name_short in file.name and "None" in file.name]) == 0:
-            user_profile_names.append(user_profiles_name)
+            model = MultiLayerPerceptronPredictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1)
 
-    for user_profiles_name in tqdm(user_profile_names, desc="User Profiles"):
-        user_profiles = ProfilesManager().get_user_profiles(user_profiles_name)
-
-        train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, tips, users, user_profiles)
-
-        model = MultiLayerPerceptronPredictor(input_size=train_test_data[0].columns.size, output_size=1)
-        optimizer = optim.Adam(model.parameters(), lr=0.002)
-
-        nn_trainer = NeuralNetworkTrainer(user_profiles_name, None, *train_test_data)
-        model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True, verbose=False)
-        model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_None.png"))
+            optimizer = optim.Adam(model.parameters(), lr=0.002)
+            model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True, verbose=False)
+            model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_{business_profiles_name}.png"))
+        else:
+            logging.info(f"Skipped model {short_name_user_profile}  | {short_name_business_profile}, another version already exists")
 
 
 if __name__ == '__main__':
