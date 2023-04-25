@@ -14,7 +14,7 @@ from tools.profiles_manager import ProfilesManager
 
 
 def main():
-    businesses, reviews, tips = DataReader().read_data()
+    businesses, reviews, tips, users = DataReader().read_data()
 
     logging.info("Starting training: with user profiles and business profiles")
     for user_profiles_name in tqdm(ProfilesManager().get_user_profiles_names(), desc="User Profiles"):
@@ -23,7 +23,7 @@ def main():
             user_profiles = ProfilesManager().get_user_profiles(user_profiles_name)
             business_profiles = ProfilesManager().get_business_profiles(business_profiles_name)
 
-            train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, tips, user_profiles, business_profiles)
+            train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, tips, users, user_profiles, business_profiles)
 
             model = MultiLayerPerceptronPredictor(input_size=train_test_data[0].columns.size, output_size=1)
             # Check if model already exists
@@ -53,7 +53,7 @@ def main():
     for user_profiles_name in tqdm(user_profile_names, desc="User Profiles"):
         user_profiles = ProfilesManager().get_user_profiles(user_profiles_name)
 
-        train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, tips, user_profiles)
+        train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, tips, users, user_profiles)
 
         model = MultiLayerPerceptronPredictor(input_size=train_test_data[0].columns.size, output_size=1)
         optimizer = optim.Adam(model.parameters(), lr=0.002)

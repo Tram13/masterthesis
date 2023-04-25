@@ -25,7 +25,7 @@ class DataReader:
         'yelp_academic_dataset_user.json'
     ]
 
-    RELEVANT_BUSINESS_FIELDS = [  # TODO: set van maken, ook van alles hieronder
+    RELEVANT_BUSINESS_FIELDS = [
         'business_id',
         'name',
         'city',
@@ -62,9 +62,6 @@ class DataReader:
 
     RELEVANT_USER_FIELDS = [
         'user_id',
-        'name',
-        'review_count',  # See FAQ on Yelp.com, not entirely correct with the actual amount of reviews we have
-        'friends',
         'useful',
         'funny',
         'cool',
@@ -81,21 +78,20 @@ class DataReader:
         self._assert_cache_dir_exists()
         self.file_paths = [Path(data_path, file) for file in self.EXPECTED_FILES]
 
-    def read_data(self, use_cache: bool = True, save_as_cache: bool = True) -> tuple[
-        pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def read_data(self, use_cache: bool = True, save_as_cache: bool = True) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         if use_cache:
-            businesses, reviews, tips = self._read_from_cache()
+            businesses, reviews, tips, users = self._read_from_cache()
         else:
-            businesses, reviews, tips = self._read_from_disk()
+            businesses, reviews, tips, users = self._read_from_disk()
         if save_as_cache:
             businesses.to_parquet(Path(self.cache_path, 'businesses.parquet'), engine='fastparquet')
             reviews.to_parquet(Path(self.cache_path, 'reviews.parquet'), engine='fastparquet')
             tips.to_parquet(Path(self.cache_path, 'tips.parquet'), engine='fastparquet')
-            # users.to_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
-        return businesses, reviews, tips
+            users.to_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
+        return businesses, reviews, tips, users
 
-    def _read_from_disk(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        with tqdm(total=4, desc="Reading files from disk") as p_bar:
+    def _read_from_disk(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        with tqdm(total=5, desc="Reading files from disk") as p_bar:
             p_bar.set_postfix_str('(current: businesses)')
             businesses = self._parse_businesses(self.file_paths[0])
             p_bar.update()
@@ -105,25 +101,35 @@ class DataReader:
             p_bar.set_postfix_str('current: tips')
             tips = self._parse_tips(self.file_paths[3], businesses)
             p_bar.update()
-            # p_bar.set_postfix_str('current: users')
-            # users = self._parse_users(self.file_paths[4])
-            # p_bar.update()
+            p_bar.set_postfix_str('current: users')
+            users = self._parse_users(self.file_paths[4], businesses, reviews)
+            p_bar.update()
             p_bar.set_postfix_str('current: creating optimised indices')
-            businesses, reviews, tips = DataReader.fix_indices(businesses, reviews, tips)
+
+            businesses, reviews, tips, users = DataReader.fix_indices(businesses, reviews, tips, users)
             p_bar.update()
 
-        return businesses, reviews, tips
+        return businesses, reviews, tips, users
 
-    def _read_from_cache(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def _read_from_cache(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         try:
-            businesses = pd.read_parquet(Path(self.cache_path, 'businesses.parquet'), engine='fastparquet')
-            reviews = pd.read_parquet(Path(self.cache_path, 'reviews.parquet'), engine='fastparquet')
-            tips = pd.read_parquet(Path(self.cache_path, 'tips.parquet'), engine='fastparquet')
-            # users = pd.read_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
+            with tqdm(total=4, desc="Reading files from cache") as p_bar:
+                p_bar.set_postfix_str('(current: businesses)')
+                businesses = pd.read_parquet(Path(self.cache_path, 'businesses.parquet'), engine='fastparquet')
+                p_bar.update()
+                p_bar.set_postfix_str('(current: reviews)')
+                reviews = pd.read_parquet(Path(self.cache_path, 'reviews.parquet'), engine='fastparquet')
+                p_bar.update()
+                p_bar.set_postfix_str('current: tips')
+                tips = pd.read_parquet(Path(self.cache_path, 'tips.parquet'), engine='fastparquet')
+                p_bar.update()
+                p_bar.set_postfix_str('current: users')
+                users = pd.read_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
+                p_bar.update()
         except OSError:
             print("Could not reach caches!", file=sys.stderr)
-            businesses, reviews, tips = self._read_from_disk()
-        return businesses, reviews, tips
+            businesses, reviews, tips, users = self._read_from_disk()
+        return businesses, reviews, tips, users
 
     # Check if ALL and NOTHING BUT the data files are present in the provided directory
     def _assert_cache_dir_exists(self):
@@ -160,7 +166,7 @@ class DataReader:
             for column_name in column_names_to_normalise
         ]
         businesses = businesses.drop(columns=column_names_to_normalise)
-        businesses = pd.concat([businesses, *normalised_series],axis=1)  # TODO: what if there are no reviews for a business?
+        businesses = pd.concat([businesses, *normalised_series], axis=1)
 
         # PARSING CATEGORIES
         categories_whitelist = {
@@ -236,8 +242,8 @@ class DataReader:
         onehot_attributes = [
             businesses['attributes']
             .map(
-                lambda business_attributes:
-                business_attributes[attribute] if attribute in business_attributes
+                lambda business_attributes_f:
+                business_attributes_f[attribute] if attribute in business_attributes_f
                 else None
             )
             .rename(f'attribute_{attribute.lower()}')
@@ -318,10 +324,8 @@ class DataReader:
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_REVIEW_FIELDS)
         reviews = pd.DataFrame.from_records(filtered_entries)
 
-        # TODO: extra normalisation: aan de hand van de gemiddelde rating van de gebruiker
         normalised_column = pd.Series(
-            data=
-            preprocessing.MinMaxScaler().fit_transform(
+            data=preprocessing.MinMaxScaler().fit_transform(
                 reviews['stars'].to_numpy().reshape(-1, 1)
             ).flatten(),
             name='stars_normalised',
@@ -355,41 +359,79 @@ class DataReader:
         return tips
 
     @staticmethod
-    def _parse_users(file_location: os.PathLike) -> pd.DataFrame:
-        # Currently not used in training of the model!
-        # entries = DataReader._get_entries_from_file(file_location)
-        # # Combine all compliments
-        # compliment_fields = [
-        #     'compliment_hot',
-        #     'compliment_more',
-        #     'compliment_profile',
-        #     'compliment_cute',
-        #     'compliment_list',
-        #     'compliment_note',
-        #     'compliment_plain',
-        #     'compliment_cool',
-        #     'compliment_funny',
-        #     'compliment_writer',
-        #     'compliment_photos'
-        # ]
-        # combined_compliments = DataReader._filter_entries(entries, compliment_fields)
-        # combined_compliments = [sum(x.values()) for x in combined_compliments]
-        # for entry, sum_combined_for_entry in zip(entries, combined_compliments):
-        #     entry['compliments'] = sum_combined_for_entry
-        #
-        # filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_USER_FIELDS)
-        # users = pd.DataFrame.from_records(filtered_entries)
-        # users['friends'] = users['friends'].map(lambda friend_str: friend_str.split(', '))
-        #
-        # users = users.rename(columns={'review_count': 'user_review_count'})
-        # users['name'] = users['name'].astype("string")
-        # users = users.set_index('user_id')
-        # return users
-        raise NotImplementedError
+    def _parse_users(file_location: os.PathLike, businesses: pd.DataFrame, reviews: pd.DataFrame) -> pd.DataFrame:
+        entries = DataReader._get_entries_from_file(file_location)
+        # Combine all compliments
+        compliment_fields = [
+            'compliment_hot',
+            'compliment_more',
+            'compliment_profile',
+            'compliment_cute',
+            'compliment_list',
+            'compliment_note',
+            'compliment_plain',
+            'compliment_cool',
+            'compliment_funny',
+            'compliment_writer',
+            'compliment_photos'
+        ]
+        combined_compliments = DataReader._filter_entries(entries, compliment_fields)
+        combined_compliments = [sum(x.values()) for x in combined_compliments]
+        for entry, sum_combined_for_entry in zip(entries, combined_compliments):
+            entry['compliments'] = sum_combined_for_entry
+
+        filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_USER_FIELDS)
+        users = pd.DataFrame.from_records(filtered_entries)
+
+        users['positive_interactions'] = users['useful'] + users['funny'] + users['cool']
+        users = users.drop(columns=['useful', 'funny', 'cool'])
+
+        # Normalisation
+        users = DataReader.users_normalise_data_quantile_based(users, 'positive_interactions')
+        users = DataReader.users_normalise_data_quantile_based(users, 'fans')
+        users = DataReader.users_normalise_data_quantile_based(users, 'compliments')
+
+        users = users.set_index('user_id')
+
+        # Adding user profiles based on labels
+        users.columns = [f"user_{column_name}" for column_name in users.columns]
+        reviews = reviews.join(users, on='user_id')
+        reviews = reviews.join(businesses, on='business_id')
+        drop_columns = [
+            column_name for column_name in reviews.columns
+            if column_name != 'user_id' and not column_name.startswith("category") and not column_name.startswith("attribute")
+        ]
+        reviews = reviews.drop(columns=drop_columns)
+        user_label_profiles = reviews.groupby('user_id').sum()
+        user_review_count = reviews.groupby('user_id').count()['category_food'].rename("user_review_count")
+
+        user_label_profiles = user_label_profiles.join(user_review_count, on='user_id')
+        for column_name in tqdm(user_label_profiles.columns, desc="Applying normalisation for user profiles based on labels", leave=False):
+            user_label_profiles[column_name] = user_label_profiles.apply(lambda row: row[column_name] / row['user_review_count'], axis=1).astype(np.float16)
+        users = users.join(user_label_profiles, on='user_id')
+        users = users.drop(columns=['user_review_count'])
+
+        return users
 
     @staticmethod
-    def fix_indices(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame) -> \
-            tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def users_normalise_data_quantile_based(users: pd.DataFrame, column_name: str):
+        bottom = users[column_name].quantile(0.10)
+        top = users[column_name].quantile(0.90)
+
+        users[column_name] = users[column_name].transform(lambda val: DataReader.quantile_rescale(val, bottom, top))
+        return users
+
+    @staticmethod
+    def quantile_rescale(val, bottom, top):
+        if val <= bottom:
+            return 0
+        if val >= top:
+            return 1
+        return (val - bottom) / (top - bottom)
+
+    @staticmethod
+    def fix_indices(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame, users: pd.DataFrame) -> \
+            tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
         # Transforming business IDs to integers
         businesses_indices = pd.Series(range(len(businesses)), index=businesses.index).astype(np.uint16)
@@ -412,4 +454,10 @@ class DataReader:
         tips['user_id'] = tips['user_id'].transform(lambda u_id: users_indices[u_id]).astype(np.uint32)
         tips['business_id'] = tips['business_id'].transform(lambda b_id: businesses_indices[b_id]).astype(np.uint16)
 
-        return businesses, reviews, tips
+        # Applying original transformation based on reviews on the users, and removing users which don't have any reviews
+        users = users.join(users_indices.rename("new_id"), on='user_id', how="inner")
+        users.index = users['new_id']
+        users.index = users.index.rename('user_id')
+        users = users.drop(columns=['new_id'])
+
+        return businesses, reviews, tips, users

@@ -9,6 +9,16 @@ class DataPreparer:
     def get_train_test_validate(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame, users: pd.DataFrame, user_profiles: pd.DataFrame,
                                 business_profiles: pd.DataFrame = None) \
             -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        # Copy data
+        businesses = businesses.copy(deep=True)
+        reviews = reviews.copy(deep=True)
+        tips = tips.copy(deep=True)
+        users = users.copy(deep=True)
+        user_profiles = user_profiles.copy(deep=True)
+        if business_profiles:
+            business_profiles = business_profiles.copy(deep=True)
+
+        # Process data
         ml_data = DataPreparer.get_df_for_ml(businesses, reviews, tips, users, user_profiles, business_profiles).reset_index()
         output_ml = ml_data['stars_normalised']
         input_ml = ml_data.drop(columns=['stars_normalised', 'review_id', 'user_id', 'business_id'])
@@ -22,6 +32,7 @@ class DataPreparer:
         Get all combinations of business attributes and user attributes
         :return: A DataFrame where each row represents an input for the ML model
         """
+        users.columns = [f"user_{column_name}" if not column_name.startswith("user") else column_name for column_name in users.columns]
         user_profiles.columns = [f"user_profile_{column_id}" for column_id in user_profiles.columns]
         reviews = reviews.join(user_profiles, on='user_id')
         businesses = businesses.drop(columns=['name', 'city'])
