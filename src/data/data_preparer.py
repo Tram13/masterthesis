@@ -15,7 +15,7 @@ class DataPreparer:
         tips = tips.copy(deep=True)
         users = users.copy(deep=True)
         user_profiles = user_profiles.copy(deep=True)
-        if business_profiles:
+        if business_profiles is not None:
             business_profiles = business_profiles.copy(deep=True)
 
         # Process data
