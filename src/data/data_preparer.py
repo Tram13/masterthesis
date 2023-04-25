@@ -42,7 +42,7 @@ class DataPreparer:
         user_reviewed_restaurant = reviews[['user_id', 'business_id', 'stars_normalised', *user_profiles.columns]]
         user_reviewed_restaurant = user_reviewed_restaurant.join(businesses, on='business_id')
 
-        user_reviewed_restaurant = user_reviewed_restaurant.join(users, on='user_id')
+        user_reviewed_restaurant = user_reviewed_restaurant.join(users, on='user_id', how="inner")
         user_reviewed_restaurant = user_reviewed_restaurant.set_index(['user_id', 'business_id'], append=True)
 
         return user_reviewed_restaurant
