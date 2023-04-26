@@ -2,7 +2,7 @@ import numpy as np
 from collections import Counter
 
 
-# input col: (topic, sentiment_label, sentiment_probability)
+# input col: (topic, [sentiment_label, sentiment_probability])
 def online_bertopic_scoring_func(col, total_amount_topics, use_sentiment=True):
     output = np.zeros(total_amount_topics)
 
@@ -26,17 +26,17 @@ def online_bertopic_scoring_func(col, total_amount_topics, use_sentiment=True):
 
 
 # outdated for offline bertopic
-def bertopic_scoring_func(col, total_amount_topics, weight_main_topics=0.75):
+def bertopic_scoring_func(col, total_amount_topics, sentiment=True):
     output = np.zeros(total_amount_topics)
 
     # sentiment_label * sentiment_probability
-    sentiment_score = col[3] * col[4]
+    if sentiment:
+        sentiment_score = col[1] * col[2]
 
-    # add to main topic: topic_probability * weight * sentiment_score
-    np.add.at(output, col[0], col[2] * sentiment_score * weight_main_topics)
-
-    # add to force topic: sentiment_score * (1-weight)
-    np.add.at(output, col[1], sentiment_score * (1 - weight_main_topics))
+        # add to main topic: topic_probability * weight * sentiment_score
+        np.add.at(output, col[0], sentiment_score)
+    else:
+        np.add.at(output, col[0], 1)
 
     # normalize data per topic
     normalize_values = Counter(col[0])

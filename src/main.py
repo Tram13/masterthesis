@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from NLP.main_offline_BERTopic import main_BERTopic
 from NLP.main_online_BERTopic import create_model_online_BERTopic, create_scores_from_online_model_by_topic
 from NLP.main_user_profiles import main_user_profile_approximation, main_user_profile_topic
 from NLP.managers.nlp_cache_manager import NLPCache
@@ -409,28 +410,10 @@ def main():
     # reviews = reviews.head(1000)
 
     logging.info('Finished reading in data, starting NLP...')
-    main_user_profile_approximation(reviews)
+    main_BERTopic(reviews['text'])
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    logging.info(
-        '------------------------------------\n\n\n ALGO 1: approx 50 top 5 for business profile \n\n\n------------------------------')
-    main_user_profile_approximation_50topics(False, profile_mode='business_id',
-                                             profile_name="business_profile_approx_50_top5.parquet")
-    logging.info(
-        '------------------------------------\n\n\n ALGO 2: approx 50 top 10 for business profile \n\n\n------------------------------')
-    main_user_profile_approximation_50topics(False, profile_mode='business_id', top_n=10,
-                                             profile_name="business_profile_approx_50_top10.parquet")
-    logging.info(
-        '------------------------------------\n\n\n ALGO 3: business approx 400 tops with normalize \n\n\n------------------------------')
-    main_user_profile_approximation_400topics(True, profile_mode='business_id')
-    logging.info(
-        '------------------------------------\n\n\n ALGO 4: business approx 400 tops \n\n\n------------------------------')
-    main_user_profile_approximation_400topics(False, profile_mode='business_id')
-    logging.info(
-        '------------------------------------\n\n\n ALGO 5: business approx 400 tops with normalize top 10 \n\n\n------------------------------')
-    main_user_profile_approximation_400topics(True, profile_mode='business_id', top_n=10)
-    logging.info(
-        '------------------------------------\n\n\n ALGO 6: business approx 400 tops top 10 \n\n\n------------------------------')
-    main_user_profile_approximation_400topics(False, profile_mode='business_id', top_n=10)
+    logging.info('please no break :)')
+    main()
