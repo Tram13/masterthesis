@@ -78,7 +78,7 @@ class DataReader:
         self._assert_cache_dir_exists()
         self.file_paths = [Path(data_path, file) for file in self.EXPECTED_FILES]
 
-    def read_data(self, use_cache: bool = True, save_as_cache: bool = True) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def read_data(self, use_cache: bool = True, save_as_cache: bool = True, part: int = None, total_parts: int = None) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         if use_cache:
             businesses, reviews, tips, users = self._read_from_cache()
         else:
@@ -88,6 +88,15 @@ class DataReader:
             reviews.to_parquet(Path(self.cache_path, 'reviews.parquet'), engine='fastparquet')
             tips.to_parquet(Path(self.cache_path, 'tips.parquet'), engine='fastparquet')
             users.to_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
+        if part is None or total_parts is None:
+            return businesses, reviews, tips, users
+        if part > total_parts or part < 1:
+            raise ValueError(f"Cannot get part {part}/{total_parts}")
+        # Only partial read
+        business_count = len(businesses)
+        start_index = (part - 1) * (business_count // total_parts)
+        end_index = part * (business_count // total_parts)
+        businesses = businesses[start_index:end_index]
         return businesses, reviews, tips, users
 
     def _read_from_disk(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
