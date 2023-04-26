@@ -25,13 +25,13 @@ class DataPreparer:
         """
         users.columns = [f"user_{column_name}" if not column_name.startswith("user") else column_name for column_name in users.columns]
         user_profiles.columns = [f"user_profile_{column_id}" for column_id in user_profiles.columns]
-        reviews = reviews.join(user_profiles, on='user_id')
+        reviews = reviews.join(user_profiles, on='user_id', how='inner')
         businesses = businesses.drop(columns=['name', 'city'])
         if business_profiles is not None:
             business_profiles.columns = [f"business_profile_{column_id}" for column_id in business_profiles.columns]
-            businesses = businesses.join(business_profiles, on='business_id')
+            businesses = businesses.join(business_profiles, on='business_id', how='inner')
         user_reviewed_restaurant = reviews[['user_id', 'business_id', 'stars_normalised', *user_profiles.columns]]
-        user_reviewed_restaurant = user_reviewed_restaurant.join(businesses, on='business_id')
+        user_reviewed_restaurant = user_reviewed_restaurant.join(businesses, on='business_id', how="inner")
 
         user_reviewed_restaurant = user_reviewed_restaurant.join(users, on='user_id', how="inner")
         user_reviewed_restaurant = user_reviewed_restaurant.set_index(['user_id', 'business_id'], append=True)
