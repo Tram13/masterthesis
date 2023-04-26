@@ -24,8 +24,11 @@ class ProfilesManager:
     def get_user_profiles_names(self) -> list[str]:
         return self.up_names
 
-    def get_user_profiles(self, name: Union[os.PathLike, str]) -> pd.DataFrame:
-        user_profiles = pd.read_parquet(Path(self.up_dir, name))
+    def get_user_profiles(self, name: Union[os.PathLike, str] = None) -> pd.DataFrame:
+        if name is None:  # load the best model
+            name = ConfigParser().get_value("cache", "best_user")
+        location = Path(self.up_dir, name)
+        user_profiles = pd.read_parquet(location)
         if user_profiles.index.name != 'user_id':
             user_profiles = user_profiles.set_index(user_profiles['user_id'], drop=True)
             user_profiles = user_profiles.drop(columns=['user_id'])
@@ -35,8 +38,11 @@ class ProfilesManager:
     def get_business_profiles_names(self) -> list[str]:
         return self.bp_names
 
-    def get_business_profiles(self, name: Union[os.PathLike, str]) -> pd.DataFrame:
-        business_profiles = pd.read_parquet(Path(self.bp_dir, name))
+    def get_business_profiles(self, name: Union[os.PathLike, str] = None) -> pd.DataFrame:
+        if name is None:  # load the best model
+            name = ConfigParser().get_value("cache", "best_business")
+        location = Path(self.bp_dir, name)
+        business_profiles = pd.read_parquet(location)
         if business_profiles.index.name != 'business_id':
             business_profiles = business_profiles.set_index(business_profiles['business_id'], drop=True)
             business_profiles = business_profiles.drop(columns=['business_id'])
