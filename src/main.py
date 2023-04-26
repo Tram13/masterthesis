@@ -1,3 +1,4 @@
+import gc
 import logging
 import os
 from pathlib import Path
@@ -13,46 +14,76 @@ from tools.config_parser import ConfigParser
 from tools.profiles_manager import ProfilesManager
 
 
+def get_data(part: int = None, total_parts: int = None):
+    businesses, reviews, tips, users = DataReader().read_data(part=part, total_parts=total_parts)
+    user_profiles = ProfilesManager().get_user_profiles()
+    business_profiles = ProfilesManager().get_business_profiles()
+
+    logging.info("Processing original data")
+    train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, tips, users, user_profiles, business_profiles)
+
+    # Cleanup memory
+    logging.info("Cleaning up original data")
+    gc.collect()
+    return train_test_data
+
+
 def main():
+    # Parameters
+    TOTAL_PARTS = 2  # For dataset splitting
+    EPOCHS = 5
 
     logging.info("Starting training: with user profiles and business profiles")
-    user_profiles_name = "BASIC_USER_PROFILES_400_no_sentiment.parquet"
-    for business_profiles_name in tqdm(ProfilesManager().get_business_profiles_names(), desc="Business Profiles"):
-        # To skip duplicate work
-        short_name_user_profile = "".join(user_profiles_name.split(".")[:-1])
-        short_name_business_profile = "".join(business_profiles_name.split(".")[:-1])
-        # Check if model already exists
-        save_dir = ConfigParser().get_value('predictor_model', 'model_dir')
-        if len([file.name for file in os.scandir(Path(save_dir)) if short_name_user_profile in file.name and short_name_business_profile in file.name]) == 0:  # if not found
+    # Initialisation
+    user_profiles_name = ConfigParser().get_value("cache", "best_user")
+    business_profiles_name = ConfigParser().get_value("cache", "best_user")
+    short_name_user_profile = Path(ConfigParser().get_value("cache", "best_user")).stem
+    short_name_business_profile = Path(ConfigParser().get_value("cache", "best_business")).stem
 
-            businesses, reviews, tips, users = DataReader().read_data()
-            user_profiles = ProfilesManager().get_user_profiles(user_profiles_name)
-            business_profiles = ProfilesManager().get_business_profiles(business_profiles_name)
+    # Check if model already exists
+    save_dir = ConfigParser().get_value('predictor_model', 'model_dir')
+    if len([file.name for file in os.scandir(Path(save_dir)) if short_name_user_profile in file.name and short_name_business_profile in file.name]) != 0:
+        logging.info(f"Skipped model {short_name_user_profile}  | {short_name_business_profile}, another version already exists")
+        return 1
 
-            logging.info("Processing original data")
-            train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, tips, users, user_profiles, business_profiles)
+    # Getting first part of dataset
+    train_test_data = get_data(part=1, total_parts=TOTAL_PARTS)
+    nn_trainer = NeuralNetworkTrainer(user_profiles_name, business_profiles_name, *train_test_data)
+    logging.info("Cleaning up memory on CPU")
+    gc.collect()
 
-            # Cleanup memory
-            logging.info("Cleaning up original data")
-            del businesses
-            del reviews
-            del tips
-            del users
-            del user_profiles
-            del business_profiles
+    # Creating model
+    model = MultiLayerPerceptronPredictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1)
+    optimizer = optim.Adam(model.parameters(), lr=0.002)
 
-            nn_trainer = NeuralNetworkTrainer(user_profiles_name, business_profiles_name, *train_test_data)
+    # Training on first part of dataset
+    logging.info(f"Training with part 1/{TOTAL_PARTS} of dataset")
+    model, optimizer = nn_trainer.train(model, optimizer, epochs=EPOCHS, save_to_disk=False, verbose=False)
 
-            logging.info("Cleaning up memory on CPU")
-            del train_test_data
+    # Memory cleanup after run
+    gc.collect()
 
-            model = MultiLayerPerceptronPredictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1)
+    for index_part in range(2, TOTAL_PARTS + 1):
+        # Getting next part of dataset
+        train_test_data = get_data(part=index_part, total_parts=TOTAL_PARTS)
+        nn_trainer = NeuralNetworkTrainer(user_profiles_name, business_profiles_name, *train_test_data)
+        logging.info("Cleaning up memory on CPU")
+        del train_test_data
 
-            optimizer = optim.Adam(model.parameters(), lr=0.002)
-            model, optimizer = nn_trainer.train(model, optimizer, epochs=100, save_to_disk=True, verbose=False)
-            model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_{business_profiles_name}.png"))
-        else:
-            logging.info(f"Skipped model {short_name_user_profile}  | {short_name_business_profile}, another version already exists")
+        logging.info(f"Training with part {index_part}/{TOTAL_PARTS} of dataset")
+        model, optimizer = nn_trainer.train(model, optimizer, epochs=EPOCHS, save_to_disk=index_part == TOTAL_PARTS, verbose=False)
+
+        # Memory cleanup after run
+        del nn_trainer.train_loader.dataset
+        del nn_trainer.test_loader.dataset
+        del nn_trainer.train_loader
+        del nn_trainer.test_loader
+        del nn_trainer
+        gc.collect()
+
+    # Save statistics
+    model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_{business_profiles_name}.png"))
+    return 0
 
 
 if __name__ == '__main__':
