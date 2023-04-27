@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 from typing import Union
 
@@ -16,7 +17,7 @@ from tools.RestaurantReviewsDataset import RestaurantReviewsDataset
 
 class NeuralNetworkTrainer:
     __slots__ = ['train_loader', 'test_loader', 'user_profiles_location', 'business_profiles_location']
-    BATCH_SIZE = 1024
+    BATCH_SIZE = 8192
 
     def __init__(self, user_profiles_path: Union[os.PathLike, str], business_profiles_path: Union[os.PathLike, str, None], input_ml_train: pd.DataFrame, input_ml_test: pd.DataFrame, output_ml_train: pd.DataFrame,
                  output_ml_test: pd.DataFrame):
@@ -54,7 +55,7 @@ class NeuralNetworkTrainer:
             predictions = model(restaurant_reviews)
             loss = loss_fn(predictions, ratings)
             # Compute statistics
-            total_loss += loss.item()
+            total_loss += math.sqrt(loss.item())  # TODO: aanpassen als we geen MSE meer gebruiken
             # Backpropagation
             optimizer.zero_grad()
             loss.backward()
@@ -98,7 +99,7 @@ class NeuralNetworkTrainer:
             'test_loss': [],
             'test_acc': []
         }
-        criterion = MSELoss()  # Root mean squared miss?
+        criterion = MSELoss()
 
         epochs_with_progressbar = tqdm(range(epochs), desc="Epochs")
         for epoch in epochs_with_progressbar:
@@ -109,7 +110,7 @@ class NeuralNetworkTrainer:
             history['test_loss'].append(test_loss)
             history['test_acc'].append(test_acc)
             model.update_epoch(test_loss)
-            epochs_with_progressbar.set_description_str(f"Epochs (loss of last 5 epochs: {[f'{val:.3}' for val in history['test_loss'][-5:]]}")
+            epochs_with_progressbar.set_description_str(f"Epochs (RMSEloss of last 5 epochs: {[f'{val:.3}' for val in history['test_loss'][-5:]]}")
             if plot_loss and epoch % (epochs // (100 / 5)) == 0:  # Every 5%
                 model.plot_loss_progress()
                 plt.show()
