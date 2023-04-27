@@ -13,3 +13,4 @@ spacy
 umap-learn
 matplotlib
 BERTopic
+seaborn
