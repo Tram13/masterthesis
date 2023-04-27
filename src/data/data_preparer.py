@@ -8,7 +8,7 @@ class DataPreparer:
     @staticmethod
     def get_train_test_validate(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame, users: pd.DataFrame, user_profiles: pd.DataFrame,
                                 business_profiles: pd.DataFrame = None) \
-            -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+            -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
 
         ml_data = DataPreparer.get_df_for_ml(businesses, reviews, tips, users, user_profiles, business_profiles).reset_index()
         output_ml = ml_data['stars_normalised']
