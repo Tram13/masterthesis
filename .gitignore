@@ -2,6 +2,7 @@
 /.venv
 /.env
 /.venv_windows
+/.venv_windows3.10
 # Python compiled files
 *__pyc__*
 # PyCharm files
