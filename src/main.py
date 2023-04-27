@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 
 from torch import optim
-from tqdm import tqdm
 
 from data.data_preparer import DataPreparer
 from data.data_reader import DataReader
@@ -16,6 +15,7 @@ from tools.profiles_manager import ProfilesManager
 
 def get_data(part: int = None, total_parts: int = None):
     businesses, reviews, tips, users = DataReader().read_data(part=part, total_parts=total_parts)
+    logging.info("Reading profiles")
     user_profiles = ProfilesManager().get_user_profiles()
     business_profiles = ProfilesManager().get_business_profiles()
 
@@ -30,13 +30,14 @@ def get_data(part: int = None, total_parts: int = None):
 
 def main():
     # Parameters
-    TOTAL_PARTS = 2  # For dataset splitting
-    EPOCHS = 5
+    TOTAL_PARTS = 1  # For dataset splitting
+    EPOCHS = 1000
+    LR = 0.0002
 
     logging.info("Starting training: with user profiles and business profiles")
     # Initialisation
     user_profiles_name = ConfigParser().get_value("cache", "best_user")
-    business_profiles_name = ConfigParser().get_value("cache", "best_user")
+    business_profiles_name = ConfigParser().get_value("cache", "best_business")
     short_name_user_profile = Path(ConfigParser().get_value("cache", "best_user")).stem
     short_name_business_profile = Path(ConfigParser().get_value("cache", "best_business")).stem
 
@@ -54,11 +55,11 @@ def main():
 
     # Creating model
     model = MultiLayerPerceptronPredictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1)
-    optimizer = optim.Adam(model.parameters(), lr=0.002)
+    optimizer = optim.Adagrad(model.parameters(), lr=LR)
 
     # Training on first part of dataset
     logging.info(f"Training with part 1/{TOTAL_PARTS} of dataset")
-    model, optimizer = nn_trainer.train(model, optimizer, epochs=EPOCHS, save_to_disk=False, verbose=False)
+    model, optimizer = nn_trainer.train(model, optimizer, epochs=EPOCHS, save_to_disk=1 == TOTAL_PARTS, verbose=True)
 
     # Memory cleanup after run
     gc.collect()
@@ -71,7 +72,7 @@ def main():
         del train_test_data
 
         logging.info(f"Training with part {index_part}/{TOTAL_PARTS} of dataset")
-        model, optimizer = nn_trainer.train(model, optimizer, epochs=EPOCHS, save_to_disk=index_part == TOTAL_PARTS, verbose=False)
+        model, optimizer = nn_trainer.train(model, optimizer, epochs=EPOCHS, save_to_disk=index_part == TOTAL_PARTS, verbose=True)
 
         # Memory cleanup after run
         del nn_trainer.train_loader.dataset
