@@ -16,8 +16,14 @@ class MultiLayerPerceptronPredictor(nn.Module):
         self.flatten = nn.Flatten()
         # Definition of netwok architecture
         self.linear_stack = nn.Sequential(
-            nn.Linear(input_size, input_size // 2),
-            nn.Sigmoid(),
+            nn.Linear(input_size, int(input_size * 1.2)),
+            nn.ReLU(),
+            nn.Dropout(p=0.2),
+            nn.Linear(int(input_size * 1.2), int(input_size * 0.9)),
+            nn.Dropout(p=0.2),
+            nn.ReLU(),
+            nn.Linear(int(input_size * 0.9), input_size // 2),
+            nn.ReLU(),
             nn.Linear(input_size // 2, input_size // 4),
             nn.ReLU(),
             nn.Linear(input_size // 4, input_size // 8),
@@ -26,6 +32,15 @@ class MultiLayerPerceptronPredictor(nn.Module):
             nn.Sigmoid(),
             nn.Linear(input_size // 16, output_size)
         )
+
+        # Random initialisation
+        torch.nn.init.xavier_uniform_(self.linear_stack[0].weight)
+        torch.nn.init.xavier_uniform_(self.linear_stack[3].weight)
+        torch.nn.init.xavier_uniform_(self.linear_stack[6].weight)
+        torch.nn.init.xavier_uniform_(self.linear_stack[8].weight)
+        torch.nn.init.xavier_uniform_(self.linear_stack[10].weight)
+        torch.nn.init.xavier_uniform_(self.linear_stack[12].weight)
+        torch.nn.init.xavier_uniform_(self.linear_stack[14].weight)
 
         # Run on GPU is available
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
