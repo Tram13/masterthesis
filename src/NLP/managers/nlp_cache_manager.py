@@ -10,7 +10,8 @@ import os
 class NLPCache:
 
     def __init__(self, amount_of_scores_batches: int = 10, amount_of_zero_shot_batches: int = 30,
-                 amount_of_approximation_batches: int = 1, amount_of_top_n_batches: int = 10):
+                 amount_of_approximation_batches: int = 1, amount_of_top_n_batches: int = 10,
+                 _amount_of_embeddings_batches: int = 100):
         self.cache_path = Path(ConfigParser().get_value('cache', 'nlp_cache_dir'))
         self.user_profiles_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'user_profiles_dir')))
         self.business_profile_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'business_profiles_dir')))
@@ -19,6 +20,7 @@ class NLPCache:
         self.approximation_path = self.scores_path
         self.zero_shot_classes_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'zero_shot_dir')))
         self.guided_topics_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'guided_topics')))
+        self.embeddings_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'embeddings')))
 
         self._make_dirs()
 
@@ -27,6 +29,7 @@ class NLPCache:
         self._amount_of_zero_shot_batches = amount_of_zero_shot_batches
         self._amount_of_approximation_batches = amount_of_approximation_batches
         self._amount_of_top_n_batches = amount_of_top_n_batches
+        self._amount_of_embeddings_batches = _amount_of_embeddings_batches
 
     def _make_dirs(self):
         self._create_path_if_not_exists(self.cache_path)
@@ -37,6 +40,7 @@ class NLPCache:
         self._create_path_if_not_exists(self.approximation_path)
         self._create_path_if_not_exists(self.zero_shot_classes_path)
         self._create_path_if_not_exists(self.guided_topics_path)
+        self._create_path_if_not_exists(self.embeddings_path)
 
     @staticmethod
     def _create_path_if_not_exists(path: Path):
@@ -46,6 +50,9 @@ class NLPCache:
     def read_guided_topics(self, name: str = "NLP_categories.txt"):
         with open(self.guided_topics_path.joinpath(Path(name)), 'r') as f:
             return [line.strip().split(';') for line in f.readlines()]
+
+    def save_embeddings(self, embeddings, index):
+        embeddings.to_parquet(Path(self.embeddings_path, f"embedding_part_{index}.parquet"), engine='fastparquet')
 
     def save_business_profiles(self, business_profiles: pd.DataFrame, name: str = "BASIC_BUSINESS_PROFILES.parquet"):
         business_profiles.to_parquet(Path(self.business_profile_path, name), engine='fastparquet')
@@ -73,6 +80,14 @@ class NLPCache:
             to_add = pd.read_parquet(base_path.joinpath(Path(f"selected_top_{n}{'_normalized' if normalized else ''}{filter_string}_part_{index}.parquet")), engine='fastparquet')
             scores = pd.concat([scores, to_add], ignore_index=True)
         return scores
+
+    def load_embeddings(self):
+        embeddings = pd.read_parquet(Path(self.embeddings_path, f"embedding_part_{0}.parquet"), engine='fastparquet')
+        for index in range(1, self._amount_of_embeddings_batches):
+            to_add = pd.read_parquet(Path(self.embeddings_path, f"embedding_part_{index}.parquet"), engine='fastparquet')
+            embeddings = pd.concat([embeddings, to_add], ignore_index=True)
+
+        return embeddings
 
     def load_business_profiles(self, name: str = "BASIC_BUSINESS_PROFILES.parquet"):
         return pd.read_parquet(Path(self.business_profile_path, name), engine='fastparquet')
@@ -112,6 +127,14 @@ class NLPCache:
                                      engine='fastparquet')
             scores = pd.concat([scores, to_add], ignore_index=True)
         return scores
+
+    def is_available_embeddings(self):
+        path = self.embeddings_path
+        if not path.is_dir():
+            path.mkdir()
+        available_files = {file.name for file in os.scandir(path)}
+        required_files = {f"embedding_part_{index}.parquet" for index in range(self._amount_of_embeddings_batches)}
+        return required_files.issubset(available_files)
 
     def is_available_top_n(self, n: int = 5, model_dir: str = 'base', normalized: bool = False, filter_string: str = ""):
         path = self.approximation_path.joinpath(Path(model_dir))

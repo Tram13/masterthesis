@@ -9,6 +9,7 @@ from NLP.main_online_BERTopic import create_model_online_BERTopic, create_scores
 from NLP.main_user_profiles import main_user_profile_approximation, main_user_profile_topic
 from NLP.managers.nlp_cache_manager import NLPCache
 from NLP.managers.nlp_model_manager import NLPModels
+from NLP.utils.evaluate_model import evaluate_model
 from NLP.utils.sentence_splitter import SentenceSplitter
 from data.data_reader import DataReader
 
@@ -402,6 +403,16 @@ def main_bert_guided():
                                  guided_topics=topics)
 
 
+def main_evaluate_model(model_name):
+    print("hello world")
+    logging.basicConfig(level=logging.INFO)
+
+    sentences = SentenceSplitter()._load_splitted_reviews_from_cache()
+
+    logging.info('Finished reading in data, starting evaluation...')
+    evaluate_model(sentences, model_name)
+
+
 def main():
     print("hello world")
     logging.basicConfig(level=logging.INFO)
@@ -415,5 +426,5 @@ def main():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    logging.info('please no break :)')
-    main()
+    logging.info('Clustering metric for 1 model')
+    main_evaluate_model("online_model_50top_85.bert")

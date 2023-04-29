@@ -1,6 +1,6 @@
 import numpy as np
 
-from sklearn.metrics import silhouette_score, davies_bouldin_score
+from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
 from libs.jqmcvi_base import dunn_fast
 
 
@@ -11,6 +11,7 @@ class ClusteringMetrics:
         self.silhouet_index = None          # -1 to 1 => close to 1 is good
         self.dunn_index = None              #
         self.davies_bouldin_index = None    # as high as possible
+        self.calinski_harabasz_score = None
 
     def calculate_silhouet_index(self) -> float:
         if self.silhouet_index is None:
@@ -30,6 +31,12 @@ class ClusteringMetrics:
 
         return self.davies_bouldin_index
 
+    def calculate_calinski_harabasz_score(self) -> float:
+        if self.calinski_harabasz_score is None:
+            self.calinski_harabasz_score = calinski_harabasz_score(self.features, self.labels)
+
+        return self.calinski_harabasz_score
+
     def calculate_all_indices(self):
         print("calculating silhouet...")
         self.calculate_silhouet_index()
@@ -43,5 +50,6 @@ class ClusteringMetrics:
         Silhouet_index: {self.silhouet_index}
         Dunn_index: {self.dunn_index}
         Davies_bouldin_index: {self.davies_bouldin_index}
+        Calinski_harabasz_score: {self.calinski_harabasz_score}
         """
 
