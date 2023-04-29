@@ -20,7 +20,8 @@ def evaluate_model(sentences, model_name):
         bertopic_model = nlp_models.load_model(model_name)
         for index, batch in enumerate(tqdm(np.array_split(sentences, amount_of_embedding_batches), desc="Embedding batches")):
             print()
-            features = bertopic_model.embedding_model.embed_documents(batch['text'], verbose=True)
+            batch = batch.reset_index()['text']
+            features = bertopic_model.embedding_model.embed_documents(batch, verbose=True)
             features = pd.DataFrame(features)
             features.columns = [str(x) for x in features.columns]
             nlp_cache.save_embeddings(features, index)
