@@ -81,9 +81,12 @@ class NLPCache:
             scores = pd.concat([scores, to_add], ignore_index=True)
         return scores
 
-    def load_embeddings(self):
+    def load_embeddings(self, total: int = None):
+        if total is None or total > self._amount_of_embeddings_batches:
+            total = self._amount_of_embeddings_batches
+
         embeddings = pd.read_parquet(Path(self.embeddings_path, f"embedding_part_{0}.parquet"), engine='fastparquet')
-        for index in range(1, self._amount_of_embeddings_batches):
+        for index in range(1, total):
             to_add = pd.read_parquet(Path(self.embeddings_path, f"embedding_part_{index}.parquet"), engine='fastparquet')
             embeddings = pd.concat([embeddings, to_add], ignore_index=True)
 

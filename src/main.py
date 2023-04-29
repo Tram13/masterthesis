@@ -420,8 +420,11 @@ def main():
     _, reviews, _ = DataReader().read_data()
     # reviews = reviews.head(1000)
 
+    nlp_cache = NLPCache(_amount_of_embeddings_batches=100)
+    embeddings = nlp_cache.load_embeddings()
+
     logging.info('Finished reading in data, starting NLP...')
-    main_BERTopic(reviews['text'])
+    main_BERTopic(reviews['text'], embeddings=embeddings)
 
 
 if __name__ == '__main__':
