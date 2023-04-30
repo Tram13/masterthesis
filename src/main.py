@@ -389,18 +389,17 @@ def main_business_profile_50topics(sentiment: bool = True):
                             profile_mode="business_id")
 
 
-def main_bert_guided():
+def main_online_big_dim():
     print("hello world")
     logging.basicConfig(level=logging.INFO)
 
     _, reviews, _ = DataReader().read_data()
-    nlp_cache = NLPCache()
-    topics = nlp_cache.read_guided_topics()
-    max_top = 10 + len(topics)
 
     logging.info('Finished reading in data, starting NLP...')
-    create_model_online_BERTopic(reviews['text'], model_name=f"BERTopic_guided_maxtop_{max_top}", max_topics=max_top,
-                                 guided_topics=topics)
+    create_model_online_BERTopic(reviews['text'], model_name="BERTopic_400_dim_red_100.bert", max_topics=400, dim_red_components=100)
+
+    logging.info('User profile')
+    main_user_profile_topic(reviews, profile_name="BASIC_USER_400_HIGH_DIM.parquet", model_name="BERTopic_400_dim_red_100.bert")
 
 
 def main_evaluate_model(model_name):
@@ -436,5 +435,6 @@ def main():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    logging.info('Clustering metric for 1 model')
-    main_evaluate_model("online_model_50top_85.bert")
+    # logging.info('Clustering metric for 1 model')
+    # main_evaluate_model("online_model_50top_85.bert")
+    main_online_big_dim()
