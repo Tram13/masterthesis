@@ -55,7 +55,7 @@ class NeuralNetworkTrainer:
             predictions = model(restaurant_reviews)
             loss = loss_fn(predictions, ratings)
             # Compute statistics
-            total_loss += math.sqrt(loss.item())  # TODO: aanpassen als we geen MSE meer gebruiken
+            total_loss += loss.item()
             # Backpropagation
             optimizer.zero_grad()
             loss.backward()
@@ -110,7 +110,7 @@ class NeuralNetworkTrainer:
             history['test_loss'].append(test_loss)
             history['test_acc'].append(test_acc)
             model.update_epoch(test_loss)
-            epochs_with_progressbar.set_description_str(f"Epochs (RMSEloss of last 5 epochs: {[f'{val:.3}' for val in history['test_loss'][-5:]]}")
+            epochs_with_progressbar.set_description_str(f"Epochs (MSEloss of last 5 epochs: {[f'{val:.3}' for val in history['test_loss'][-5:]]}")
             if plot_loss and epoch % (epochs // (100 / 5)) == 0:  # Every 5%
                 model.plot_loss_progress()
                 plt.show()
