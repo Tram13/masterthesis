@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
@@ -44,6 +46,8 @@ class ClusteringMetrics:
         self.calculate_dunn_index()
         print("calculating davies_bouldin...")
         self.calculate_davies_bouldin_index()
+        print("calinski_harabasz_score...")
+        self.calinski_harabasz_score()
 
     def __str__(self):
         return f"""Scores:

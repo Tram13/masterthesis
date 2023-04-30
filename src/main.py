@@ -410,7 +410,14 @@ def main_evaluate_model(model_name):
     sentences = SentenceSplitter()._load_splitted_reviews_from_cache()
 
     logging.info('Finished reading in data, starting evaluation...')
-    evaluate_model(sentences, model_name)
+    logging.info("0.1% of the data")
+    evaluate_model(sentences, model_name, 1, True)
+    logging.info("0.5% of the data")
+    evaluate_model(sentences, model_name, 5, True)
+    logging.info("1% of the data")
+    evaluate_model(sentences, model_name, 1, False)
+    logging.info("2% of the data")
+    evaluate_model(sentences, model_name, 2, False)
 
 
 def main():
