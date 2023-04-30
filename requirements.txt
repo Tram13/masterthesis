@@ -14,3 +14,4 @@ umap-learn
 matplotlib
 BERTopic
 seaborn
+xgboost
