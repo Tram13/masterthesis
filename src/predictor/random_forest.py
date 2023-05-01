@@ -11,7 +11,7 @@ class RandomForest:
             n_estimators=100,
             subsample=0.8,
             colsample_bynode=0.2,
-        )
+        )  # Parameters optimized by grid search
         self.input_ml_train = input_ml_train
         self.input_ml_test = input_ml_test
         self.output_ml_train = output_ml_train
