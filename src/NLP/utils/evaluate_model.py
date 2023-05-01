@@ -9,15 +9,15 @@ from NLP.managers.nlp_model_manager import NLPModels
 from NLP.utils.ClusteringMetrics import ClusteringMetrics
 
 
-def evaluate_model(sentences, model_name, percentage, divide_10=False):
+def evaluate_model(sentences, model_name, percentage, divide_10=False, dim_reduction=True):
 
     nlp_cache = NLPCache(amount_of_embeddings_batches=percentage)
     nlp_models = NLPModels()
+    bertopic_model = nlp_models.load_model(model_name)
 
     if not nlp_cache.is_available_embeddings():
         logging.info('Creating embeddings...')
 
-        bertopic_model = nlp_models.load_model(model_name)
         for index, batch in enumerate(tqdm(np.array_split(sentences, 100), desc="Embedding batches")):
             print()
             batch = batch.reset_index()['text']
@@ -31,6 +31,10 @@ def evaluate_model(sentences, model_name, percentage, divide_10=False):
 
     if divide_10:
         features = features.head(len(features.index)//10)
+
+    if dim_reduction:
+        # also apply dimensionality reduction to our embedding
+        features = bertopic_model.umap_model.transform(features)
 
     logging.info('Loading in topics...')
     topics = np.array(nlp_cache.load_scores(nlp_models.get_dir_for_model(model_name))['topic_id'])[:len(features.index)]
