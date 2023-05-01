@@ -396,7 +396,7 @@ def main_online_big_dim():
     _, reviews, _ = DataReader().read_data()
 
     logging.info('Finished reading in data, starting NLP...')
-    create_model_online_BERTopic(reviews['text'], model_name="BERTopic_400_dim_red_100.bert", max_topics=400, dim_red_components=100)
+    # create_model_online_BERTopic(reviews['text'], model_name="BERTopic_400_dim_red_100.bert", max_topics=400, dim_red_components=100)
 
     logging.info('User profile')
     main_user_profile_topic(reviews, profile_name="BASIC_USER_400_HIGH_DIM.parquet", model_name="BERTopic_400_dim_red_100.bert")
