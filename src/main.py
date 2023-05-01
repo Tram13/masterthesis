@@ -430,7 +430,11 @@ def main_offline_bert_small_dataset():
     reviews = reviews.head(SIZE)
 
     logging.info('Finished reading in data, starting NLP...')
-    main_BERTopic(reviews['text'], model_name=f"offline_bertopic_{SIZE}.bert")
+    model_name = f"offline_bertopic_{SIZE}.bert"
+    main_BERTopic(reviews['text'], model_name=model_name)
+
+    main_user_profile_topic(reviews, profile_name=f"BASIC_USER_offline_{SIZE}.parquet",
+                            model_name=model_name, scores_save_dir=f"offline_{SIZE}")
 
 
 if __name__ == '__main__':
