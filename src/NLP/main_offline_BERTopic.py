@@ -13,11 +13,13 @@ from NLP.utils.sentence_splitter import SentenceSplitter
 
 
 def main_BERTopic(reviews: pd.Series, embeddings: np.ndarray = None, do_precompute_and_save_embeddings: bool = False,
-                  save_path: Path = None, use_sentiment: bool = False) -> tuple[pd.Series, pd.DataFrame]:
+                  save_path: Path = None, use_sentiment: bool = False, model_name: str = "offline_test_model",
+                  calculate_profiles: bool = False):
     # split reviews into sentences
     print('Splitting Sentences...')
     sentence_splitter = SentenceSplitter()
-    reviews = sentence_splitter.split_reviews(reviews)
+    # cache is only for online model
+    reviews = sentence_splitter.split_reviews(reviews, read_cache=False, save_in_cache=False)
     input_data = reviews['text']
 
     # create the model
@@ -43,7 +45,10 @@ def main_BERTopic(reviews: pd.Series, embeddings: np.ndarray = None, do_precompu
 
     print('SAVING model...')
     nlp_models = NLPModels()
-    nlp_models.save_model(BERTopic_model, "offline_test_model.bert")
+    nlp_models.save_model(BERTopic_model, model_name)
+
+    if not calculate_profiles:
+        return
 
     print('SAVING TOPICS...')
     scores = pd.concat([pd.Series(topics)], axis=1)

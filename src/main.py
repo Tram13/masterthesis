@@ -419,18 +419,18 @@ def main_evaluate_model(model_name):
     evaluate_model(sentences, model_name, 2, False)
 
 
-def main():
+def main_offline_bert_small_dataset():
     print("hello world")
     logging.basicConfig(level=logging.INFO)
 
     _, reviews, _ = DataReader().read_data()
-    # reviews = reviews.head(1000)
+    SIZE = 100_000
+    # SIZE = 300_000
 
-    nlp_cache = NLPCache(_amount_of_embeddings_batches=100)
-    embeddings = nlp_cache.load_embeddings()
+    reviews = reviews.head(SIZE)
 
     logging.info('Finished reading in data, starting NLP...')
-    main_BERTopic(reviews['text'], embeddings=embeddings)
+    main_BERTopic(reviews['text'], model_name=f"offline_bertopic_{SIZE}.bert")
 
 
 if __name__ == '__main__':
