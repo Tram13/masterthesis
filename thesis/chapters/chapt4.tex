@@ -1,9 +1,85 @@
 \chapter{Experimenten}
 
 \section{Voorgestelde architectuur}
+In deze thesis onderzoeken we of de combinatie van tekstuele data aan de hand van transformermodellen kan omgezet worden in features, die het voorspellingsvermogen van een neuraal netwerk positief beïnvloeden. Ons basisidee ziet er uit zoals beschreven in \autoref{fig:chapt4_architectuur_begin}: eerst worden de geschreven reviews door een transformermodel omgezet naar numerieke features. Deze worden dan toegevoegd aan de input van een neuraal netwerk. We maken dus gebruik van een 'feature augmentation'  hybride model (\ref{sec:chapt2_hybride_modellen}) met machine learning-technieken (\ref{sec:chapt2_machine_learning_modellen}). De overige features voor het neurale netwerk komen rechtstreeks uit de dataset. Dit betreft dan features die de restaurants beschrijven, zoals het type restaurant (bvb "fastfood"). In \autoref{sec:chapt4_tekst_naar_features} beschrijven we welke combinatie van technieken het beste werkt om de geschreven reviews om te zetten naar features voor het neurale netwerk. In \autoref{sec:chapt4_neuraal_netwerk} doen we onderzoek naar de optimale vorm van het neurale netwerk om de scores zo precies mogelijk te kunnen voorspellen.
+
+% todo figuur aanpassen: BERT -> BERTopic?
+\mijnfiguur[H]{width=12cm}{fig/chapt4/predictor/architectuur_begin.png}{Schets van de initiële architectuur}{fig:chapt4_architectuur_begin}
+% TODO: throwback naar chapt2 waarin ik de uitdagingen uitleg en geef aan in welke categorie we zitten
 
 \section{Tekst naar features}
+\label{sec:chapt4_tekst_naar_features}
+In deze sectie zullen we beschrijven hoe we uit de tekstuele reviews features zullen verkrijgen. Ook beschrijven we de redeneringen achter de algoritmen, met andere woorden wat deze features moeten voorstellen. We zullen deze algoritmen vooral baseren op BERTopic beschreven in \autoref{sub:chapt2_bertopic}. Aangezien we verschillende modellen zullen verkrijgen moeten we deze zo objectief mogelijk evalueren, hoe we dit doen staat beschreven in \autoref{sub:chapt4_testsetup}. BERTopic zal van de reviews een clustering maken, dit volstaat nog niet als features voor het neurale netwerk. We zullen van deze clustering eerst nog gebruikers- en restaurantprofielen moeten maken. Dit proces is ook gevisualiseerd in \autoref{fig:chapt4_structuur_evaluatie_bertopic}.
+
+\mijnfiguur[H]{width=16cm}{fig/chapt4/NLP/structuur_evaluatie_bertopic.jpg}{Visualisatie van het proces om tekstuele reviews om te zetten in de uiteindelijk gebruikers- en restaurantprofielen.}{fig:chapt4_structuur_evaluatie_bertopic}
+
 % TODO: Arnoud, go ahead. Bespreek in deze section ook al de individuele resultaten. Random grafieken: go! Chapter 5 is enkel bedoelt om alles nog eens samen te vatten.
+\subsection{Testset-up}
+\label{sub:chapt4_testsetup}
+Zoals gevisualiseerd in \autoref{fig:chapt4_structuur_evaluatie_bertopic} kunnen we ons algoritme op meerdere plaatsen evalueren. In volgende paragrafen zullen we beide manieren met elkaar vergelijken. We zullen onder andere de werking beschrijven, enkele voor- en nadelen oplijsten en een conclusie trekken.
+
+\subsubsection{Evaluatie van profielen}
+
+Een eerste mogelijkheid is om de uiteindelijke verkregen features te evalueren. In dit geval zullen dat de gebruikers- en restaurantprofielen zijn zoals beschreven in \autoref{sub:chapt2_gebruikersprofielen}. Aan de ene kant modelleren ze wat een bepaalde gebruiker belangrijk vindt via zijn gebruikersprofiel. Aan de andere kant zullen we dit combineren met een restaurantprofiel, hiermee geven we de specialiteiten en andere eigenschappen van een bepaald restaurant weer. Om deze profielen te evalueren zullen we gebruik maken van de architectuur afgebeeld in \autoref{fig:chapt4_architectuur_begin}. We zullen het volledige neurale netwerk constant houden met uitzondering van deze profielen. Op deze manier kunnen we de profielen objectief beoordelen door de output van het neurale netwerk te evalueren. Ten slotte zullen we de (combinatie van) profielen waarvoor het model het beste presteert selecteren.
+
+\subsubsection{Evaluatie van de clustering}
+
+De tweede manier is aan de hand de verkregen clusters zoals beschreven in \autoref{sub:chapt2_bertopic_clustering}. Bij de keuze van een evaluatiemetriek voor deze clusters moeten we rekening houden met enkele aspecten. Het eerste is dat we geen gelabelde data hebben. In theorie kunnen we de zinnen handmatig labelen, helaas zal dit niet altijd even accuraat zijn. Hierbij komt ook nog het probleem dat elk BERTopic model verschillende topics zal maken, het gevolg is dat we handmatig gelabelde data niet kunnen hergebruiken. Met deze redenen zullen we metrieken die gebruik maken van de ground truth labels uitsluiten. % TODO en gebruik maken van de technieken beschreven in \autoref{CHAPT 2 METRICS}.
+
+% TODO REF: https://towardsdatascience.com/7-evaluation-metrics-for-clustering-algorithms-bdc537ff54d2
+
+% TODO subsecties?
+% TODO voordelen/nadelen van technieken
+% sneller te weten of het goed is of niet
+% trager (trainen neuraal netwerk)
+% geen expliciet gebruik van profielen bij clustering
+% TODO schalen de clusteringsmetrieken? -> nee, maar is het nodig om dit op zoveel data te doen?
+
+% TODO ZIJN DE VOLGORDE VAN GOED NAAR SLECHT GELIJKAARDIG?
+
+% TODO uitleggen nadelen van bertopic overwinnen -> per zin splitsen => meerdere topics
+% TODO: technische details: framework, libraries, python versie, cpu model, OS, ... + eventueel korte motivatie voor keuze (gelijk 1-2 zinnen, zoals HuggingFace is in de NLP community de standaard om modellen uit te wisselen, ik zeg maar iets)
+
+% TODO: Arnoud moet vermelden in HS4 dat wij geen finetuning doen omdat er geen specifieke dataset bestaat voor ons
+
+\subsection{Standaard BERTopic}
+We hebben gebruik gemaakt van een bestaande implementaties van BERTopic \cite{bertopic_homepage} waarbij we de verschillende lagen aanpassen door bijvoorbeeld sentence-BERT te gebruiken van \cite{sentence_transformers_implementation}. Het initiële model zal gebruik maken van de standaardimplementatie van BERTopic, zoals beschreven in \autoref{sub:chapt2_bertopic}, in combinatie met sentence-BERT. Deze implementatie is voor de volledigheid gevisualiseerd in \autoref{fig:basismodel_bertopic}.
+
+\mijnfiguur[H]{width=5cm}{fig/chapt4/NLP/basismodel_bertopic.jpg}{Visualisatie van de standaardimplementatie van BERTopic \cite{bertopic_algo}.}{fig:basismodel_bertopic}
+
+De eerste stap is het bepalen wat de documenten zullen voorstellen, hiervoor hebben we meerdere mogelijkheden. De meest voor de hand liggende mogelijkheid is dat we één review als een document beschouwen. Dit zal betekenen dat we ongeveer 4,7 miljoen documenten hebben zoals beschreven in \autoref{sub:chapt3_eigenschappen_dataset}. Helaas brengt deze aanpak meerdere problemen met zicht mee. 
+
+Één probleem volgt rechtstreeks uit het gebruik van BERTopic, zoals beschreven in \autoref{sub:chapt2_bertopic} kunnen we namelijk een document maar aan één cluster toevoegen. Dit is tegenstrijdig met de praktijk, waar reviews meerdere onderwerpen aankaarten zoals lekker eten maar slechte service. Aangezien een cluster overeenkomt met precies één onderwerp is dit geen ideale match. We zullen deze complicatie deels vermijden door de reviews op te splitsen in zinnen. Dit zal gebeuren via een tokenizer zoals beschreven in \autoref{sub:chapt2_tokenization}. Hierbij veronderstellen we wel nog steeds dat één zin overeenkomt met één onderwerp. Gebaseerd op een steekproef lijkt dit voor de meeste zinnen uit de reviews wel het geval. Onze implementatie gebruikt de sentence tokenizer van SpaCy \cite{spacy_main}.
+
+Via deze methode kunnen we aan elke van de 36 miljoen zinnen een cluster toekennen. Hierdoor kennen we meerdere onderwerpen aan één review toe. Voor de rest van deze masterthesis zullen we één document gelijkstellen aan één zin uit een review.
+
+% todo schaalbaarheid is kekw
+De volgende uitdaging is de schaalbaarheid van het algoritme. Zoals beschreven in vorige paragraaf hebben we ongeveer 36 miljoen documenten die we zullen moeten clusteren.
+
+% todo -> op 2%, 10% van de data? doenbaar + hoe goed is het? 
+
+
+% TODO:
+% Input kan op meerdere manieren
+% Sentiment analysis H2 en verschil in user/restaurant profiles (grafiek go brrr)
+% Bertopic to userprofile
+% Countvectorizer + stopwords en lemmatization voor approximations
+
+% ref sentence_transformers_implementation
+% ref bertopic_homepage
+% ref sentiment: Huggingface
+
+% TODO zero-shot encoding
 
 \section{Neuraal netwerk}
+\label{sec:chapt4_neuraal_netwerk}
 % TODO: Arno, go ahead. Bespreek in deze section ook al de individuele resultaten. Random grafieken: go! Chapter 5 is enkel bedoelt om alles nog eens samen te vatten
+\subsection{Input}
+% TODO: zie correlatiegraphs
+\subsection{Testset-up}
+% TODO: hoe evalueer je wat een goed model is? Hoe doen we dit objectief? Welke problemen had je met het opstellen van een objectief framework?
+% TODO: technische details: framework, python versie, cpu model, OS, ...
+\subsection{*beschrijving idee 1*}
+% TODO: eerste idee en resultaten, problemen en opmerkingen...
+% TODO: MLP, simpel, moeilijker, custom loss functie. Bij makkelijke architectuur gaan we naar default predicition van 4 sterren, onafhankelijk van optimizer en loss functie (penalty/weights). Bij moeilijkere architectuur hebben we moeite om loss naar beneden te krijgen.
+% TODO: random forest werkt ok, als we explainability belangrijk zouden vinden. RMSE van 1.2
