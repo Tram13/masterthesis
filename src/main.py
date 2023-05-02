@@ -356,8 +356,7 @@ def main_user_profile_approximation_400topics(normalize: bool = False, top_n: in
                                     )
 
 
-def main_user_profile_approximation_50topics(normalize: bool = False, top_n: int = 5, profile_mode: str = "user_id",
-                                             profile_name: str = None):
+def main_user_profile_approximation_50topics(normalize: bool = False, top_n: int = 5, profile_mode: str = "user_id"):
     print("hello world")
     logging.basicConfig(level=logging.INFO)
 
@@ -368,14 +367,15 @@ def main_user_profile_approximation_50topics(normalize: bool = False, top_n: int
                                     amount_of_batches_for_approximations=1,
                                     model_name="online_model_50top_85.bert",
                                     amount_of_batches_top_n=10,
-                                    profile_name=profile_name,
+                                    profile_name=f"APPROX_{'USER' if profile_mode == 'user_id' else 'BUSINESS'}_PROFILE_top_{top_n}_50filtered_topics_normalized_{normalize}",
                                     normalize_after_selection=normalize,
                                     top_n_topics=top_n,
-                                    profile_mode=profile_mode
+                                    profile_mode=profile_mode,
                                     )
 
 
-def main_business_profile_50topics(sentiment: bool = True):
+def main_business_profile_50topics(sentiment: bool = True, size: int = 50,
+                                   model_name: str = "online_model_50top_85.bert", amount_of_batches: int = 10):
     print("hello world")
     logging.basicConfig(level=logging.INFO)
 
@@ -383,9 +383,9 @@ def main_business_profile_50topics(sentiment: bool = True):
 
     logging.info('Finished reading in data, starting NLP...')
 
-    main_user_profile_topic(reviews, amount_of_batches=10,
-                            profile_name=f"BUSINESS_PROFILE_50_sentiment={sentiment}.parquet",
-                            use_cache=True, model_name="online_model_50top_85.bert", use_sentiment_in_scores=True,
+    main_user_profile_topic(reviews, amount_of_batches=amount_of_batches,
+                            profile_name=f"BUSINESS_PROFILE_{size}_sentiment={sentiment}.parquet",
+                            use_cache=True, model_name=model_name, use_sentiment_in_scores=sentiment,
                             profile_mode="business_id")
 
 
@@ -399,9 +399,11 @@ def main_online_big_dim():
     # create_model_online_BERTopic(reviews['text'], model_name="BERTopic_400_dim_red_100.bert", max_topics=400, dim_red_components=100)
 
     logging.info('User profile')
-    main_user_profile_topic(reviews, profile_name="BASIC_USER_400_HIGH_DIM.parquet", model_name="BERTopic_400_dim_red_100.bert")
+    main_user_profile_topic(reviews, profile_name="BASIC_USER_400_HIGH_DIM.parquet",
+                            model_name="BERTopic_400_dim_red_100.bert")
 
 
+# todo run
 def main_evaluate_model(model_name):
     print("hello world")
     logging.basicConfig(level=logging.INFO)
@@ -419,26 +421,53 @@ def main_evaluate_model(model_name):
     evaluate_model(sentences, model_name, 2, False)
 
 
-def main_offline_bert_small_dataset():
+# todo run
+def main_extra_business_profiles():
+    # approx 50 with normalization
+    logging.info('Business profile 1 - approx 50 - normalize')
+    main_user_profile_approximation_50topics(normalize=True, top_n=5, profile_mode="business_id")
+
+    # normal online
+    logging.info('Business profile 2 - normal 50 - sentiment')
+    main_business_profile_50topics(sentiment=True)
+    logging.info('Business profile 3 - normal 50 - NO sentiment')
+    main_business_profile_50topics(sentiment=False)
+
+    # normal online, big model
+    logging.info('Business profile 4 - normal BIG 400 model - sentiment')
+    main_business_profile_50topics(sentiment=True, size=400, model_name="online_model_400top_97.bert", amount_of_batches=80)
+    logging.info('Business profile 5 - normal BIG 400 model - NO sentiment')
+    main_business_profile_50topics(sentiment=False, size=400, model_name="online_model_400top_97.bert", amount_of_batches=80)
+
+
+# todo run
+def main_offline_bert_small_dataset(size: int = 100_000):
     print("hello world")
     logging.basicConfig(level=logging.INFO)
 
     _, reviews, _ = DataReader().read_data()
-    SIZE = 100_000
-    # SIZE = 300_000
 
-    reviews = reviews.head(SIZE)
+    reviews = reviews.head(size)
 
     logging.info('Finished reading in data, starting NLP...')
-    model_name = f"offline_bertopic_{SIZE}.bert"
+    model_name = f"offline_bertopic_{size}.bert"
     main_BERTopic(reviews['text'], model_name=model_name)
 
-    main_user_profile_topic(reviews, profile_name=f"BASIC_USER_offline_{SIZE}.parquet",
-                            model_name=model_name, scores_save_dir=f"offline_{SIZE}")
+    main_user_profile_topic(reviews, profile_name=f"BASIC_USER_offline_{size}.parquet",
+                            model_name=model_name, scores_save_dir=f"offline_bert_{size}")
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    # logging.info('Clustering metric for 1 model')
-    # main_evaluate_model("online_model_50top_85.bert")
-    main_online_big_dim()
+
+    logging.info('Calculating extra business profiles')
+    main_extra_business_profiles()
+
+    logging.info('Training small offline model + Calculating user profiles')
+    main_offline_bert_small_dataset(size=100_000)
+
+    logging.info('Clustering metric for 1 model')
+    main_evaluate_model("online_model_50top_85.bert")
+
+
+
