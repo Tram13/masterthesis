@@ -461,7 +461,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
     logging.info('Calculating extra business profiles')
-    main_extra_business_profiles()
+    # main_extra_business_profiles()
 
     logging.info('Training small offline model + Calculating user profiles')
     main_offline_bert_small_dataset(size=100_000)

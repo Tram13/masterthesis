@@ -99,14 +99,17 @@ class NLPCache:
         return pd.read_parquet(Path(self.user_profiles_path, name), engine='fastparquet')
 
     def load_sentiment(self) -> pd.DataFrame:
-        return self.load_scores()[['review_id', 'label_sentiment', 'score_sentiment']]
+        return self.load_scores(batches=10)[['review_id', 'label_sentiment', 'score_sentiment']]
 
-    def load_scores(self, model_dir: str = 'base') -> pd.DataFrame:
+    def load_scores(self, model_dir: str = 'base', batches: int = None) -> pd.DataFrame:
+        if batches is None:
+            batches = self._amount_of_scores_batches
+
         base_path = Path(self.scores_path, model_dir)
         self._create_path_if_not_exists(base_path)
 
         scores = pd.read_parquet(base_path.joinpath(Path(f"score_part_{0}.parquet")), engine='fastparquet')
-        for index in range(1, self._amount_of_scores_batches):
+        for index in range(1, batches):
             to_add = pd.read_parquet(base_path.joinpath(Path(f"score_part_{index}.parquet")), engine='fastparquet')
             scores = pd.concat([scores, to_add], ignore_index=True)
         return scores
