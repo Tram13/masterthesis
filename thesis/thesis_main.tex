@@ -18,9 +18,9 @@
 %\wordcount{6.431} % Fill in the number of words if needed
 \studentnr{01808870 - 01806792} % Fill in your student number
 
-\promotor{prof. dr. ir. Toon De Pessemier en prof. dr. ir. Luc Martens} % TODO: Moet prof. Martens hier ook staan?
+\promotor{prof. dr. ir. Toon De Pessemier, prof. dr. ir. Luc Martens}
 %\copromotor{Dr. FirstName LastName}
-\tutor{}
+\tutor{prof. dr. ir. Toon De Pessemier}
 
 \degree{master} % Mogelijkheid: bachelor of master
 \richting{Informatica}
@@ -44,7 +44,19 @@
 \bibliography{Thesis_bib}
 \usepackage{csquotes}
 \usepackage{float}
+\usepackage{alltt}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+\usepackage{array}
+\newenvironment{conditions}
+  {\par\vspace{\abovedisplayskip}\noindent\begin{tabular}{>{$}l<{$} @{${}={}$} l}}
+  {\end{tabular}\par\vspace{\belowdisplayskip}}
+  
 \usepackage{hyperref}
+\usepackage{fancyvrb}
+\newcommand\verbatimbold[1]{\textbf{#1}}
 % This packages adds the Appendix name in the toc. See below
 \usepackage[titletoc]{appendix}
 
