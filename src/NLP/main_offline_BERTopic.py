@@ -14,7 +14,7 @@ from NLP.utils.sentence_splitter import SentenceSplitter
 
 def main_BERTopic(reviews: pd.Series, embeddings: np.ndarray = None, do_precompute_and_save_embeddings: bool = False,
                   save_path: Path = None, use_sentiment: bool = False, model_name: str = "offline_test_model",
-                  calculate_profiles: bool = False):
+                  calculate_profiles: bool = False, generate_prediction_data: bool = True):
     # split reviews into sentences
     print('Splitting Sentences...')
     sentence_splitter = SentenceSplitter()
@@ -35,6 +35,9 @@ def main_BERTopic(reviews: pd.Series, embeddings: np.ndarray = None, do_precompu
 
     # generate topics
     topics, _ = BERTopic_model.fit_transform(input_data, embeddings=embeddings)
+
+    if generate_prediction_data:
+        BERTopic_model.hdbscan_model.generate_prediction_data()
 
     # print("finished BERTopic, calculating metrics")
 

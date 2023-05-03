@@ -453,6 +453,12 @@ def main_offline_bert_small_dataset(size: int = 100_000):
     model_name = f"offline_bertopic_{size}.bert"
     main_BERTopic(reviews['text'], model_name=model_name)
 
+    # tmp fix:
+    nlp_models = NLPModels()
+    BERTopic_model = nlp_models.load_model(model_name)
+    BERTopic_model.hdbscan_model.generate_prediction_data()
+    nlp_models.save_model(BERTopic_model, model_name)
+
     main_user_profile_topic(reviews, profile_name=f"BASIC_USER_offline_{size}.parquet",
                             model_name=model_name, scores_save_dir=f"offline_bert_{size}")
 
