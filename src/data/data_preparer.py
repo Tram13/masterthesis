@@ -14,6 +14,7 @@ class DataPreparer:
         output_ml = ml_data['stars_normalised']
         input_ml = ml_data.drop(columns=['stars_normalised', 'review_id', 'user_id', 'business_id'])
         input_ml_train, input_ml_test, output_ml_train, output_ml_test = train_test_split(input_ml, output_ml, test_size=0.2)
+        # Geen toevoeging van median score van gebruiker, omdat NN dan gewoon die variabele voorspelt
         return input_ml_train, input_ml_test, output_ml_train, output_ml_test
 
     @staticmethod
