@@ -8,7 +8,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from pandas import DataFrame
 from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
 from tools.config_parser import ConfigParser
@@ -78,67 +80,96 @@ class DataReader:
         self._assert_cache_dir_exists()
         self.file_paths = [Path(data_path, file) for file in self.EXPECTED_FILES]
 
-    def read_data(self, use_cache: bool = True, save_as_cache: bool = True, part: int = None, total_parts: int = None) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def read_data(self, use_cache: bool = True, save_as_cache: bool = True, part: int = None,
+                  total_parts: int = None, no_train_test: bool = False) -> \
+            tuple[tuple[DataFrame, DataFrame, DataFrame], tuple[DataFrame, DataFrame, DataFrame]]:
+        if part is not None or total_parts is not None:
+            raise NotImplementedError("Dit wordt niet meer ondersteund")
+        if no_train_test:
+            try:
+                with tqdm(total=3, desc="Reading files from disk (no train test)", leave=False) as p_bar:
+                    p_bar.set_postfix_str('(current: businesses)')
+                    b = pd.read_parquet(Path(self.cache_path, 'businesses.parquet'), engine='fastparquet')
+                    p_bar.update()
+                    p_bar.set_postfix_str('(current: reviews)')
+                    r = pd.read_parquet(Path(self.cache_path, 'reviews.parquet'), engine='fastparquet')
+                    p_bar.update()
+                    p_bar.set_postfix_str('(current: users)')
+                    u = pd.read_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
+                    p_bar.update()
+                return (b, r, u), (pd.DataFrame(), pd.DataFrame(), pd.DataFrame())
+            except OSError:
+                raise FileNotFoundError('Please regenerate original caches')
         if use_cache:
-            businesses, reviews, tips, users = self._read_from_cache()
+            (b_train, r_train, u_train), (b_test, r_test, u_test) = self._read_from_cache()
         else:
-            businesses, reviews, tips, users = self._read_from_disk()
+            (b_train, r_train, u_train), (b_test, r_test, u_test) = self._read_from_disk()
         if save_as_cache:
-            businesses.to_parquet(Path(self.cache_path, 'businesses.parquet'), engine='fastparquet')
-            reviews.to_parquet(Path(self.cache_path, 'reviews.parquet'), engine='fastparquet')
-            tips.to_parquet(Path(self.cache_path, 'tips.parquet'), engine='fastparquet')
-            users.to_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
-        if part is None or total_parts is None:
-            return businesses, reviews, tips, users
-        if part > total_parts or part < 1:
-            raise ValueError(f"Cannot get part {part}/{total_parts}")
-        # Only partial read
-        business_count = len(businesses)
-        start_index = (part - 1) * (business_count // total_parts)
-        end_index = part * (business_count // total_parts)
-        businesses = businesses[start_index:end_index]
-        return businesses, reviews, tips, users
+            b_train.to_parquet(Path(self.cache_path, 'businesses_train_test.parquet'), engine='fastparquet')
+            r_train.to_parquet(Path(self.cache_path, 'reviews_train.parquet'), engine='fastparquet')
+            r_test.to_parquet(Path(self.cache_path, 'reviews_test.parquet'), engine='fastparquet')
+            u_train.to_parquet(Path(self.cache_path, 'users_train.parquet'), engine='fastparquet')
+            u_test.to_parquet(Path(self.cache_path, 'users_test.parquet'), engine='fastparquet')
 
-    def _read_from_disk(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        with tqdm(total=5, desc="Reading files from disk", leave=False) as p_bar:
+        return (b_train, r_train, u_train), (b_test, r_test, u_test)
+
+        # if part > total_parts or part < 1:
+        #     raise ValueError(f"Cannot get part {part}/{total_parts}")
+        # # Only partial read
+        # else:
+        #     raise NotImplementedError("Dit wordt niet meer ondersteund")
+        # business_count = len(businesses)
+        # start_index = (part - 1) * (business_count // total_parts)
+        # end_index = part * (business_count // total_parts)
+        # businesses = businesses[start_index:end_index]
+        # return businesses, reviews, tips, users
+
+    def _read_from_disk(self) -> tuple[tuple[DataFrame, DataFrame, DataFrame], tuple[DataFrame, DataFrame, DataFrame]]:
+        with tqdm(total=4, desc="Reading files from disk", leave=False) as p_bar:
             p_bar.set_postfix_str('(current: businesses)')
             businesses = self._parse_businesses(self.file_paths[0])
             p_bar.update()
             p_bar.set_postfix_str('(current: reviews)')
-            reviews = self._parse_reviews(self.file_paths[2], businesses)
+            reviews_train, reviews_test = self._parse_reviews(self.file_paths[2], businesses)
             p_bar.update()
-            p_bar.set_postfix_str('current: tips')
-            tips = self._parse_tips(self.file_paths[3], businesses)
-            p_bar.update()
+            # p_bar.set_postfix_str('current: tips')
+            # tips = self._parse_tips(self.file_paths[3], businesses)  # Gebruiken we niet
+            # p_bar.update()
             p_bar.set_postfix_str('current: users')
-            users = self._parse_users(self.file_paths[4], businesses, reviews)
+            users_train, users_test = self._parse_users(self.file_paths[4], businesses, reviews_train, reviews_test)
             p_bar.update()
             p_bar.set_postfix_str('current: creating optimised indices')
 
-            businesses, reviews, tips, users = DataReader.fix_indices(businesses, reviews, tips, users)
+            businesses, reviews_train, reviews_test, users_train, users_test = DataReader.fix_indices(
+                businesses, reviews_train, reviews_test, users_train, users_test
+            )
+
+            train_set = (businesses, reviews_train, users_train)
+            test_set = (businesses.copy(deep=True), reviews_test, users_test)
+
             p_bar.update()
 
-        return businesses, reviews, tips, users
+        return train_set, test_set
 
-    def _read_from_cache(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def _read_from_cache(self) -> tuple[tuple[DataFrame, DataFrame, DataFrame], tuple[DataFrame, DataFrame, DataFrame]]:
         try:
-            with tqdm(total=4, desc="Reading files from cache", leave=False) as p_bar:
+            with tqdm(total=3, desc="Reading files from cache", leave=False) as p_bar:
                 p_bar.set_postfix_str('(current: businesses)')
-                businesses = pd.read_parquet(Path(self.cache_path, 'businesses.parquet'), engine='fastparquet')
+                b_train = pd.read_parquet(Path(self.cache_path, 'businesses_train_test.parquet'), engine='fastparquet')
+                b_test = b_train.copy(deep=True)
                 p_bar.update()
                 p_bar.set_postfix_str('(current: reviews)')
-                reviews = pd.read_parquet(Path(self.cache_path, 'reviews.parquet'), engine='fastparquet')
-                p_bar.update()
-                p_bar.set_postfix_str('current: tips')
-                tips = pd.read_parquet(Path(self.cache_path, 'tips.parquet'), engine='fastparquet')
+                r_train = pd.read_parquet(Path(self.cache_path, 'reviews_train.parquet'), engine='fastparquet')
+                r_test = pd.read_parquet(Path(self.cache_path, 'reviews_test.parquet'), engine='fastparquet')
                 p_bar.update()
                 p_bar.set_postfix_str('current: users')
-                users = pd.read_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
+                u_train = pd.read_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
+                u_test = pd.read_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
                 p_bar.update()
         except OSError:
             print("Could not reach caches!", file=sys.stderr)
-            businesses, reviews, tips, users = self._read_from_disk()
-        return businesses, reviews, tips, users
+            (b_train, r_train, u_train), (b_test, r_test, u_test) = self._read_from_disk()
+        return (b_train, r_train, u_train), (b_test, r_test, u_test)
 
     # Check if ALL and NOTHING BUT the data files are present in the provided directory
     def _assert_cache_dir_exists(self):
@@ -323,7 +354,7 @@ class DataReader:
         return checkins
 
     @staticmethod
-    def _parse_reviews(file_location: os.PathLike, businesses: pd.DataFrame) -> pd.DataFrame:
+    def _parse_reviews(file_location: os.PathLike, businesses: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         :param file_location: Location of the reviews dataset in json format
         :param businesses: The businesses DataFrame as parsed by `_parse_businesses()`
@@ -356,7 +387,18 @@ class DataReader:
         reviews = reviews.set_index('review_id')
         reviews['text'] = reviews['text'].astype("string")
 
-        return reviews
+        # Train - testset
+        train_reviews, test_reviews = train_test_split(reviews, train_size=0.8)
+        train_reviews: pd.DataFrame = train_reviews
+        test_reviews: pd.DataFrame = test_reviews
+        # Iedere business uit de testset moet ook in de trainset zitten
+        train_restaurants = pd.DataFrame(index=train_reviews.groupby(['business_id']).count().index)
+        test_reviews = test_reviews.join(train_restaurants, on='business_id', how='inner')
+        # Iedere user uit de testset moet ook in de trainset zitten
+        train_users = pd.DataFrame(index=train_reviews.groupby(['user_id']).count().index)
+        test_reviews = test_reviews.join(train_users, on='user_id', how='inner')
+
+        return train_reviews, test_reviews
 
     @staticmethod
     def _parse_tips(file_location: os.PathLike, businesses: pd.DataFrame) -> pd.DataFrame:
@@ -368,7 +410,8 @@ class DataReader:
         return tips
 
     @staticmethod
-    def _parse_users(file_location: os.PathLike, businesses: pd.DataFrame, reviews: pd.DataFrame) -> pd.DataFrame:
+    def _parse_users(file_location: os.PathLike, businesses: pd.DataFrame, reviews_train: pd.DataFrame,
+                     reviews_test: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         entries = DataReader._get_entries_from_file(file_location)
         # Combine all compliments
         compliment_fields = [
@@ -401,26 +444,41 @@ class DataReader:
         users = DataReader.users_normalise_data_quantile_based(users, 'compliments')
 
         users = users.set_index('user_id')
-
-        # Adding user profiles based on labels
         users.columns = [f"user_{column_name}" for column_name in users.columns]
-        reviews = reviews.join(users, on='user_id')
-        reviews = reviews.join(businesses, on='business_id')
+
+        # Splitting in train and test set
+        reviews_train = reviews_train.join(users, on='user_id')
+        reviews_test = reviews_test.join(users, on='user_id')
+
+        users_train = DataReader._process_users_split(users, reviews_train, businesses)
+        users_test = DataReader._process_users_split(users, reviews_test, businesses)
+
+        return users_train, users_test
+
+    @staticmethod
+    def _process_users_split(users, reviews, businesses):
+        # Adding user profiles based on labels
+
+        reviews = reviews.join(users, on='user_id', how='inner')
+        reviews = reviews.join(businesses, on='business_id', how='inner')
         drop_columns = [
             column_name for column_name in reviews.columns
-            if column_name != 'user_id' and not column_name.startswith("category") and not column_name.startswith("attribute")
+            if column_name != 'user_id' and not column_name.startswith("category") and not column_name.startswith(
+                "attribute")
         ]
         reviews = reviews.drop(columns=drop_columns)
         user_label_profiles = reviews.groupby('user_id').sum()
         user_review_count = reviews.groupby('user_id').count()['category_food'].rename("user_review_count")
 
         user_label_profiles = user_label_profiles.join(user_review_count, on='user_id')
-        for column_name in tqdm(user_label_profiles.columns, desc="Applying normalisation for user profiles based on labels", leave=False):
-            user_label_profiles[column_name] = user_label_profiles.apply(lambda row: row[column_name] / row['user_review_count'], axis=1).astype(np.float16)
+        for column_name in tqdm(user_label_profiles.columns,
+                                desc="Applying normalisation for user profiles based on labels", leave=False):
+            user_label_profiles[column_name] = user_label_profiles.apply(
+                lambda row: row[column_name] * row['stars_normalised'] / row['user_review_count'], axis=1).astype(
+                np.float16)
         users = users.join(user_label_profiles, on='user_id')
         users = users.drop(columns=['user_review_count'])
         users = users.astype(np.float16)
-
         return users
 
     @staticmethod
@@ -440,34 +498,43 @@ class DataReader:
         return (val - bottom) / (top - bottom)
 
     @staticmethod
-    def fix_indices(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame, users: pd.DataFrame) -> \
-            tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def fix_indices(businesses: pd.DataFrame, reviews_train: pd.DataFrame, reviews_test: pd.DataFrame,
+                    users_train: pd.DataFrame, users_test: pd.DataFrame) \
+            -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
         # Transforming business IDs to integers
         businesses_indices = pd.Series(range(len(businesses)), index=businesses.index).astype(np.uint16)
         businesses = businesses.reset_index(drop=True)
         businesses.index = businesses.index.rename('business_id')
-        reviews['business_id'] = reviews['business_id'].transform(lambda b_id: businesses_indices[b_id]).astype(
-            np.uint16)
+        reviews_train['business_id'] = reviews_train['business_id'].transform(
+            lambda b_id: businesses_indices[b_id]).astype(np.uint16)
+        reviews_test['business_id'] = reviews_test['business_id'].transform(
+            lambda b_id: businesses_indices[b_id]).astype(np.uint16)
 
         # Transforming user IDs to integers
-        unique_users = reviews['user_id'].unique()
+        unique_users = reviews_train['user_id'].unique()
         users_indices = pd.Series(range(len(unique_users)), index=unique_users).astype(np.uint32)
-        reviews['user_id'] = reviews['user_id'].transform(lambda u_id: users_indices[u_id]).astype(np.uint32)
+        reviews_train['user_id'] = reviews_train['user_id'].transform(lambda u_id: users_indices[u_id]).astype(
+            np.uint32)
+        reviews_test['user_id'] = reviews_test['user_id'].transform(lambda u_id: users_indices[u_id]).astype(np.uint32)
 
         # Transforming review IDs to integers
-        reviews = reviews.reset_index(drop=True)
-        reviews.index = reviews.index.rename('review_id')
+        reviews_train = reviews_train.reset_index(drop=True)
+        reviews_train.index = reviews_train.index.rename('review_id')
 
-        # Applying changes to tips dataset as well
-        tips = tips.loc[tips['user_id'].isin(set(users_indices.index))].copy()
-        tips['user_id'] = tips['user_id'].transform(lambda u_id: users_indices[u_id]).astype(np.uint32)
-        tips['business_id'] = tips['business_id'].transform(lambda b_id: businesses_indices[b_id]).astype(np.uint16)
+        reviews_test = reviews_test.reset_index(drop=True)
+        reviews_test.index = reviews_test.index.rename('review_id')
 
-        # Applying original transformation based on reviews on the users, and removing users which don't have any reviews
-        users = users.join(users_indices.rename("new_id"), on='user_id', how="inner")
-        users.index = users['new_id']
-        users.index = users.index.rename('user_id')
-        users = users.drop(columns=['new_id'])
+        # Applying original transformation based on reviews on the users
+        # and removing users which don't have any reviews
+        users_train = users_train.join(users_indices.rename("new_id"), on='user_id', how="inner")
+        users_train.index = users_train['new_id']
+        users_train.index = users_train.index.rename('user_id')
+        users_train = users_train.drop(columns=['new_id'])
 
-        return businesses, reviews, tips, users
+        users_test = users_test.join(users_indices.rename("new_id"), on='user_id', how="inner")
+        users_test.index = users_test['new_id']
+        users_test.index = users_test.index.rename('user_id')
+        users_test = users_test.drop(columns=['new_id'])
+
+        return businesses, reviews_train, reviews_test, users_train, users_test
