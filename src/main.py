@@ -28,7 +28,7 @@ def get_data(part: int = None, total_parts: int = None):
     return train_test_data
 
 
-def main():
+def main_single_model():
     # Parameters
     TOTAL_PARTS = 1  # For dataset splitting
     EPOCHS = 1000
@@ -40,6 +40,7 @@ def main():
     business_profiles_name = ConfigParser().get_value("cache", "best_business")
     short_name_user_profile = Path(ConfigParser().get_value("cache", "best_user")).stem
     short_name_business_profile = Path(ConfigParser().get_value("cache", "best_business")).stem
+    logging.info(f"Running {user_profiles_name} | {business_profiles_name}")
 
     # Check if model already exists
     save_dir = ConfigParser().get_value('predictor_model', 'model_dir')
@@ -89,4 +90,4 @@ def main():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    main()
+    main_single_model()
