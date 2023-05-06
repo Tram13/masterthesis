@@ -447,9 +447,6 @@ class DataReader:
         users.columns = [f"user_{column_name}" for column_name in users.columns]
 
         # Splitting in train and test set
-        reviews_train = reviews_train.join(users, on='user_id')
-        reviews_test = reviews_test.join(users, on='user_id')
-
         users_train = DataReader._process_users_split(users, reviews_train, businesses)
         users_test = DataReader._process_users_split(users, reviews_test, businesses)
 
@@ -474,9 +471,9 @@ class DataReader:
         for column_name in tqdm(user_label_profiles.columns,
                                 desc="Applying normalisation for user profiles based on labels", leave=False):
             user_label_profiles[column_name] = user_label_profiles.apply(
-                lambda row: row[column_name] * row['stars_normalised'] / row['user_review_count'], axis=1).astype(
+                lambda row: row[column_name] / row['user_review_count'], axis=1).astype(
                 np.float16)
-        users = users.join(user_label_profiles, on='user_id')
+        users = users.join(user_label_profiles, on='user_id', how='inner')
         users = users.drop(columns=['user_review_count'])
         users = users.astype(np.float16)
         return users
