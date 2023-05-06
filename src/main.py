@@ -3,6 +3,7 @@ import logging
 import os
 from pathlib import Path
 
+import pandas as pd
 from torch import optim
 
 from data.data_preparer import DataPreparer
@@ -14,13 +15,14 @@ from tools.profiles_manager import ProfilesManager
 
 
 def get_data(part: int = None, total_parts: int = None):
-    businesses, reviews, tips, users = DataReader().read_data(part=part, total_parts=total_parts)
+    (businesses, reviews, users), _ = DataReader().read_data()  # TODO: check dat dit juiststaat
+    raise NotImplementedError("Todo: check bovenstaand")
     logging.info("Reading profiles")
     user_profiles = ProfilesManager().get_user_profiles()
     business_profiles = ProfilesManager().get_business_profiles()
 
     logging.info("Processing original data")
-    train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, tips, users, user_profiles, business_profiles)
+    train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, pd.DataFrame(), users, user_profiles, business_profiles)
 
     # Cleanup memory
     logging.info("Cleaning up original data")
