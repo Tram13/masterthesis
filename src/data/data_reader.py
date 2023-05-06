@@ -393,6 +393,10 @@ class DataReader:
         reviews = reviews.set_index('review_id')
         reviews['text'] = reviews['text'].astype("string")
 
+        # Transforming review IDs to integers
+        reviews = reviews.reset_index(drop=True)
+        reviews.index = reviews.index.rename('review_id')
+
         # Train - testset
         train_reviews, test_reviews = train_test_split(reviews, train_size=0.8)
         train_reviews: pd.DataFrame = train_reviews
@@ -529,12 +533,7 @@ class DataReader:
             np.uint32)
         reviews_test['user_id'] = reviews_test['user_id'].transform(lambda u_id: users_indices[u_id]).astype(np.uint32)
 
-        # Transforming review IDs to integers
-        reviews_train = reviews_train.reset_index(drop=True)
-        reviews_train.index = reviews_train.index.rename('review_id')
-
-        reviews_test = reviews_test.reset_index(drop=True)
-        reviews_test.index = reviews_test.index.rename('review_id')
+        # Reviews already have optimized indices
 
         # Applying original transformation based on reviews on the users
         # and removing users which don't have any reviews
