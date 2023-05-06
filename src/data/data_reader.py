@@ -343,6 +343,12 @@ class DataReader:
         amount_of_weeks = (last_checkin - first_checkins).map(lambda x: x.days / 7)
         amount_of_checkins = checkins['date'].transform(len)
         avg_checkins_per_week = (amount_of_checkins / amount_of_weeks).replace([np.inf, -np.inf, np.nan], 0)
+
+        # remove extreme values
+        avg_checkin_bottom_5 = avg_checkins_per_week.quantile(0.05)
+        avg_checkin_top_5 = avg_checkins_per_week.quantile(0.95)
+        avg_checkins_per_week = avg_checkins_per_week.transform(lambda x: DataReader.remove_extremes(x, avg_checkin_bottom_5, avg_checkin_top_5))
+
         avg_checkins_per_week_normalised = pd.Series(
             data=preprocessing.MinMaxScaler().fit_transform(avg_checkins_per_week.to_numpy().reshape(-1, 1)).flatten(),
             name="average_checkins_per_week_normalised"
@@ -493,6 +499,14 @@ class DataReader:
         if val >= top:
             return 1
         return (val - bottom) / (top - bottom)
+
+    @staticmethod
+    def remove_extremes(val, bottom, top):
+        if val < bottom:
+            return bottom
+        if val > top:
+            return top
+        return val
 
     @staticmethod
     def fix_indices(businesses: pd.DataFrame, reviews_train: pd.DataFrame, reviews_test: pd.DataFrame,
