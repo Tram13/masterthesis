@@ -1,11 +1,10 @@
+import contextlib
 import logging
-import os
-
-import numpy as np
-import swifter
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+import swifter
 from bertopic import BERTopic
 from tqdm import tqdm
 
@@ -17,8 +16,8 @@ from NLP.utils.sentence_splitter import SentenceSplitter
 from NLP.utils.user_profile_creation import calculate_basic_user_profiles, select_top_n, normalize_user_profile
 
 # Trust me bro
-with open(os.devnull) as null:
-    print(f"{swifter}", file=null)
+with contextlib.redirect_stdout(None):
+    _ = swifter.config
 
 
 def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for_approximations: int = 1,
