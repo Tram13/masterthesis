@@ -11,52 +11,22 @@ from data.data_preparer import DataPreparer
 from data.data_reader import DataReader
 from predictor.multilayer_perceptron import MultiLayerPerceptronPredictor
 from predictor.neural_network_trainer import NeuralNetworkTrainer
+from tools.restaurant_profiles_manager import RestaurantProfilesManager
+from tools.user_profiles_manager import UserProfilesManager
 
 
-def parse_data_train_test(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]) -> tuple[tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series], tuple[dict, dict]]:
-    profile_creators_params = get_profile_creators()
+def parse_data_train_test(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], profile_params: tuple[dict, dict]) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     logging.info("Parsing train set")
-    training_input, training_output = DataPreparer.transform_data(*train_data, *profile_creators_params)
+    training_input, training_output = DataPreparer.transform_data(*train_data, *profile_params)
     logging.info("Parsing test set")
-    test_input, test_output = DataPreparer.transform_data(*test_data, *profile_creators_params)
+    test_input, test_output = DataPreparer.transform_data(*test_data, *profile_params)
     gc.collect()
-    return (training_input, test_input, training_output, test_output), profile_creators_params
+    return training_input, test_input, training_output, test_output
 
 
-def get_profile_creators() -> tuple[dict, dict]:
-    up_creator = ProfileCreator(
-        model_name="online_model_400top_97.bert",
-        use_sentiment_in_scores=False,
-        approx_mode=False,
-        approx_normalization=True,
-        approx_amount_top_n=5,
-        filter_useful_topics=False
-    ).get_build_parameters()
-
-    rp_creator = ProfileCreator(
-        model_name="online_model_50top_85.bert",
-        use_sentiment_in_scores=True,
-        approx_mode=True,
-        approx_normalization=True,
-        approx_amount_top_n=5,
-        filter_useful_topics=False
-    ).get_build_parameters()
-
-    return up_creator, rp_creator
-
-
-def main_single_model():
-    # Parameters
-    EPOCHS = 1
-    SUB_EPOCHS = 10
-    LR = 0.0002
-
-    logging.info("Reading Yelp Dataset")
-    train_data, test_data = DataReader().read_data()
-    gc.collect()
-
-    with tqdm(total=EPOCHS, desc="Epochs") as p_bar:
-        train_test_data, (up_params, rp_params) = parse_data_train_test(train_data, test_data)
+def main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR):
+    with tqdm(total=EPOCHS, desc="Epochs", leave=False) as p_bar:
+        train_test_data = parse_data_train_test(train_data, test_data, (up_params, rp_params))
 
         logging.info("Transforming data to DataLoaders")
         nn_trainer = NeuralNetworkTrainer(up_params, rp_params, *train_test_data)
@@ -72,7 +42,7 @@ def main_single_model():
 
         for epoch in range(2, EPOCHS + 1):
             # Creates new user profiles based on subset of train or test data
-            train_test_data, (up_params, rp_params) = parse_data_train_test(train_data, test_data)
+            train_test_data = parse_data_train_test(train_data, test_data, (up_params, rp_params))
 
             logging.info("Transforming data to DataLoaders")
             nn_trainer = NeuralNetworkTrainer(up_params, rp_params, *train_test_data)
@@ -86,8 +56,23 @@ def main_single_model():
             p_bar.update()
             gc.collect()
 
-    # Save statistics
+        # Save statistics
     model.plot_loss_progress(save_location=Path(f"{str(model.get_default_save_location())[:-2]}.png"))
+    gc.collect()
+
+
+def main_all_models():
+    # Parameters
+    EPOCHS = 30
+    SUB_EPOCHS = 20
+    LR = 0.0002
+
+    logging.info("Reading Yelp Dataset")
+    train_data, test_data = DataReader().read_data()
+    gc.collect()
+    for up_params in tqdm(UserProfilesManager(), desc="User Profiles"):
+        for rp_params in tqdm(RestaurantProfilesManager(), desc="Restaurant Profiles"):
+            main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
     return 0
 
 
@@ -98,4 +83,4 @@ if __name__ == '__main__':
         datefmt='%H:%M:%S',
         format='%(asctime)s %(levelname)-8s %(message)s',
     )
-    main_single_model()
+    main_all_models()
