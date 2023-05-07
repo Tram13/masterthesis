@@ -11,3 +11,5 @@ sentiment analysis enkel op restaurant profile en NIET op user profile:
 - Studie over hoeveel reviews nodig zijn om accurate results te hebben -> cold start problem
 
 TODO is our recommender vulnerable to fake reviews (ja zeker, maar out of scope. Wel goed om te vermelden)
+
+TODO's uit code halen, en houd er rekening mee dat de notebooks niet in PyCharm TODO checker komen!
