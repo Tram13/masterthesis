@@ -21,10 +21,16 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
                                     model_name: str = None, amount_of_batches_top_n: int = 10,
                                     profile_name: str = None, use_cache: bool = True,
                                     use_splitted_cache: bool = True, top_n_topics: int = 5,
+                                    use_sentiment_in_scores: bool = False,
                                     approx_save_dir: str = "base", filter_select: list[str] = None,
-                                    normalize_after_selection: bool = False, profile_mode: str = "user_id"):
+                                    normalize_after_selection: bool = False, profile_mode: str = "user_id",
+                                    part_of_dataset: bool = False):
     if profile_name is None:
         profile_name = f"APPROX_USER_PROFILES_top_{top_n_topics}_normalize_{normalize_after_selection}.parquet"
+
+    nlp_models = NLPModels()
+    if model_name:
+        approx_save_dir = nlp_models.get_dir_for_model(model_name)
 
     logging.info('Finished reading in data, starting NLP...')
     nlp_cache = NLPCache(amount_of_approximation_batches=amount_of_batches_for_approximations,
@@ -60,9 +66,10 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
     # only keep the top n topics with the highest probability
     if not use_cache or not nlp_cache.is_available_top_n(top_n_topics, approx_save_dir,
                                                          normalized=normalize_after_selection,
-                                                         filter_string=filter_string):
+                                                         filter_string=filter_string,
+                                                         sentiment=use_sentiment_in_scores):
         logging.warning(
-            f'Cache is not being used for selecting top n with n={top_n_topics}: allowed: {use_cache} - available: {nlp_cache.is_available_top_n(top_n_topics, approx_save_dir, normalized=normalize_after_selection, filter_string=filter_string)}')
+            f'Cache is not being used for selecting top n with n={top_n_topics}: allowed: {use_cache} - available: {nlp_cache.is_available_top_n(top_n_topics, approx_save_dir, normalized=normalize_after_selection, filter_string=filter_string, sentiment=use_sentiment_in_scores)}')
         logging.info('Selecting top N topics for each sentence...')
         if normalize_after_selection:
             logging.info('+ Normalizing top_n_topics...')
@@ -71,18 +78,27 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
             top_n_selected = batch.progress_apply(select_top_n, n=top_n_topics, axis=1)
             if normalize_after_selection:
                 top_n_selected = top_n_selected.progress_apply(normalize_user_profile, axis=1)
+            if use_sentiment_in_scores:
+                sentiment = nlp_cache.load_sentiment()["label_sentiment"]
+                top_n_selected = top_n_selected.multiply(sentiment, axis=0)
             top_n_selected.columns = [str(x) for x in top_n_selected.columns]
             nlp_cache.save_top_n_filter(top_n_selected, n=top_n_topics, index=index, save_dir=approx_save_dir,
-                                        normalized=normalize_after_selection, filter_string=filter_string)
+                                        normalized=normalize_after_selection, filter_string=filter_string,
+                                        sentiment=use_sentiment_in_scores)
 
     logging.info('Collecting top_n_topics...')
     user_profiles = nlp_cache.load_top_n_filter(n=top_n_topics, save_dir=approx_save_dir,
-                                                normalized=normalize_after_selection, filter_string=filter_string)
+                                                normalized=normalize_after_selection, filter_string=filter_string,
+                                                sentiment=use_sentiment_in_scores)
 
     logging.info('Aggregating sentences by review...')
     # add the review id to the data, so we can concatenate the sentences and aggregate (sum) them per review
     user_profiles = pd.concat([sentences['review_id'], user_profiles], axis=1)
     user_profiles = user_profiles.groupby('review_id').aggregate('sum')
+
+    # only select reviews we can use
+    if part_of_dataset:
+        user_profiles = user_profiles.loc[reviews.index]
 
     logging.info('Aggregating reviews by user_id or business_id...')
     # add the user id to the data, so we can concatenate the reviews and aggregate (sum) them per user
@@ -105,11 +121,14 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
         nlp_cache.save_business_profiles(user_profiles, profile_name)
     logging.info(f'Saved user profiles with name: {profile_name}')
 
+    return user_profiles
+
 
 def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
                             profile_name: str = "BASIC_USER_PROFILES.parquet", use_cache: bool = True,
                             scores_save_dir: str = "base", model_name: str = None,
-                            use_sentiment_in_scores: bool = False, profile_mode: str = 'user_id'):
+                            use_sentiment_in_scores: bool = False, profile_mode: str = 'user_id',
+                            part_of_dataset: bool = False):
     logging.info('Finished reading in data, starting NLP...')
     nlp_cache = NLPCache(amount_of_scores_batches=amount_of_batches)
     nlp_models = NLPModels()
@@ -142,6 +161,11 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
     logging.info('Merging Reviews...')
 
     scores = scores.groupby('review_id').aggregate(lambda item: item.tolist())
+
+    # only select reviews we can use
+    if part_of_dataset:
+        scores = scores.loc[reviews.index]
+
     # convert elements to numpy array
     scores[columns_to_use] = scores[columns_to_use].applymap(np.array)
 
@@ -175,3 +199,5 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
     else:
         nlp_cache.save_business_profiles(user_profiles, profile_name)
     logging.info(f'Saved user profiles with name: {profile_name}')
+
+    return user_profiles

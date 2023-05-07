@@ -26,13 +26,13 @@ class CustomBERTTopic:
 
         # Reduce dimensionality
         # MUST SUPPORT: `.fit` and `.transform` functions.
-        self.dim_reduction_model = UMAP(n_neighbors=15, n_components=5, min_dist=0.0,
+        self.dim_reduction_model = UMAP(n_neighbors=10, n_components=5, min_dist=0.0,
                                         metric='cosine') if dim_reduction_model is None else dim_reduction_model
 
         # Cluster reduced embeddings
         # MUST SUPPORT: .fit` and `.predict` functions along with the `.labels_` variable.
         self.cluster_model = HDBSCAN(min_cluster_size=15, metric='euclidean', cluster_selection_method='eom',
-                                     prediction_data=True) if cluster_model is None else cluster_model
+                                     prediction_data=False) if cluster_model is None else cluster_model
 
         # Tokenize clusters => no assumptions of cluster structure
         self.vectorizer_model = CountVectorizer(stop_words="english", min_df=3) if vectorizer_model is None else vectorizer_model
