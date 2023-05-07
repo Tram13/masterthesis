@@ -325,8 +325,9 @@ class ProfileCreator:
 
     def __init__(self, model_name: str,
                  use_sentiment_in_scores: bool,
+                 approx_mode: bool,
                  approx_normalization: bool,
-                 approx_amount_top_n: bool,
+                 approx_amount_top_n: int,
                  filter_useful_topics: bool):
         # the model to be used
         self.current_model_name = model_name
@@ -336,6 +337,7 @@ class ProfileCreator:
         self.use_sentiment_in_scores = use_sentiment_in_scores
 
         # parameters that only apply for approximation
+        self.approx_mode = approx_mode
         self.approx_normalization = approx_normalization    # normalize after selecting top_n
         self.approx_amount_top_n = approx_amount_top_n      # set N for top_n selection in approximation
         self.filter_useful_topics = filter_useful_topics    # filter out certain topics (manual selection)
@@ -343,6 +345,14 @@ class ProfileCreator:
         # can only be done for this model
         if model_name != "online_model_400top_97.bert" and filter_useful_topics:
             logging.warning("FILTERING TOPICS FOR WRONG MODEL")
+
+    def get_parameters_string(self):
+        return f"{self.current_model_name}-" \
+               f"use_sentiment_in_scores={self.use_sentiment_in_scores}-" \
+               f"approx_mode={self.approx_mode}-" \
+               f"approx_normalization={self.approx_normalization}-" \
+               f"approx_amount_top_{self.approx_amount_top_n}-" \
+               f"filter_useful_topics={self.filter_useful_topics}"
 
     @staticmethod
     def _get_amount_of_batches_for_model(model_name):
@@ -358,14 +368,14 @@ class ProfileCreator:
         elif model_name == "BERTopic_400_dim_red_100.bert":
             return 10, 8, 80
 
-    def get_user_profile(self, reviews: pd.DataFrame, approx_mode: bool = False):
-        if approx_mode:
+    def get_user_profile(self, reviews: pd.DataFrame):
+        if self.approx_mode:
             return self._get_profile_approximation(reviews, "user_id", [str(topic) for topic in self.FILTER_USERS_400TOPS] if self.filter_useful_topics else None)
         else:
             return self._get_profile_topic(reviews, "user_id")
 
-    def get_restaurant_profile(self, reviews: pd.DataFrame, approx_mode: bool = False):
-        if approx_mode:
+    def get_restaurant_profile(self, reviews: pd.DataFrame):
+        if self.approx_mode:
             return self._get_profile_approximation(reviews, "business_id", [str(topic) for topic in self.FILTER_BUSINESS_400TOPS] if self.filter_useful_topics else None)
         else:
             return self._get_profile_topic(reviews, "business_id")
