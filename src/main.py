@@ -14,30 +14,40 @@ from tools.config_parser import ConfigParser
 from tools.profiles_manager import ProfilesManager
 
 
-def get_data(part: int = None, total_parts: int = None):
-    (businesses, reviews, users), _ = DataReader().read_data()  # TODO: check dat dit juiststaat
-    raise NotImplementedError("Todo: check bovenstaand")
-    logging.info("Reading profiles")
-    user_profiles = ProfilesManager().get_user_profiles()
-    business_profiles = ProfilesManager().get_business_profiles()
-
-    logging.info("Processing original data")
-    train_test_data = DataPreparer.get_train_test_validate(businesses, reviews, pd.DataFrame(), users, user_profiles, business_profiles)
-
-    # Cleanup memory
-    logging.info("Cleaning up original data")
+def get_data_train_test():
+    logging.info("Reading Yelp Dataset")
+    (b_train, r_train, u_train), (b_test, r_test, u_test) = DataReader().read_data()
     gc.collect()
-    return train_test_data
+    logging.info("Parsing train set")
+    training_input, training_output = transform_data(b_train, r_train, u_train)
+    logging.info("Parsing test set")
+    test_input, test_output = transform_data(b_test, r_test, u_test)
+    gc.collect()
+    return training_input, test_input, training_output, test_output
+
+
+def transform_data(businesses, reviews, users):
+    logging.info("Splitting in generation and prediction sets")
+    reviews_generation, reviews_prediction = DataPreparer.get_profiles_split(reviews, profile_dataframe_size=0.7)
+
+    logging.info("Creating profiles")
+    # TODO: onderstaand vervangen met nieuwe code
+    user_profiles_nlp = ProfilesManager().get_user_profiles()
+    business_profiles_nlp = ProfilesManager().get_business_profiles()
+
+    logging.info("Transforming to ML input")
+    input_ml, output_ml = DataPreparer.get_df_for_ml(businesses, reviews_prediction, users, user_profiles_nlp, business_profiles_nlp)
+    gc.collect()
+    return input_ml, output_ml
 
 
 def main_single_model():
     # Parameters
-    TOTAL_PARTS = 1  # For dataset splitting
     EPOCHS = 1000
     LR = 0.0002
 
-    logging.info("Starting training: with user profiles and business profiles")
-    # Initialisation
+    logging.info("Initialising")
+    # Initialisation TODO: uitzoeken wat hiervan nog nodig is
     user_profiles_name = ConfigParser().get_value("cache", "best_user")
     business_profiles_name = ConfigParser().get_value("cache", "best_business")
     short_name_user_profile = Path(ConfigParser().get_value("cache", "best_user")).stem
@@ -51,7 +61,7 @@ def main_single_model():
         return 1
 
     # Getting first part of dataset
-    train_test_data = get_data(part=1, total_parts=TOTAL_PARTS)
+    train_test_data = get_data_train_test()
     nn_trainer = NeuralNetworkTrainer(user_profiles_name, business_profiles_name, *train_test_data)
     logging.info("Cleaning up memory on CPU")
     gc.collect()
@@ -61,29 +71,8 @@ def main_single_model():
     optimizer = optim.Adagrad(model.parameters(), lr=LR)
 
     # Training on first part of dataset
-    logging.info(f"Training with part 1/{TOTAL_PARTS} of dataset")
-    model, optimizer = nn_trainer.train(model, optimizer, epochs=EPOCHS, save_to_disk=1 == TOTAL_PARTS, verbose=True)
-
-    # Memory cleanup after run
-    gc.collect()
-
-    for index_part in range(2, TOTAL_PARTS + 1):
-        # Getting next part of dataset
-        train_test_data = get_data(part=index_part, total_parts=TOTAL_PARTS)
-        nn_trainer = NeuralNetworkTrainer(user_profiles_name, business_profiles_name, *train_test_data)
-        logging.info("Cleaning up memory on CPU")
-        del train_test_data
-
-        logging.info(f"Training with part {index_part}/{TOTAL_PARTS} of dataset")
-        model, optimizer = nn_trainer.train(model, optimizer, epochs=EPOCHS, save_to_disk=index_part == TOTAL_PARTS, verbose=True)
-
-        # Memory cleanup after run
-        del nn_trainer.train_loader.dataset
-        del nn_trainer.test_loader.dataset
-        del nn_trainer.train_loader
-        del nn_trainer.test_loader
-        del nn_trainer
-        gc.collect()
+    logging.info("Starting training")
+    model, optimizer = nn_trainer.train(model, optimizer, epochs=EPOCHS, save_to_disk=True, verbose=True)
 
     # Save statistics
     model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_{business_profiles_name}.png"))
@@ -91,5 +80,6 @@ def main_single_model():
 
 
 if __name__ == '__main__':
+    # Note: force manual garbage collection is used to save on memory after heavy RAM and I/O instructions
     logging.basicConfig(level=logging.INFO)
     main_single_model()
