@@ -346,13 +346,26 @@ class ProfileCreator:
         if model_name != "online_model_400top_97.bert" and filter_useful_topics:
             logging.warning("FILTERING TOPICS FOR WRONG MODEL")
 
-    def get_parameters_string(self):
-        return f"{self.current_model_name}-" \
-               f"use_sentiment_in_scores={self.use_sentiment_in_scores}-" \
-               f"approx_mode={self.approx_mode}-" \
-               f"approx_normalization={self.approx_normalization}-" \
-               f"approx_amount_top_{self.approx_amount_top_n}-" \
-               f"filter_useful_topics={self.filter_useful_topics}"
+    def get_build_parameters(self) -> dict:
+        return {
+            "current_model_name": self.current_model_name,
+            "use_sentiment_in_scores": self.use_sentiment_in_scores,
+            "approx_mode": self.approx_mode,
+            "approx_normalization": self.approx_normalization,
+            "approx_amount_top_n": self.approx_amount_top_n,
+            "filter_useful_topics": self.filter_useful_topics
+        }
+
+    @staticmethod
+    def load_from_dict(params: dict):
+        return ProfileCreator(
+            model_name=params['current_model_name'],
+            use_sentiment_in_scores=params['use_sentiment_in_scores'],
+            approx_mode=params['approx_mode'],
+            approx_normalization=params['approx_normalization'],
+            approx_amount_top_n=params['approx_amount_top_n'],
+            filter_useful_topics=params['filter_useful_topics']
+        )
 
     @staticmethod
     def _get_amount_of_batches_for_model(model_name):
