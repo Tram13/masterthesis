@@ -1,6 +1,11 @@
+import gc
+import logging
+
 import pandas as pd
 import torch
 from sklearn.model_selection import train_test_split
+
+from NLP.profiles_creator import ProfileCreator
 
 
 class DataPreparer:
@@ -63,3 +68,23 @@ class DataPreparer:
         ratings = ratings.unsqueeze(-1)
         restaurant_reviews, ratings = restaurant_reviews.to(device), ratings.to(device)  # Copy to GPU
         return restaurant_reviews, ratings
+
+    @staticmethod
+    def transform_data(businesses: pd.DataFrame, reviews: pd.DataFrame, users: pd.DataFrame, up_creator: ProfileCreator, rp_creator: ProfileCreator) -> tuple[pd.DataFrame, pd.Series, str, str]:
+        logging.info("Splitting in generation and prediction sets")
+        reviews_generation, reviews_prediction = DataPreparer.get_profiles_split(reviews, profile_dataframe_size=0.7)
+
+        logging.info("Creating User Profile")
+
+        user_profiles_nlp = up_creator.get_user_profile(reviews_generation)
+        user_profiles_parameters = up_creator.get_parameters_string()
+
+        logging.info("Creating Restaurant Profile")
+
+        business_profiles_nlp = rp_creator.get_restaurant_profile(reviews_generation)
+        business_profiles_parameters = rp_creator.get_parameters_string()
+
+        logging.info("Transforming to ML input")
+        input_ml, output_ml = DataPreparer.get_df_for_ml(businesses, reviews_prediction, users, user_profiles_nlp, business_profiles_nlp)
+        gc.collect()
+        return input_ml, output_ml, user_profiles_parameters, business_profiles_parameters

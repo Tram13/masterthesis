@@ -14,20 +14,17 @@ from predictor.neural_network_trainer import NeuralNetworkTrainer
 
 
 def parse_data_train_test(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]):
+    profile_creators = get_profile_creators()
     logging.info("Parsing train set")
-    training_input, training_output, users_param, businesses_param = transform_data(*train_data)
+    training_input, training_output, users_param, businesses_param = DataPreparer.transform_data(*train_data, *profile_creators)
     logging.info("Parsing test set")
-    test_input, test_output, _, _ = transform_data(*test_data)
+    test_input, test_output, _, _ = DataPreparer.transform_data(*test_data, *profile_creators)
     gc.collect()
     return (training_input, test_input, training_output, test_output), (users_param, businesses_param)
 
 
-def transform_data(businesses, reviews, users):
-    logging.info("Splitting in generation and prediction sets")
-    reviews_generation, reviews_prediction = DataPreparer.get_profiles_split(reviews, profile_dataframe_size=0.7)
-
-    logging.info("Creating User Profile")
-    profile_creator = ProfileCreator(
+def get_profile_creators():
+    up_creator = ProfileCreator(
         model_name="online_model_400top_97.bert",
         use_sentiment_in_scores=False,
         approx_mode=False,
@@ -35,11 +32,8 @@ def transform_data(businesses, reviews, users):
         approx_amount_top_n=5,
         filter_useful_topics=False
     )
-    user_profiles_nlp = profile_creator.get_user_profile(reviews_generation)
-    user_profiles_parameters = profile_creator.get_parameters_string()
 
-    logging.info("Creating Restaurant Profile")
-    profile_creator = ProfileCreator(
+    rp_creator = ProfileCreator(
         model_name="online_model_50top_85.bert",
         use_sentiment_in_scores=True,
         approx_mode=True,
@@ -47,13 +41,8 @@ def transform_data(businesses, reviews, users):
         approx_amount_top_n=5,
         filter_useful_topics=False
     )
-    business_profiles_nlp = profile_creator.get_restaurant_profile(reviews_generation)
-    business_profiles_parameters = profile_creator.get_parameters_string()
 
-    logging.info("Transforming to ML input")
-    input_ml, output_ml = DataPreparer.get_df_for_ml(businesses, reviews_prediction, users, user_profiles_nlp, business_profiles_nlp)
-    gc.collect()
-    return input_ml, output_ml, user_profiles_parameters, business_profiles_parameters
+    return up_creator, rp_creator
 
 
 def main_single_model():
