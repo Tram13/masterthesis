@@ -1,11 +1,7 @@
 import logging
-import math
-import os
-from typing import Union
 
 import pandas as pd
 import torch
-from matplotlib import pyplot as plt
 from torch.nn import Module, MSELoss
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
@@ -19,7 +15,7 @@ class NeuralNetworkTrainer:
     __slots__ = ['train_loader', 'test_loader', 'user_profiles_params', 'business_profiles_params']
     BATCH_SIZE = 8192
 
-    def __init__(self, user_profiles_params: Union[os.PathLike, str], business_profiles_params: Union[os.PathLike, str, None], input_ml_train: pd.DataFrame, input_ml_test: pd.DataFrame, output_ml_train: pd.DataFrame,
+    def __init__(self, user_profiles_params: dict, business_profiles_params: dict, input_ml_train: pd.DataFrame, input_ml_test: pd.DataFrame, output_ml_train: pd.DataFrame,
                  output_ml_test: pd.DataFrame):
 
         train_data = RestaurantReviewsDataset(input_ml_train.to_numpy(), output_ml_train.to_numpy())
