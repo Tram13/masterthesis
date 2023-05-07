@@ -25,7 +25,7 @@ class NeuralNetworkTrainer:
         self.test_loader = DataLoader(test_data, batch_size=self.BATCH_SIZE)
 
         self.user_profiles_params = user_profiles_params
-        self.business_profiles_params = business_profiles_params if business_profiles_params not in {"None", "", "none", None} else "None"
+        self.business_profiles_params = business_profiles_params
 
     @staticmethod
     def _get_parameters_string(model: Module, optimizer: Optimizer, sub_epochs: int):

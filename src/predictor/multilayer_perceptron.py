@@ -50,8 +50,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
         self.current_epoch = 0
         self.loss_history = []
         self.note = ""
-        self.user_profiles_params = "None"
-        self.business_profiles_params = "None"
+        self.user_profiles_params = {}
+        self.business_profiles_params = {}
         self.parameters_configuration = ""
         self.input_size = input_size
 
