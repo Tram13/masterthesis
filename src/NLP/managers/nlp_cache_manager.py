@@ -60,11 +60,11 @@ class NLPCache:
     def save_user_profiles(self, user_profiles: pd.DataFrame, name: str = "BASIC_USER_PROFILES.parquet"):
         user_profiles.to_parquet(Path(self.user_profiles_path, name), engine='fastparquet')
 
-    def save_top_n_filter(self, top_n_selected: pd.DataFrame, n: int = 5, index: int = 0, save_dir: str = 'base', normalized: bool = False, filter_string: str = ""):
+    def save_top_n_filter(self, top_n_selected: pd.DataFrame, n: int = 5, index: int = 0, save_dir: str = 'base', normalized: bool = False, filter_string: str = "", sentiment: bool = False):
         base_path = Path(self.approximation_path, save_dir)
         self._create_path_if_not_exists(base_path)
 
-        top_n_selected.to_parquet(Path(base_path, f"selected_top_{n}{'_normalized' if normalized else ''}{filter_string}_part_{index}.parquet"), engine='fastparquet')
+        top_n_selected.to_parquet(Path(base_path, f"selected_top_{n}{'_with_sentiment' if sentiment else ''}{'_normalized' if normalized else ''}{filter_string}_part_{index}.parquet"), engine='fastparquet')
 
     def save_scores(self, scores: pd.DataFrame, index: int = 0, model_dir: str = 'base'):
         base_path = Path(self.scores_path, model_dir)
@@ -72,12 +72,12 @@ class NLPCache:
 
         scores.to_parquet(Path(base_path, f"score_part_{index}.parquet"), engine='fastparquet')
 
-    def load_top_n_filter(self, n: int = 5, save_dir: str = 'base', normalized: bool = False, filter_string: str = ""):
+    def load_top_n_filter(self, n: int = 5, save_dir: str = 'base', normalized: bool = False, filter_string: str = "", sentiment: bool = False):
         base_path = Path(self.approximation_path, save_dir)
 
-        scores = pd.read_parquet(base_path.joinpath(Path(f"selected_top_{n}{'_normalized' if normalized else ''}{filter_string}_part_{0}.parquet")), engine='fastparquet')
+        scores = pd.read_parquet(base_path.joinpath(Path(f"selected_top_{n}{'_with_sentiment' if sentiment else ''}{'_normalized' if normalized else ''}{filter_string}_part_{0}.parquet")), engine='fastparquet')
         for index in range(1, self._amount_of_top_n_batches):
-            to_add = pd.read_parquet(base_path.joinpath(Path(f"selected_top_{n}{'_normalized' if normalized else ''}{filter_string}_part_{index}.parquet")), engine='fastparquet')
+            to_add = pd.read_parquet(base_path.joinpath(Path(f"selected_top_{n}{'_with_sentiment' if sentiment else ''}{'_normalized' if normalized else ''}{filter_string}_part_{index}.parquet")), engine='fastparquet')
             scores = pd.concat([scores, to_add], ignore_index=True)
         return scores
 
@@ -142,12 +142,12 @@ class NLPCache:
         required_files = {f"embedding_part_{index}.parquet" for index in range(self._amount_of_embeddings_batches)}
         return required_files.issubset(available_files)
 
-    def is_available_top_n(self, n: int = 5, model_dir: str = 'base', normalized: bool = False, filter_string: str = ""):
+    def is_available_top_n(self, n: int = 5, model_dir: str = 'base', normalized: bool = False, filter_string: str = "", sentiment: bool = False):
         path = self.approximation_path.joinpath(Path(model_dir))
         if not path.is_dir():
             path.mkdir()
         available_files = {file.name for file in os.scandir(path)}
-        required_files = {f"selected_top_{n}{'_normalized' if normalized else ''}{filter_string}_part_{index}.parquet" for index in range(self._amount_of_top_n_batches)}
+        required_files = {f"selected_top_{n}{'_with_sentiment' if sentiment else ''}{'_normalized' if normalized else ''}{filter_string}_part_{index}.parquet" for index in range(self._amount_of_top_n_batches)}
         return required_files.issubset(available_files)
 
     def is_available_scores(self, model_dir: str = 'base') -> bool:
