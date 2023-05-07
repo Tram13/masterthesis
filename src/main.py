@@ -77,7 +77,7 @@ def main_single_model():
     model, optimizer = nn_trainer.train(model, optimizer, epochs=EPOCHS, save_to_disk=True, verbose=True)
 
     # Save statistics
-    model.plot_loss_progress(save_location=Path("predictor", f"{model.get_default_save_location()}.png"))
+    model.plot_loss_progress(save_location=Path(f"{model.get_default_save_location()}.png"))
     return 0
 
 
