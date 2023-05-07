@@ -2,19 +2,9 @@ import numpy as np
 import pandas as pd
 
 
-def calculated_basic_profile_for_one_user(reviews: pd.Series, scores: pd.DataFrame):
-    # too slow (batch is too small)
-    pass
-
-
 # only based on user_id and feature vector of each review
 def calculate_basic_user_profiles(reviews: pd.DataFrame, scores: pd.DataFrame, agg_type: str = 'mean', mode: str = 'user_id'):
-    scores_with_userid = pd.concat([reviews.reset_index(drop=True)[mode], scores], axis=1)
-    return scores_with_userid.groupby(mode).agg(agg_type).reset_index()
-
-
-def calculate_time_based_user_profiles(reviews: pd.DataFrame, scores: pd.DataFrame):
-    raise NotImplementedError
+    return reviews[[mode]].join(scores.rename("bert_scores"), on='review_id', how='inner').groupby(mode).agg(agg_type)
 
 
 def select_top_n(row: pd.Series, n: int):
