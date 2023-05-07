@@ -32,13 +32,13 @@ class NeuralNetworkTrainer:
         self.business_profiles_params = business_profiles_params if business_profiles_params not in {"None", "", "none", None} else "None"
 
     @staticmethod
-    def _get_parameters_string(model: Module, optimizer: Optimizer, epochs: int):
+    def _get_parameters_string(model: Module, optimizer: Optimizer, sub_epochs: int):
         # Save all parameters as string, which will then be saved with the model
         note = {
             'model': model.__class__,
             'optimizer': optimizer.__class__,
             'learning_rate': optimizer.defaults['lr'],
-            'epochs': epochs
+            'sub_epochs': sub_epochs
         }
         return str(note)
 
@@ -88,8 +88,8 @@ class NeuralNetworkTrainer:
         accuracy = correct / size
         return mean_loss, accuracy
 
-    def train(self, model: Module, optimizer: Optimizer, epochs: int = 100, plot_loss: bool = False, save_to_disk: bool = True, verbose=True) -> tuple[Module, Optimizer]:
-        model.parameters_configuration = self._get_parameters_string(model, optimizer, epochs)
+    def train(self, model: Module, optimizer: Optimizer, sub_epochs: int = 2, plot_loss: bool = False, save_to_disk: bool = True, verbose=True) -> tuple[Module, Optimizer]:
+        model.parameters_configuration = self._get_parameters_string(model, optimizer, sub_epochs)
         model.user_profiles_params = self.user_profiles_params
         model.business_profiles_params = self.business_profiles_params
         if verbose:
@@ -101,19 +101,15 @@ class NeuralNetworkTrainer:
         }
         criterion = MSELoss()
 
-        epochs_with_progressbar = tqdm(range(epochs), desc="Epochs")
-        for epoch in epochs_with_progressbar:
+        for _ in tqdm(range(sub_epochs), desc="Sub-Epochs", leave=False):
             train_loss = self.train_epoch(model, optimizer, self.train_loader, criterion)
             test_loss, test_acc = self.validate_epoch(model, self.test_loader, criterion)
 
             history['train_loss'].append(train_loss)
             history['test_loss'].append(test_loss)
             history['test_acc'].append(test_acc)
-            model.update_epoch(test_loss)
-            epochs_with_progressbar.set_description_str(f"Epochs (MSEloss of last 5 epochs: {[f'{val:.3}' for val in history['test_loss'][-5:]]}")
-            if plot_loss and epoch % (epochs // (100 / 5)) == 0:  # Every 5%
-                model.plot_loss_progress()
-                plt.show()
+
+        model.update_epoch(history['test_loss'][-1])
 
         if save_to_disk:
             model.save(optimizer, verbose=verbose)
