@@ -1,6 +1,8 @@
 import logging
+import os
 
 import numpy as np
+import swifter
 from pathlib import Path
 
 import pandas as pd
@@ -14,7 +16,9 @@ from NLP.utils.scoring_functions import online_bertopic_scoring_func
 from NLP.utils.sentence_splitter import SentenceSplitter
 from NLP.utils.user_profile_creation import calculate_basic_user_profiles, select_top_n, normalize_user_profile
 
-tqdm.pandas()
+# Trust me bro
+with open(os.devnull) as null:
+    print(f"{swifter}", file=null)
 
 
 def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for_approximations: int = 1,
@@ -75,9 +79,9 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
             logging.info('+ Normalizing top_n_topics...')
         for index, batch in enumerate(
                 tqdm(np.array_split(user_profiles, amount_of_batches_top_n), desc="Top N batches")):
-            top_n_selected = batch.progress_apply(select_top_n, n=top_n_topics, axis=1)
+            top_n_selected = batch.swifter.apply(select_top_n, n=top_n_topics, axis=1)
             if normalize_after_selection:
-                top_n_selected = top_n_selected.progress_apply(normalize_user_profile, axis=1)
+                top_n_selected = top_n_selected.swifter.apply(normalize_user_profile, axis=1)
             if use_sentiment_in_scores:
                 sentiment = nlp_cache.load_sentiment()["label_sentiment"]
                 top_n_selected = top_n_selected.multiply(sentiment, axis=0)
@@ -107,7 +111,7 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
 
     logging.info(f'Normalizing {profile_mode[:-3]} profiles...')
     # normalize the user profiles -> [0,1]
-    user_profiles = user_profiles.progress_apply(normalize_user_profile, axis=1)
+    user_profiles = user_profiles.swifter.apply(normalize_user_profile, axis=1)
 
     # if no topic is relevant for any review from a user, the userprofile will be [0,0,...,0]
     # should basically never happen
@@ -174,7 +178,7 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
     model_online_BERTopic: BERTopic = model_manager.load_model(model_name)
 
     logging.info("Calculating bert_scores...")
-    bert_scores = scores[columns_to_use].apply(
+    bert_scores = scores[columns_to_use].swifter.apply(
         online_bertopic_scoring_func, total_amount_topics=len(model_online_BERTopic.get_topic_info()['Topic']),
         use_sentiment=use_sentiment_in_scores, axis=1)
 
@@ -187,7 +191,7 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
         user_profiles = calculate_basic_user_profiles(reviews, bert_scores, 'sum', mode=profile_mode)
 
         logging.info("Exploding bert_scores (late) & normalizing user profiles...")
-        user_profiles = pd.DataFrame([*user_profiles['bert_scores']], index=user_profiles.index).progress_apply(normalize_user_profile, axis=1)
+        user_profiles = pd.DataFrame([*user_profiles['bert_scores']], index=user_profiles.index).swifter.apply(normalize_user_profile, axis=1)
 
     user_profiles.columns = [str(x) for x in user_profiles.columns]
 
