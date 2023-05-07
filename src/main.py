@@ -36,7 +36,7 @@ def transform_data(businesses, reviews, users):
         approx_amount_top_n=5,
         filter_useful_topics=False
     )
-    user_profiles_nlp = profile_creator.get_user_profile(reviews)
+    user_profiles_nlp = profile_creator.get_user_profile(reviews_generation)
     user_profiles_parameters = profile_creator.get_parameters_string()
 
     logging.info("Creating Restaurant Profile")
@@ -48,7 +48,7 @@ def transform_data(businesses, reviews, users):
         approx_amount_top_n=5,
         filter_useful_topics=False
     )
-    business_profiles_nlp = profile_creator.get_restaurant_profile(reviews)
+    business_profiles_nlp = profile_creator.get_restaurant_profile(reviews_generation)
     business_profiles_parameters = profile_creator.get_parameters_string()
 
     logging.info("Transforming to ML input")
@@ -83,5 +83,9 @@ def main_single_model():
 
 if __name__ == '__main__':
     # Note: force manual garbage collection is used to save on memory after heavy RAM and I/O instructions
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        datefmt='%H:%M:%S',
+        format='%(asctime)s %(levelname)-8s %(message)s',
+    )
     main_single_model()
