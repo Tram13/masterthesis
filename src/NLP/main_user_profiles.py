@@ -102,10 +102,10 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
 
     logging.info('Aggregating reviews by user_id or business_id...')
     # add the user id to the data, so we can concatenate the reviews and aggregate (sum) them per user
-    user_profiles = pd.concat([reviews[profile_mode], user_profiles], axis=1)
-    user_profiles = user_profiles.groupby(profile_mode).aggregate('sum')
 
-    logging.info('Normalizing user profiles...')
+    user_profiles = reviews[[profile_mode]].join(user_profiles, on='review_id', how='inner').groupby(profile_mode).agg('sum')
+
+    logging.info(f'Normalizing {profile_mode[:-3]} profiles...')
     # normalize the user profiles -> [0,1]
     user_profiles = user_profiles.progress_apply(normalize_user_profile, axis=1)
 
@@ -114,7 +114,7 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
     user_profiles = user_profiles.fillna(0)
 
     # save the user_profile for later use
-    logging.info('Saving user profiles...')
+    logging.info(f'Saving {profile_mode[:-3]} profiles...')
     if profile_mode == 'user_id':
         nlp_cache.save_user_profiles(user_profiles, profile_name)
     else:
@@ -187,9 +187,7 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
         user_profiles = calculate_basic_user_profiles(reviews, bert_scores, 'sum', mode=profile_mode)
 
         logging.info("Exploding bert_scores (late) & normalizing user profiles...")
-        user_profiles = pd.concat([user_profiles[profile_mode],
-                                   pd.DataFrame(user_profiles[0].to_list()).progress_apply(normalize_user_profile,
-                                                                                           axis=1)], axis=1)
+        user_profiles = pd.DataFrame([*user_profiles['bert_scores']], index=user_profiles.index).progress_apply(normalize_user_profile, axis=1)
 
     user_profiles.columns = [str(x) for x in user_profiles.columns]
 
