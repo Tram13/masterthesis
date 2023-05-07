@@ -1,15 +1,34 @@
 \chapter{Dataset}
+\label{sec:chapt3}
 
-Voor ons onderzoek beroepen we ons op de Yelp Dataset. Dit is een open dataset met verschillende voordelen: de beschikbare data wordt geleverd met een open licentie die het gebruik voor onderzoek toestaat. \cite{Yelp_Dataset} De data is een verzameling van reviews van echte gebruikers over echte restaurants, en niet synthetisch uitgebreid of aangepast. Hierdoor is de kans groter dat de resultaten van het onderzoek in de praktijk ook relevant zijn.
+Voor ons onderzoek beroepen we ons op de Yelp Dataset. Dit is een open dataset met verschillende voordelen: de beschikbare data wordt geleverd met een open licentie die het gebruik voor onderzoek toestaat. \cite{Yelp_Dataset} De data is een verzameling van reviews van echte gebruikers over echte restaurants, en niet synthetisch uitgebreid of aangepast. Hierdoor is de kans groter dat de resultaten van het onderzoek in de praktijk ook relevant zijn. De dataset omvat veel meer dan enkel restaurants. Allerhande soorten bedrijven zijn aanwezig, van juweelwinkels tot autogarages. In de volgende onderdelen gaan we enkel verder met bedrijven die tot de categorie 'restaurant' of 'food trucks' behoren. 
 
 \section{Eigenschappen}
+\label{sub:chapt3_eigenschappen_dataset}
 De verzamelde data beschrijft 153 346 bedrijven uit 11 steden in De Verenigde Staten van Amerika en Canada. 1 987 897 gebruikers gaven 6 990 280 reviews over deze bedrijven. Ons onderzoek spitst zich toe op restaurants. Na filteren blijven 52 533 restaurants over, of 34\%. Het aantal reviews daalt minder sterk: 68\% blijft over, dus 4 731 031.
 
 \subsection{Gebruikers}
 \subsubsection{Reviews per gebruiker}
 \label{sec:chapt3_reviews_per_gebruiker}
-Iedere gebruiker heeft gemiddeld 3.27 reviews, waarbij 82\% minder dan het gemiddelde reviews heeft. Door het Cold-Startprobleem (\ref{sec:chapt2_cold_start}) zal het voor deze gebruikers moeilijker worden om accurate aanbevelingen te maken. In \autoref{fig:chapt3_verdeling_aantal_reviews_per_gebruiker} zijn gebruikers met meer meer dan 20 reviews zijn weggelaten.
-\mijnfiguur[H]{width=12cm}{fig/chapt3/verdeling_aantal_reviews_per_gebruiker.png}{Histogram aantal reviews per gebruiker}{fig:chapt3_verdeling_aantal_reviews_per_gebruiker}
+Iedere gebruiker heeft gemiddeld 3,27 reviews, waarbij 82\% minder dan het gemiddelde reviews heeft. Door het Cold-Startprobleem (\ref{sec:chapt2_cold_start}) zal het voor deze gebruikers moeilijker worden om accurate aanbevelingen te maken. In \autoref{fig:chapt3_verdeling_aantal_reviews_per_gebruiker} zijn gebruikers met meer meer dan 20 reviews zijn weggelaten.
+
+Een review bestaat uit gemiddeld uit 7,5 zinnen wat in totaal voor ongeveer 36 miljoen zinnen of documenten zal zorgen. De meeste reviews bestaan uit 3 tot 6 zinnen, zoals afgebeeld in \autoref{fig:chapt3_verdeling_aantal_zinnen_per_review}.
+
+\begin{figure}[H]
+    \begin{subfigure}{.5\textwidth}
+        \centering
+        \includegraphics[width=1\linewidth]{fig/chapt3/verdeling_aantal_reviews_per_gebruiker.png}
+        \caption{Histogram aantal reviews per gebruiker}
+        \label{fig:chapt3_verdeling_aantal_reviews_per_gebruiker}
+    \end{subfigure}
+    \begin{subfigure}{.5\textwidth}
+        \centering
+        \includegraphics[width=1\linewidth]{fig/chapt3/zin_per_review.png}
+        \caption{Histogram aantal zinnen per review}
+        \label{fig:chapt3_verdeling_aantal_zinnen_per_review}
+    \end{subfigure}
+    \caption{Hoeveelheid beschikbare data per gebruiker}
+\end{figure}
 
 \subsubsection{Verdeling scores}
 De mediaan score over alle gebruikers is 4 van de 5 sterren. De hogere scores komen vaker voor, met 5 de individueel meest voorkomende score.
@@ -17,13 +36,13 @@ De mediaan score over alle gebruikers is 4 van de 5 sterren. De hogere scores ko
     \begin{subfigure}{.5\textwidth}
         \centering
         \includegraphics[width=1\linewidth]{fig/chapt3/verdeling_mediaan_scores_per_gebruiker.png}
-        \caption{Histogram mediaan reviews per gebruiker}
+        \caption{Histogram mediaan score van reviews per gebruiker}
         \label{fig:chapt3_verdeling_mediaan_scores_per_gebruiker}
     \end{subfigure}
     \begin{subfigure}{.5\textwidth}
         \centering
         \includegraphics[width=1\linewidth]{fig/chapt3/verdeling_alle_scores.png}
-        \caption{Histogram individuele reviews}
+        \caption{Histogram score van alle individuele reviews}
         \label{fig:chapt3_verdeling_alle_scores}
     \end{subfigure}
     \caption{Histogrammen over scores}
@@ -52,7 +71,7 @@ De afstand tussen de minimum- en maximumscore die éénzelfde gebruiker geeft is
 \subsection{Restaurants}
 \subsubsection{Reviews per restaurant}
 Ieder restaurant uit de dataset heeft minstens 5 reviews van gebruikers. In \autoref{fig:chapt3_verdeling_aantal_reviews_per_restaurant} zijn restaurants met meer dan 155 reviews weggelaten. Merk op dat de dataset veel minder sparse is als we groeperen per restaurant (\ref{sec:chapt3_reviews_per_gebruiker}): weinig gebruikers hebben 5 of meer reviews geschreven, maar ieder restaurant heeft wel minstens 5 reviews. Deze schaarsheid aan reviews per gebruiker suggereert dat IICF beter zal werken op deze dataset dan UUCF. \cite{cursus_hs9}
-\mijnfiguur[H]{width=12cm}{fig/chapt3/verdeling_aantal_reviews_per_restaurant.png}{Histogram aantal reviews per restaurant}{fig:chapt3_verdeling_aantal_reviews_per_restaurant}
+\mijnfiguur[H]{width=10cm}{fig/chapt3/verdeling_aantal_reviews_per_restaurant.png}{Histogram aantal reviews per restaurant}{fig:chapt3_verdeling_aantal_reviews_per_restaurant}
 
 
 \subsubsection{Verdeling scores}
@@ -77,3 +96,30 @@ Het verschil tussen de hoogste en laagste score van een restaurant is vaak extre
     \caption{Histogrammen over verschil tussen hoge en lage scores binnen hetzelfde restaurant}
     \label{fig:chapt3_verdeling_score_min_max_combined_restaurants}
 \end{figure}
+
+\subsubsection{Attributen en categorieën}
+Een bedrijf dat de categorie 'restaurant' bevat, zal vaak nog andere categorieën bevatten die het type restaurant beter beschrijven, zoals 'fastfood' of 'Italian'. Deze categorieën kunnen dus gebruikt worden om de restaurants te beschrijven aan de hand van labels. Er zijn in totaal 1311 verschillende categorieën die de restaurants modelleren. Dit grote aantal zorgt ervoor dat ieder restaurant vrij uniek beschreven is, wat zorgt voor een ijle dataset. Hierdoor wordt het ook moeilijker om gelijkaardige items te vinden op basis van labels. Een restaurant bevat gemiddeld 4,25 categorieën (\autoref{fig:chapt3_verdeling_aantal_categorieën_per_restaurant}).\newline
+Als een gebruiker een review achterlaat over een restaurant dan associëren we die gebruiker met de categorieën van dat restaurant. Zo zien we dat de categorieën van een gebruiker ook vrij lineair schalen met het aantal reviews (\autoref{fig:chapt3_stijging_categorieen_per_gebruiker}). Dit toont dat een gebruiker vaak verschillende types restaurants bezoekt. Dit suggereert dat Content-Based filtering niet goed zal werken op deze dataset.
+
+
+\begin{figure}[H]
+    \begin{subfigure}{.5\textwidth}
+        \centering
+        \includegraphics[width=1\linewidth]{fig/chapt3/verdeling_aantal_categorieën_per_restaurant.png}
+        \caption{Histogram aantal categorieën per restaurant}
+        \label{fig:chapt3_verdeling_aantal_categorieën_per_restaurant}
+    \end{subfigure}
+    \begin{subfigure}{.5\textwidth}
+        \centering
+        \includegraphics[width=1\linewidth]{fig/chapt3/stijging_categorieen_per_gebruiker.png}
+        \caption{Aantal unieke categorieën geassocieerd met een gebruiker stijgt lineair met het aantal reviews}
+        \label{fig:chapt3_stijging_categorieen_per_gebruiker}
+    \end{subfigure}
+    \caption{Analyse categorieën bij restaurants}
+    \label{fig:chapt3_categorieen_combined}
+\end{figure}
+% TODO: deze figuren aligneren met elkaar, prob whitespace toevoegen onderaan eerste figuur
+
+
+Een attribuut uit de Yelp dataset is vaak een faciliteit die een restaurant bezit, zoals parking of de mogelijkheid tot betalen met kredietkaart. We houden bij het maken van aanbevelingen geen rekening met de meeste van dit soort attributen: de verwachte use case is dat een gebruiker een manuele filter gebruikt om dergelijke eisen te verwerken. Dit type attributen zullen we dus niet gebruiken. Dezelfde redenering gaat op voor de locatie van een restaurant. We verwachten dat deze data gebruikt wordt om restaurants te filteren die fysiek dicht bij de gebruiker zijn, voordat de verwachte score wordt berekend.\newline
+Er zijn wel enkele nuttige attributen zoals 'atmosphere', dat de sfeer van een restaurant beschrijft in één woord zoals 'romantic' of 'classy', en 'priceRange', wat een restaurant opdeelt in één van vier prijsklassen. In tegenstelling tot categorieën, zijn attributen niet consistent aanwezig bij ieder restaurant. 
