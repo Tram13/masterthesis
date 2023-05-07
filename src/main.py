@@ -98,7 +98,7 @@ def main_single_model():
             gc.collect()
 
     # Save statistics
-    model.plot_loss_progress(save_location=Path(f"{model.get_default_save_location()[:-2]}.png"))
+    model.plot_loss_progress(save_location=Path(f"{str(model.get_default_save_location())[:-2]}.png"))
     return 0
 
 
