@@ -69,7 +69,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
         else:
             file_name = ConfigParser().get_value('predictor_model', 'mlp_full_model_name').split('.')
         uuid = datetime.now().strftime("%Y-%m-%d_%Hh%M")
-        return Path(save_dir, f'{file_name[0]}_{uuid}__EPOCHS={self.current_epoch}_LOSS={self.loss_history[-1]:.3}_{self.user_profiles_params}_{self.business_profiles_params}.{file_name[1]}')
+        return Path(save_dir, f'{file_name[0]}_{uuid}__EPOCHS={self.current_epoch}_LOSS={self.loss_history[-1]:.3}.{file_name[1]}')
 
     @staticmethod
     def get_latest_model_from_default_location(use_inference_model: bool = False) -> Path:  # Only for full model
@@ -114,6 +114,11 @@ class MultiLayerPerceptronPredictor(nn.Module):
             "business_profiles_params": self.business_profiles_params,
             "parameters_configuration": self.parameters_configuration
         }, path)
+
+        with open(f"{path}_params.txt", 'w+', encoding='utf-8') as params_file:
+            params_file.write(f'{self.user_profiles_params}\n')
+            params_file.write(f'{self.business_profiles_params}\n')
+
         if verbose:
             logging.info(f"Model saved at {path}.")
 
