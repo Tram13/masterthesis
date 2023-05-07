@@ -13,17 +13,17 @@ from predictor.multilayer_perceptron import MultiLayerPerceptronPredictor
 from predictor.neural_network_trainer import NeuralNetworkTrainer
 
 
-def parse_data_train_test(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]):
-    profile_creators = get_profile_creators()
+def parse_data_train_test(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]) -> tuple[tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series], tuple[dict, dict]]:
+    profile_creators_params = get_profile_creators()
     logging.info("Parsing train set")
-    training_input, training_output, users_param, businesses_param = DataPreparer.transform_data(*train_data, *profile_creators)
+    training_input, training_output = DataPreparer.transform_data(*train_data, *profile_creators_params)
     logging.info("Parsing test set")
-    test_input, test_output, _, _ = DataPreparer.transform_data(*test_data, *profile_creators)
+    test_input, test_output = DataPreparer.transform_data(*test_data, *profile_creators_params)
     gc.collect()
-    return (training_input, test_input, training_output, test_output), (users_param, businesses_param)
+    return (training_input, test_input, training_output, test_output), profile_creators_params
 
 
-def get_profile_creators():
+def get_profile_creators() -> tuple[dict, dict]:
     up_creator = ProfileCreator(
         model_name="online_model_400top_97.bert",
         use_sentiment_in_scores=False,
@@ -31,7 +31,7 @@ def get_profile_creators():
         approx_normalization=True,
         approx_amount_top_n=5,
         filter_useful_topics=False
-    )
+    ).get_build_parameters()
 
     rp_creator = ProfileCreator(
         model_name="online_model_50top_85.bert",
@@ -40,14 +40,14 @@ def get_profile_creators():
         approx_normalization=True,
         approx_amount_top_n=5,
         filter_useful_topics=False
-    )
+    ).get_build_parameters()
 
     return up_creator, rp_creator
 
 
 def main_single_model():
     # Parameters
-    EPOCHS = 30
+    EPOCHS = 1
     SUB_EPOCHS = 10
     LR = 0.0002
 
@@ -56,10 +56,10 @@ def main_single_model():
     gc.collect()
 
     with tqdm(total=EPOCHS, desc="Epochs") as p_bar:
-        train_test_data, (users_params, businesses_params) = parse_data_train_test(train_data, test_data)
+        train_test_data, (up_params, rp_params) = parse_data_train_test(train_data, test_data)
 
         logging.info("Transforming data to DataLoaders")
-        nn_trainer = NeuralNetworkTrainer(users_params, businesses_params, *train_test_data)
+        nn_trainer = NeuralNetworkTrainer(up_params, rp_params, *train_test_data)
         gc.collect()
 
         logging.info("Creating Multi-Layer Perceptron model")
@@ -72,10 +72,10 @@ def main_single_model():
 
         for epoch in range(2, EPOCHS + 1):
             # Creates new user profiles based on subset of train or test data
-            train_test_data, (users_params, businesses_params) = parse_data_train_test(train_data, test_data)
+            train_test_data, (up_params, rp_params) = parse_data_train_test(train_data, test_data)
 
             logging.info("Transforming data to DataLoaders")
-            nn_trainer = NeuralNetworkTrainer(users_params, businesses_params, *train_test_data)
+            nn_trainer = NeuralNetworkTrainer(up_params, rp_params, *train_test_data)
             gc.collect()
 
             logging.info("Creating Multi-Layer Perceptron model")
