@@ -172,7 +172,7 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
     # convert elements to numpy array
     scores[columns_to_use] = scores[columns_to_use].applymap(np.array)
 
-    logging.info("Loading in model...")
+    logging.info("Loading in NLP model...")
     model_manager = NLPModels()
     model_online_BERTopic: BERTopic = model_manager.load_model(model_name)
 
@@ -189,16 +189,16 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
     else:
         user_profiles = calculate_basic_user_profiles(reviews, bert_scores, 'sum', mode=profile_mode)
 
-        logging.info("Exploding bert_scores (late) & normalizing user profiles...")
+        logging.info(f"Exploding bert_scores (late) & normalizing {profile_mode[:-3]} profiles...")
         user_profiles = pd.DataFrame([*user_profiles['bert_scores']], index=user_profiles.index).swifter.apply(normalize_user_profile, axis=1)
 
     user_profiles.columns = [str(x) for x in user_profiles.columns]
 
-    logging.info('Saving user profiles...')
+    logging.info(f'Saving {profile_mode[:-3]} profiles...')
     if profile_mode == 'user_id':
         nlp_cache.save_user_profiles(user_profiles, profile_name)
     else:
         nlp_cache.save_business_profiles(user_profiles, profile_name)
-    logging.info(f'Saved user profiles with name: {profile_name}')
+    logging.info(f'Saved {profile_mode[:-3]} profiles with name: {profile_name}')
 
     return user_profiles
