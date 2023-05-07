@@ -115,7 +115,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
             "parameters_configuration": self.parameters_configuration
         }, path)
 
-        with open(f"{path}_params.txt", 'w+', encoding='utf-8') as params_file:
+        with open(f"{path[:-2]}.txt", 'w+', encoding='utf-8') as params_file:
             params_file.write(f'{self.user_profiles_params}\n')
             params_file.write(f'{self.business_profiles_params}\n')
 
