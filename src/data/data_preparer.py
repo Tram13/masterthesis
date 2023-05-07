@@ -4,29 +4,43 @@ from sklearn.model_selection import train_test_split
 
 
 class DataPreparer:
-
     @staticmethod
-    def get_train_test_validate(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame, users: pd.DataFrame, user_profiles: pd.DataFrame,
-                                business_profiles: pd.DataFrame = None) \
-            -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-
-        ml_data = DataPreparer.get_df_for_ml(businesses, reviews, tips, users, user_profiles, business_profiles).reset_index()
-        output_ml = ml_data['stars_normalised']
-        input_ml = ml_data.drop(columns=['stars_normalised', 'review_id', 'user_id', 'business_id'])
-        input_ml_train, input_ml_test, output_ml_train, output_ml_test = train_test_split(input_ml, output_ml, test_size=0.2)
-        # Geen toevoeging van median score van gebruiker, omdat NN dan gewoon die variabele voorspelt
-        return input_ml_train, input_ml_test, output_ml_train, output_ml_test
-
-    @staticmethod
-    def get_df_for_ml(businesses: pd.DataFrame, reviews: pd.DataFrame, tips: pd.DataFrame, users: pd.DataFrame, user_profiles: pd.DataFrame,
-                      business_profiles: pd.DataFrame = None) -> pd.DataFrame:
+    def get_profiles_split(reviews: pd.DataFrame, profile_dataframe_size: float = 0.8) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Get all combinations of business attributes and user attributes
-        :return: A DataFrame where each row represents an input for the ML model
+        Splits the reviews in 2 parts: one part used for generating the user and business profiles, the other for rating predictions
+        :param reviews: The reviews dataframe to split into two parts
+        :param profile_dataframe_size: The size of the DataFrame for generation of user and business profiles, after splitting
+        :return: The splitted reviews DataFrame
+        """
+        # Calculate absolute sizes of generation set and prediction set
+        profile_generation_size = int(len(reviews) * profile_dataframe_size)
+        prediction_size = len(reviews) - profile_generation_size
+
+        # Select 1 review for each user and for each restaurant
+        drop_for_users = reviews.drop_duplicates(subset=['user_id']).index
+        drop_for_restaurant = reviews.drop_duplicates(subset=['business_id']).index
+        not_selectable = drop_for_users.union(drop_for_restaurant)
+
+        # Remove reviews for profile generation set from selectable set
+        reviews_selectable = reviews.drop(not_selectable)
+
+        # Random sample from selectable reviews to serve as prediction set
+        reviews_prediction = reviews_selectable.sample(min(prediction_size, len(reviews_selectable)))
+        # Inverse of the sampled reviews serve as generation set
+        reviews_profile_generation = reviews.drop(reviews_prediction.index)
+
+        return reviews_profile_generation, reviews_prediction
+
+    @staticmethod
+    def get_df_for_ml(businesses: pd.DataFrame, reviews_prediction: pd.DataFrame, users: pd.DataFrame, user_profiles: pd.DataFrame,
+                      business_profiles: pd.DataFrame = None) -> tuple[pd.DataFrame, pd.Series]:
+        """
+        Transforms the segregated parsed data into a structure to use for Machine Learning: DataFrame represents the input, Series represents the output
+        :return: A pd.DataFrame where each row represents an input for the ML model, A pd.Series where each row represents the expected output for the ML model
         """
         users.columns = [f"user_{column_name}" if not column_name.startswith("user") else column_name for column_name in users.columns]
         user_profiles.columns = [f"user_profile_{column_id}" for column_id in user_profiles.columns]
-        reviews = reviews.join(user_profiles, on='user_id', how='inner')
+        reviews = reviews_prediction.join(user_profiles, on='user_id', how='inner')
         businesses = businesses.drop(columns=['name', 'city'])
         if business_profiles is not None:
             business_profiles.columns = [f"business_profile_{column_id}" for column_id in business_profiles.columns]
@@ -37,7 +51,11 @@ class DataPreparer:
         user_reviewed_restaurant = user_reviewed_restaurant.join(users, on='user_id', how="inner")
         user_reviewed_restaurant = user_reviewed_restaurant.set_index(['user_id', 'business_id'], append=True)
 
-        return user_reviewed_restaurant
+        ml_data = user_reviewed_restaurant.reset_index()
+        output_ml = ml_data['stars_normalised']
+        input_ml = ml_data.drop(columns=['stars_normalised', 'review_id', 'user_id', 'business_id'])
+
+        return input_ml, output_ml
 
     @staticmethod
     def get_tensor_for_ml(restaurant_reviews: torch.Tensor, ratings: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
