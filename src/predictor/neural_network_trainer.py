@@ -13,7 +13,7 @@ from tools.RestaurantReviewsDataset import RestaurantReviewsDataset
 
 class NeuralNetworkTrainer:
     __slots__ = ['train_loader', 'test_loader', 'user_profiles_params', 'business_profiles_params']
-    BATCH_SIZE = 8192
+    BATCH_SIZE = 1024
 
     def __init__(self, user_profiles_params: dict, business_profiles_params: dict, input_ml_train: pd.DataFrame, input_ml_test: pd.DataFrame, output_ml_train: pd.DataFrame,
                  output_ml_test: pd.DataFrame):
