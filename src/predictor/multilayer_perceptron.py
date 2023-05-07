@@ -50,8 +50,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
         self.current_epoch = 0
         self.loss_history = []
         self.note = ""
-        self.user_profiles_location = "None"
-        self.business_profiles_location = "None"
+        self.user_profiles_params = "None"
+        self.business_profiles_params = "None"
         self.parameters_configuration = ""
 
     def forward(self, x):
@@ -69,8 +69,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
         else:
             file_name = ConfigParser().get_value('predictor_model', 'mlp_full_model_name').split('.')
         uuid = datetime.now().strftime("%Y-%m-%d_%Hh%M")
-        has_business_profile = self.business_profiles_location not in {"None", "", "none", None}
-        return Path(save_dir, f'{file_name[0]}_{uuid}__{"".join(self.user_profiles_location.split(".")[:-1])}_{"".join(self.business_profiles_location.split(".")[:-1]) if has_business_profile else "None"}.{file_name[1]}')
+        has_business_profile = self.business_profiles_params not in {"None", "", "none", None}
+        return Path(save_dir, f'{file_name[0]}_{uuid}__{"".join(self.user_profiles_params.split(".")[:-1])}_{"".join(self.business_profiles_params.split(".")[:-1]) if has_business_profile else "None"}.{file_name[1]}')
 
     @staticmethod
     def get_latest_model_from_default_location(use_inference_model: bool = False) -> Path:  # Only for full model
@@ -111,8 +111,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
             "optimizer_state_dict": optimizer.state_dict(),
             "loss": self.loss_history,
             "note": self.note,
-            "user_profiles_location": self.user_profiles_location,
-            "business_profiles_location": self.business_profiles_location,
+            "user_profiles_params": self.user_profiles_params,
+            "business_profiles_params": self.business_profiles_params,
             "parameters_configuration": self.parameters_configuration
         }, path)
         if verbose:
@@ -147,8 +147,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
         self.current_epoch = checkpoint['epoch']
         self.loss_history = checkpoint['loss']
         self.note = checkpoint['note']
-        self.user_profiles_location = checkpoint['user_profiles_location']
-        self.business_profiles_location = checkpoint['business_profiles_location']
+        self.user_profiles_params = checkpoint['user_profiles_params']
+        self.business_profiles_params = checkpoint['business_profiles_params']
         self.parameters_configuration = checkpoint['parameters_configuration']
         logging.info(f"Model loaded from {path}.")
 
@@ -157,7 +157,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
     @staticmethod
     def get_profile_names(path: os.PathLike) -> tuple[str, str]:
         checkpoint = torch.load(path)
-        return checkpoint['user_profiles_location'], checkpoint['business_profiles_location']
+        return checkpoint['user_profiles_params'], checkpoint['business_profiles_params']
 
     def load_for_inference(self, path: os.PathLike = None) -> nn.Module:
         if path is None:

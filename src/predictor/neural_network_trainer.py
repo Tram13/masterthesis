@@ -16,10 +16,10 @@ from tools.RestaurantReviewsDataset import RestaurantReviewsDataset
 
 
 class NeuralNetworkTrainer:
-    __slots__ = ['train_loader', 'test_loader', 'user_profiles_location', 'business_profiles_location']
+    __slots__ = ['train_loader', 'test_loader', 'user_profiles_params', 'business_profiles_params']
     BATCH_SIZE = 8192
 
-    def __init__(self, user_profiles_path: Union[os.PathLike, str], business_profiles_path: Union[os.PathLike, str, None], input_ml_train: pd.DataFrame, input_ml_test: pd.DataFrame, output_ml_train: pd.DataFrame,
+    def __init__(self, user_profiles_params: Union[os.PathLike, str], business_profiles_params: Union[os.PathLike, str, None], input_ml_train: pd.DataFrame, input_ml_test: pd.DataFrame, output_ml_train: pd.DataFrame,
                  output_ml_test: pd.DataFrame):
 
         train_data = RestaurantReviewsDataset(input_ml_train.to_numpy(), output_ml_train.to_numpy())
@@ -28,8 +28,8 @@ class NeuralNetworkTrainer:
         self.train_loader = DataLoader(train_data, batch_size=self.BATCH_SIZE)
         self.test_loader = DataLoader(test_data, batch_size=self.BATCH_SIZE)
 
-        self.user_profiles_location = user_profiles_path
-        self.business_profiles_location = business_profiles_path if business_profiles_path not in {"None", "", "none", None} else "None"
+        self.user_profiles_params = user_profiles_params
+        self.business_profiles_params = business_profiles_params if business_profiles_params not in {"None", "", "none", None} else "None"
 
     @staticmethod
     def _get_parameters_string(model: Module, optimizer: Optimizer, epochs: int):
@@ -90,8 +90,8 @@ class NeuralNetworkTrainer:
 
     def train(self, model: Module, optimizer: Optimizer, epochs: int = 100, plot_loss: bool = False, save_to_disk: bool = True, verbose=True) -> tuple[Module, Optimizer]:
         model.parameters_configuration = self._get_parameters_string(model, optimizer, epochs)
-        model.user_profiles_location = self.user_profiles_location
-        model.business_profiles_location = self.business_profiles_location
+        model.user_profiles_params = self.user_profiles_params
+        model.business_profiles_params = self.business_profiles_params
         if verbose:
             logging.info(f"Training network with following parametes: {model.parameters_configuration}")
         history = {
