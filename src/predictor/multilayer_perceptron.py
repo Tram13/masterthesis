@@ -53,6 +53,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
         self.user_profiles_params = "None"
         self.business_profiles_params = "None"
         self.parameters_configuration = ""
+        self.input_size = input_size
 
     def forward(self, x):
         x = self.flatten(x)
@@ -112,7 +113,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
             "note": self.note,
             "user_profiles_params": self.user_profiles_params,
             "business_profiles_params": self.business_profiles_params,
-            "parameters_configuration": self.parameters_configuration
+            "parameters_configuration": self.parameters_configuration,
+            "input_size": self.input_size
         }, path)
 
         with open(f"{str(path)[:-2]}.txt", 'w+', encoding='utf-8') as params_file:
@@ -141,27 +143,37 @@ class MultiLayerPerceptronPredictor(nn.Module):
         torch.save(self.state_dict(), path)
         logging.info(f"Inference Model saved at {path}.")
 
-    def load(self, optimizer: torch.optim.Optimizer, path: os.PathLike = None) -> tuple[nn.Module, torch.optim.Optimizer]:
+    @staticmethod
+    def load(optimizer: torch.optim.Optimizer, path: os.PathLike = None) -> tuple[nn.Module, torch.optim.Optimizer]:
         if path is None:
-            path = self.get_latest_model_from_default_location()
+            path = MultiLayerPerceptronPredictor.get_latest_model_from_default_location()
             logging.info(f"Using default save location: {path}")
         checkpoint = torch.load(path)
-        self.load_state_dict(checkpoint['model_state_dict'])
+
+        input_size = checkpoint['input_size']
+        loaded_model = MultiLayerPerceptronPredictor(input_size, 1)
+
+        loaded_model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        self.current_epoch = checkpoint['epoch']
-        self.loss_history = checkpoint['loss']
-        self.note = checkpoint['note']
-        self.user_profiles_params = checkpoint['user_profiles_params']
-        self.business_profiles_params = checkpoint['business_profiles_params']
-        self.parameters_configuration = checkpoint['parameters_configuration']
+        loaded_model.current_epoch = checkpoint['epoch']
+        loaded_model.loss_history = checkpoint['loss']
+        loaded_model.note = checkpoint['note']
+        loaded_model.user_profiles_params = checkpoint['user_profiles_params']
+        loaded_model.business_profiles_params = checkpoint['business_profiles_params']
+        loaded_model.parameters_configuration = checkpoint['parameters_configuration']
         logging.info(f"Model loaded from {path}.")
 
-        return self, optimizer
+        return loaded_model, optimizer
 
     @staticmethod
     def get_profile_names(path: os.PathLike) -> tuple[str, str]:
         checkpoint = torch.load(path)
         return checkpoint['user_profiles_params'], checkpoint['business_profiles_params']
+
+    @staticmethod
+    def get_input_size_from_file(path: os.PathLike) -> int:
+        checkpoint = torch.load(path)
+        return checkpoint['input_size']
 
     def load_for_inference(self, path: os.PathLike = None) -> nn.Module:
         if path is None:
