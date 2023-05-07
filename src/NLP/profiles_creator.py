@@ -346,6 +346,12 @@ class ProfileCreator:
         if model_name != "online_model_400top_97.bert" and filter_useful_topics:
             logging.warning("FILTERING TOPICS FOR WRONG MODEL")
 
+    def __str__(self):
+        return str(self.get_build_parameters())
+
+    def __repr__(self):
+        return self.__str__()
+
     def get_build_parameters(self) -> dict:
         return {
             "current_model_name": self.current_model_name,
