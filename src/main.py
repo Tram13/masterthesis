@@ -1,17 +1,14 @@
 import gc
 import logging
-import os
 from pathlib import Path
 
-import pandas as pd
 from torch import optim
 
+from NLP.profiles_creator import ProfileCreator
 from data.data_preparer import DataPreparer
 from data.data_reader import DataReader
 from predictor.multilayer_perceptron import MultiLayerPerceptronPredictor
 from predictor.neural_network_trainer import NeuralNetworkTrainer
-from tools.config_parser import ConfigParser
-from tools.profiles_manager import ProfilesManager
 
 
 def get_data_train_test():
@@ -19,54 +16,59 @@ def get_data_train_test():
     (b_train, r_train, u_train), (b_test, r_test, u_test) = DataReader().read_data()
     gc.collect()
     logging.info("Parsing train set")
-    training_input, training_output = transform_data(b_train, r_train, u_train)
+    training_input, training_output, users_param, businesses_param = transform_data(b_train, r_train, u_train)
     logging.info("Parsing test set")
-    test_input, test_output = transform_data(b_test, r_test, u_test)
+    test_input, test_output, _, _ = transform_data(b_test, r_test, u_test)
     gc.collect()
-    return training_input, test_input, training_output, test_output
+    return (training_input, test_input, training_output, test_output), (users_param, businesses_param)
 
 
 def transform_data(businesses, reviews, users):
     logging.info("Splitting in generation and prediction sets")
     reviews_generation, reviews_prediction = DataPreparer.get_profiles_split(reviews, profile_dataframe_size=0.7)
 
-    logging.info("Creating profiles")
-    # TODO: onderstaand vervangen met nieuwe code
-    user_profiles_nlp = ProfilesManager().get_user_profiles()
-    business_profiles_nlp = ProfilesManager().get_business_profiles()
+    logging.info("Creating User Profile")
+    profile_creator = ProfileCreator(
+        model_name="online_model_400top_97.bert",
+        use_sentiment_in_scores=False,
+        approx_mode=False,
+        approx_normalization=True,
+        approx_amount_top_n=5,
+        filter_useful_topics=False
+    )
+    user_profiles_nlp = profile_creator.get_user_profile(reviews)
+    user_profiles_parameters = profile_creator.get_parameters_string()
+
+    logging.info("Creating Restaurant Profile")
+    profile_creator = ProfileCreator(
+        model_name="online_model_50top_85.bert",
+        use_sentiment_in_scores=True,
+        approx_mode=True,
+        approx_normalization=True,
+        approx_amount_top_n=5,
+        filter_useful_topics=False
+    )
+    business_profiles_nlp = profile_creator.get_restaurant_profile(reviews)
+    business_profiles_parameters = profile_creator.get_parameters_string()
 
     logging.info("Transforming to ML input")
     input_ml, output_ml = DataPreparer.get_df_for_ml(businesses, reviews_prediction, users, user_profiles_nlp, business_profiles_nlp)
     gc.collect()
-    return input_ml, output_ml
+    return input_ml, output_ml, user_profiles_parameters, business_profiles_parameters
 
 
 def main_single_model():
     # Parameters
-    EPOCHS = 1000
+    EPOCHS = 1
     LR = 0.0002
 
     logging.info("Initialising")
-    # Initialisation TODO: uitzoeken wat hiervan nog nodig is
-    user_profiles_name = ConfigParser().get_value("cache", "best_user")
-    business_profiles_name = ConfigParser().get_value("cache", "best_business")
-    short_name_user_profile = Path(ConfigParser().get_value("cache", "best_user")).stem
-    short_name_business_profile = Path(ConfigParser().get_value("cache", "best_business")).stem
-    logging.info(f"Running {user_profiles_name} | {business_profiles_name}")
-
-    # Check if model already exists
-    save_dir = ConfigParser().get_value('predictor_model', 'model_dir')
-    if len([file.name for file in os.scandir(Path(save_dir)) if short_name_user_profile in file.name and short_name_business_profile in file.name]) != 0:
-        logging.info(f"Skipped model {short_name_user_profile}  | {short_name_business_profile}, another version already exists")
-        return 1
-
-    # Getting first part of dataset
-    train_test_data = get_data_train_test()
-    nn_trainer = NeuralNetworkTrainer(user_profiles_name, business_profiles_name, *train_test_data)
+    train_test_data, (users_params, businesses_params) = get_data_train_test()
+    nn_trainer = NeuralNetworkTrainer(users_params, businesses_params, *train_test_data)
     logging.info("Cleaning up memory on CPU")
     gc.collect()
 
-    # Creating model
+    logging.info("Creating Multi-Layer Perceptron model")
     model = MultiLayerPerceptronPredictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1)
     optimizer = optim.Adagrad(model.parameters(), lr=LR)
 
@@ -75,7 +77,7 @@ def main_single_model():
     model, optimizer = nn_trainer.train(model, optimizer, epochs=EPOCHS, save_to_disk=True, verbose=True)
 
     # Save statistics
-    model.plot_loss_progress(save_location=Path("predictor", f"loss_mlp_{user_profiles_name}_{business_profiles_name}.png"))
+    model.plot_loss_progress(save_location=Path("predictor", f"{model.get_default_save_location()}.png"))
     return 0
 
 
