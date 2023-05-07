@@ -2,7 +2,9 @@ import gc
 import logging
 from pathlib import Path
 
+import pandas as pd
 from torch import optim
+from tqdm import tqdm
 
 from NLP.profiles_creator import ProfileCreator
 from data.data_preparer import DataPreparer
@@ -11,14 +13,11 @@ from predictor.multilayer_perceptron import MultiLayerPerceptronPredictor
 from predictor.neural_network_trainer import NeuralNetworkTrainer
 
 
-def get_data_train_test():
-    logging.info("Reading Yelp Dataset")
-    (b_train, r_train, u_train), (b_test, r_test, u_test) = DataReader().read_data()
-    gc.collect()
+def parse_data_train_test(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]):
     logging.info("Parsing train set")
-    training_input, training_output, users_param, businesses_param = transform_data(b_train, r_train, u_train)
+    training_input, training_output, users_param, businesses_param = transform_data(*train_data)
     logging.info("Parsing test set")
-    test_input, test_output, _, _ = transform_data(b_test, r_test, u_test)
+    test_input, test_output, _, _ = transform_data(*test_data)
     gc.collect()
     return (training_input, test_input, training_output, test_output), (users_param, businesses_param)
 
@@ -59,22 +58,44 @@ def transform_data(businesses, reviews, users):
 
 def main_single_model():
     # Parameters
-    EPOCHS = 1
+    EPOCHS = 30
+    SUB_EPOCHS = 10
     LR = 0.0002
 
-    logging.info("Initialising")
-    train_test_data, (users_params, businesses_params) = get_data_train_test()
-    nn_trainer = NeuralNetworkTrainer(users_params, businesses_params, *train_test_data)
-    logging.info("Cleaning up memory on CPU")
+    logging.info("Reading Yelp Dataset")
+    train_data, test_data = DataReader().read_data()
     gc.collect()
 
-    logging.info("Creating Multi-Layer Perceptron model")
-    model = MultiLayerPerceptronPredictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1)
-    optimizer = optim.Adagrad(model.parameters(), lr=LR)
+    with tqdm(total=EPOCHS, desc="Epochs") as p_bar:
+        train_test_data, (users_params, businesses_params) = parse_data_train_test(train_data, test_data)
 
-    # Training on first part of dataset
-    logging.info("Starting training")
-    model, optimizer = nn_trainer.train(model, optimizer, epochs=EPOCHS, save_to_disk=True, verbose=True)
+        logging.info("Transforming data to DataLoaders")
+        nn_trainer = NeuralNetworkTrainer(users_params, businesses_params, *train_test_data)
+        gc.collect()
+
+        logging.info("Creating Multi-Layer Perceptron model")
+        model = MultiLayerPerceptronPredictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1)
+        optimizer = optim.Adagrad(model.parameters(), lr=LR)
+
+        logging.info("Starting training")
+        model, optimizer = nn_trainer.train(model, optimizer, sub_epochs=SUB_EPOCHS, save_to_disk=(EPOCHS == 1), verbose=True)
+        p_bar.update()
+
+        for epoch in range(2, EPOCHS + 1):
+            # Creates new user profiles based on subset of train or test data
+            train_test_data, (users_params, businesses_params) = parse_data_train_test(train_data, test_data)
+
+            logging.info("Transforming data to DataLoaders")
+            nn_trainer = NeuralNetworkTrainer(users_params, businesses_params, *train_test_data)
+            gc.collect()
+
+            logging.info("Creating Multi-Layer Perceptron model")
+
+            logging.info("Starting training")
+            model, optimizer = nn_trainer.train(model, optimizer, sub_epochs=SUB_EPOCHS, save_to_disk=(epoch == EPOCHS), verbose=True)
+            logging.info(f"Current loss history: {[f'{val:.3}' for val in model.loss_history[-5:]]}")
+            p_bar.update()
+            gc.collect()
 
     # Save statistics
     model.plot_loss_progress(save_location=Path(f"{model.get_default_save_location()[:-2]}.png"))
