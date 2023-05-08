@@ -6,7 +6,6 @@ import pandas as pd
 from torch import optim
 from tqdm import tqdm
 
-from NLP.profiles_creator import ProfileCreator
 from data.data_preparer import DataPreparer
 from data.data_reader import DataReader
 from predictor.multilayer_perceptron import MultiLayerPerceptronPredictor
@@ -74,7 +73,7 @@ def main_all_models():
         for restaurant_index, rp_params in enumerate(tqdm(RestaurantProfilesManager(), desc="Restaurant Profiles")):
             # Checking for duplicate work
             with open("done_combinations.txt", mode='r', encoding='utf-8') as done_file:
-                combos_done = done_file.readlines()
+                combos_done = [line.rstrip() for line in done_file.readlines()]
             # If not found yet
             if f"{user_index}_{restaurant_index}" not in combos_done:
                 main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
