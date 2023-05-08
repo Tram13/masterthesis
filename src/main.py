@@ -70,9 +70,12 @@ def main_all_models():
     logging.info("Reading Yelp Dataset")
     train_data, test_data = DataReader().read_data()
     gc.collect()
-    for up_params in tqdm(UserProfilesManager(), desc="User Profiles"):
-        for rp_params in tqdm(RestaurantProfilesManager(), desc="Restaurant Profiles"):
-            main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
+    for user_index, up_params in enumerate(tqdm(UserProfilesManager(), desc="User Profiles")):
+        for restaurant_index, rp_params in enumerate(tqdm(RestaurantProfilesManager(), desc="Restaurant Profiles")):
+            if (user_index, restaurant_index) not in {(0, 0), (0, 1)}:
+                main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
+            else:
+                logging.warning(f"Skipped model {(user_index, restaurant_index)}")
     return 0
 
 
