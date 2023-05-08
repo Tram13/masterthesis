@@ -398,8 +398,8 @@ class DataReader:
         reviews.index = reviews.index.rename('review_id')
 
         # Train - testset
-        train_reviews = reviews.join(users_train, on='user_id', how='inner')
-        test_reviews = reviews.join(users_test, on='user_id', how='inner')
+        train_reviews = reviews[reviews['user_id'].isin(users_train.index.unique())]
+        test_reviews = reviews[reviews['user_id'].isin(users_test.index.unique())]
 
         return train_reviews, test_reviews
 
@@ -517,7 +517,7 @@ class DataReader:
             lambda b_id: businesses_indices[b_id]).astype(np.uint16)
 
         # Transforming user IDs to integers
-        unique_users = reviews_train['user_id'].unique()
+        unique_users = pd.concat([reviews_train, reviews_test])['user_id'].unique()
         users_indices = pd.Series(range(len(unique_users)), index=unique_users).astype(np.uint32)
         reviews_train['user_id'] = reviews_train['user_id'].transform(lambda u_id: users_indices[u_id]).astype(
             np.uint32)
