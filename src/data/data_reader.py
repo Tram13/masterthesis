@@ -97,7 +97,7 @@ class DataReader:
                     p_bar.set_postfix_str('(current: users)')
                     u = pd.read_parquet(Path(self.cache_path, 'users.parquet'), engine='fastparquet')
                     p_bar.update()
-                return (b, r, u), (pd.DataFrame(), pd.DataFrame(), pd.DataFrame())
+                return (b, r, u), (DataFrame(), DataFrame(), DataFrame())
             except OSError:
                 raise FileNotFoundError('Please regenerate original caches')
         if use_cache:
@@ -187,10 +187,10 @@ class DataReader:
     def _filter_entries(entries: list[dict[str, any]], fields: list[str]) -> list[dict[str, any]]:
         return [{key: entry[key] for key in fields} for entry in entries]
 
-    def _parse_businesses(self, file_location: os.PathLike) -> pd.DataFrame:
+    def _parse_businesses(self, file_location: os.PathLike) -> DataFrame:
         entries = DataReader._get_entries_from_file(file_location)
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_BUSINESS_FIELDS)
-        businesses: pd.DataFrame = pd.DataFrame.from_records(filtered_entries)
+        businesses: DataFrame = DataFrame.from_records(filtered_entries)
 
         # Normalise data
         businesses = businesses.rename(columns={'stars': 'average_stars'})
@@ -329,10 +329,10 @@ class DataReader:
         return businesses
 
     @staticmethod
-    def _parse_checkins(file_location: os.PathLike) -> pd.DataFrame:
+    def _parse_checkins(file_location: os.PathLike) -> DataFrame:
         entries = DataReader._get_entries_from_file(file_location)
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_CHECKIN_FIELDS)
-        checkins = pd.DataFrame.from_records(filtered_entries)
+        checkins = DataFrame.from_records(filtered_entries)
         checkins['date'] = checkins['date'].map(
             lambda datelist: [datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S') for date_str in datelist.split(', ')]
         )
@@ -360,7 +360,7 @@ class DataReader:
         return checkins
 
     @staticmethod
-    def _parse_reviews(file_location: os.PathLike, businesses: pd.DataFrame, users_train: pd.dataFrame, users_test: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def _parse_reviews(file_location: os.PathLike, businesses: DataFrame, users_train: DataFrame, users_test: DataFrame) -> tuple[DataFrame, DataFrame]:
         """
         :param file_location: Location of the reviews dataset in json format
         :param businesses: The businesses DataFrame as parsed by `_parse_businesses()`
@@ -368,7 +368,7 @@ class DataReader:
         """
         entries = DataReader._get_entries_from_file(file_location)
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_REVIEW_FIELDS)
-        reviews = pd.DataFrame.from_records(filtered_entries)
+        reviews = DataFrame.from_records(filtered_entries)
 
         normalised_column = pd.Series(
             data=preprocessing.MinMaxScaler().fit_transform(
@@ -404,16 +404,16 @@ class DataReader:
         return train_reviews, test_reviews
 
     @staticmethod
-    def _parse_tips(file_location: os.PathLike, businesses: pd.DataFrame) -> pd.DataFrame:
+    def _parse_tips(file_location: os.PathLike, businesses: DataFrame) -> DataFrame:
         entries = DataReader._get_entries_from_file(file_location)
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_TIP_FIELDS)
-        tips = pd.DataFrame.from_records(filtered_entries)
+        tips = DataFrame.from_records(filtered_entries)
         tips = tips[tips['business_id'].isin(businesses.index)]  # Only keep tips for restaurants
         tips['text'] = tips['text'].astype("string")
         return tips
 
     @staticmethod
-    def _parse_users(file_location: os.PathLike) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def _parse_users(file_location: os.PathLike) -> tuple[DataFrame, DataFrame]:
         entries = DataReader._get_entries_from_file(file_location)
         # Combine all compliments
         compliment_fields = [
@@ -435,7 +435,7 @@ class DataReader:
             entry['compliments'] = sum_combined_for_entry
 
         filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_USER_FIELDS)
-        users = pd.DataFrame.from_records(filtered_entries)
+        users = DataFrame.from_records(filtered_entries)
 
         users['positive_interactions'] = users['useful'] + users['funny'] + users['cool']
         users = users.drop(columns=['useful', 'funny', 'cool'])
@@ -479,7 +479,7 @@ class DataReader:
         return users
 
     @staticmethod
-    def users_normalise_data_quantile_based(users: pd.DataFrame, column_name: str):
+    def users_normalise_data_quantile_based(users: DataFrame, column_name: str):
         bottom = users[column_name].quantile(0.10)
         top = users[column_name].quantile(0.90)
 
@@ -503,9 +503,9 @@ class DataReader:
         return val
 
     @staticmethod
-    def fix_indices(businesses: pd.DataFrame, reviews_train: pd.DataFrame, reviews_test: pd.DataFrame,
-                    users_train: pd.DataFrame, users_test: pd.DataFrame) \
-            -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def fix_indices(businesses: DataFrame, reviews_train: DataFrame, reviews_test: DataFrame,
+                    users_train: DataFrame, users_test: DataFrame) \
+            -> tuple[DataFrame, DataFrame, DataFrame, DataFrame, DataFrame]:
 
         # Transforming business IDs to integers
         businesses_indices = pd.Series(range(len(businesses)), index=businesses.index).astype(np.uint16)
