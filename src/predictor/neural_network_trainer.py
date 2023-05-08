@@ -104,8 +104,7 @@ class NeuralNetworkTrainer:
             history['train_loss'].append(train_loss)
             history['test_loss'].append(test_loss)
             history['test_acc'].append(test_acc)
-
-        model.update_epoch(history['test_loss'][-1])
+            model.update_epoch(test_loss)
 
         if save_to_disk:
             model.save(optimizer, verbose=verbose)
