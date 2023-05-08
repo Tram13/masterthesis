@@ -62,7 +62,7 @@ def main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_E
 
 def main_all_models():
     # Parameters
-    EPOCHS = 10
+    EPOCHS = 5
     SUB_EPOCHS = 20
     LR = 0.0002
 
