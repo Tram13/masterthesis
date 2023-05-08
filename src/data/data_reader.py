@@ -125,21 +125,21 @@ class DataReader:
         # return businesses, reviews, tips, users
 
     def _read_from_disk(self) -> tuple[tuple[DataFrame, DataFrame, DataFrame], tuple[DataFrame, DataFrame, DataFrame]]:
-        with tqdm(total=4, desc="Reading files from disk", leave=False) as p_bar:
+        with tqdm(total=5, desc="Reading files from disk", leave=False) as p_bar:
             p_bar.set_postfix_str('(current: businesses)')
             businesses = self._parse_businesses(self.file_paths[0])
             p_bar.update()
-            p_bar.set_postfix_str('(current: reviews)')
-            reviews_train, reviews_test = self._parse_reviews(self.file_paths[2], businesses)
-            p_bar.update()
-            # p_bar.set_postfix_str('current: tips')
-            # tips = self._parse_tips(self.file_paths[3], businesses)  # Gebruiken we niet
-            # p_bar.update()
             p_bar.set_postfix_str('current: users')
-            users_train, users_test = self._parse_users(self.file_paths[4], businesses, reviews_train, reviews_test)
+            users_train, users_test = self._parse_users(self.file_paths[4])
+            p_bar.update()
+            p_bar.set_postfix_str('(current: reviews)')
+            reviews_train, reviews_test = self._parse_reviews(self.file_paths[2], businesses, users_train, users_test)
+            p_bar.update()
+            p_bar.set_postfix_str('current: normalising')
+            users_train = DataReader._process_users_split(users_train, reviews_train, businesses)
+            users_test = DataReader._process_users_split(users_test, reviews_test, businesses)
             p_bar.update()
             p_bar.set_postfix_str('current: creating optimised indices')
-
             businesses, reviews_train, reviews_test, users_train, users_test = DataReader.fix_indices(
                 businesses, reviews_train, reviews_test, users_train, users_test
             )
@@ -360,7 +360,7 @@ class DataReader:
         return checkins
 
     @staticmethod
-    def _parse_reviews(file_location: os.PathLike, businesses: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def _parse_reviews(file_location: os.PathLike, businesses: pd.DataFrame, users_train: pd.dataFrame, users_test: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         :param file_location: Location of the reviews dataset in json format
         :param businesses: The businesses DataFrame as parsed by `_parse_businesses()`
@@ -398,15 +398,8 @@ class DataReader:
         reviews.index = reviews.index.rename('review_id')
 
         # Train - testset
-        train_reviews, test_reviews = train_test_split(reviews, train_size=0.8)
-        train_reviews: pd.DataFrame = train_reviews
-        test_reviews: pd.DataFrame = test_reviews
-        # Iedere business uit de testset moet ook in de trainset zitten
-        train_restaurants = pd.DataFrame(index=train_reviews.groupby(['business_id']).count().index)
-        test_reviews = test_reviews.join(train_restaurants, on='business_id', how='inner')
-        # Iedere user uit de testset moet ook in de trainset zitten
-        train_users = pd.DataFrame(index=train_reviews.groupby(['user_id']).count().index)
-        test_reviews = test_reviews.join(train_users, on='user_id', how='inner')
+        train_reviews = reviews.join(users_train, on='user_id', how='inner')
+        test_reviews = reviews.join(users_test, on='user_id', how='inner')
 
         return train_reviews, test_reviews
 
@@ -420,8 +413,7 @@ class DataReader:
         return tips
 
     @staticmethod
-    def _parse_users(file_location: os.PathLike, businesses: pd.DataFrame, reviews_train: pd.DataFrame,
-                     reviews_test: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def _parse_users(file_location: os.PathLike) -> tuple[pd.DataFrame, pd.DataFrame]:
         entries = DataReader._get_entries_from_file(file_location)
         # Combine all compliments
         compliment_fields = [
@@ -456,11 +448,9 @@ class DataReader:
         users = users.set_index('user_id')
         users.columns = [f"user_{column_name}" for column_name in users.columns]
 
-        # Splitting in train and test set
-        users_train = DataReader._process_users_split(users, reviews_train, businesses)
-        users_test = DataReader._process_users_split(users, reviews_test, businesses)
-
-        return users_train, users_test
+        # Train - testset
+        train_users, test_users = train_test_split(users, train_size=0.8)
+        return train_users, test_users
 
     @staticmethod
     def _process_users_split(users, reviews, businesses):
