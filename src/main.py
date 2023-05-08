@@ -72,9 +72,15 @@ def main_all_models():
     gc.collect()
     for user_index, up_params in enumerate(tqdm(UserProfilesManager(), desc="User Profiles")):
         for restaurant_index, rp_params in enumerate(tqdm(RestaurantProfilesManager(), desc="Restaurant Profiles")):
-            if (user_index, restaurant_index) not in {(0, 0), (0, 1)}:
+            # Checking for duplicate work
+            with open("done_combinations.txt", mode='r', encoding='utf-8') as done_file:
+                combos_done = done_file.readlines()
+            # If not found yet
+            if f"{user_index}_{restaurant_index}" not in combos_done:
                 main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
-            else:
+                with open("done_combinations.txt", mode='a+', encoding='utf-8') as done_combinations:
+                    done_combinations.write(f"{user_index}_{restaurant_index}\n")
+            else:  # Skip
                 logging.warning(f"Skipped model {(user_index, restaurant_index)}")
     return 0
 
