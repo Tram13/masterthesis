@@ -8,12 +8,16 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import swifter
 from pandas import DataFrame
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
 from tools.config_parser import ConfigParser
+
+# Trust me bro
+f"{swifter.config}"
 
 
 # This class works with the Yelp data set format. Download the data from https://www.yelp.com/dataset.
@@ -470,7 +474,7 @@ class DataReader:
         user_label_profiles = user_label_profiles.join(user_review_count, on='user_id')
         for column_name in tqdm(user_label_profiles.columns,
                                 desc="Applying normalisation for user profiles based on labels", leave=False):
-            user_label_profiles[column_name] = user_label_profiles.apply(
+            user_label_profiles[column_name] = user_label_profiles.swifter.apply(
                 lambda row: row[column_name] / row['user_review_count'], axis=1).astype(
                 np.float16)
         users = users.join(user_label_profiles, on='user_id', how='inner')
