@@ -72,7 +72,7 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
                                                          filter_string=filter_string,
                                                          sentiment=use_sentiment_in_scores):
         logging.warning(
-            f'Cache is not being used for selecting top n with n={top_n_topics}: allowed: {use_cache} - available: {nlp_cache.is_available_top_n(top_n_topics, approx_save_dir, normalized=normalize_after_selection, filter_string=filter_string, sentiment=use_sentiment_in_scores)}')
+            f'Cache is not being used for selecting top n with n={top_n_topics},{normalize_after_selection=},{filter_string},{use_sentiment_in_scores}: allowed: {use_cache} - available: {nlp_cache.is_available_top_n(top_n_topics, approx_save_dir, normalized=normalize_after_selection, filter_string=filter_string, sentiment=use_sentiment_in_scores)}')
         logging.info('Selecting top N topics for each sentence...')
         if normalize_after_selection:
             logging.info('+ Normalizing top_n_topics...')
