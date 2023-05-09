@@ -105,9 +105,9 @@ class DataReader:
             except OSError:
                 raise FileNotFoundError('Please regenerate original caches')
         if use_cache:
-            (b_train, r_train, u_train), (b_test, r_test, u_test) = self._read_from_cache()
-        else:
-            (b_train, r_train, u_train), (b_test, r_test, u_test) = self._read_from_disk()
+            return self._read_from_cache()
+
+        (b_train, r_train, u_train), (b_test, r_test, u_test) = self._read_from_disk()
         if save_as_cache:
             b_train.to_parquet(Path(self.cache_path, 'businesses_train_test.parquet'), engine='fastparquet')
             r_train.to_parquet(Path(self.cache_path, 'reviews_train.parquet'), engine='fastparquet')
