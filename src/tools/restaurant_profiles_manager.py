@@ -26,7 +26,7 @@ class RestaurantProfilesManager:
             approx_mode=True,
             approx_normalization=True,
             approx_amount_top_n=10,
-            filter_useful_topics=False
+            filter_useful_topics=True
         ).get_build_parameters(),
         ProfileCreator(
             model_name="online_model_50top_85.bert",
