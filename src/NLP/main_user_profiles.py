@@ -13,7 +13,8 @@ from NLP.managers.nlp_cache_manager import NLPCache
 from NLP.managers.nlp_model_manager import NLPModels
 from NLP.utils.scoring_functions import online_bertopic_scoring_func
 from NLP.utils.sentence_splitter import SentenceSplitter
-from NLP.utils.user_profile_creation import calculate_basic_user_profiles, select_top_n, normalize_user_profile
+from NLP.utils.user_profile_creation import select_top_n, normalize_user_profile, calculate_basic_user_profiles_from_dataframe, \
+    calculate_basic_user_profiles_from_series
 
 # Trust me bro
 with contextlib.redirect_stdout(None):
@@ -185,9 +186,9 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
     if use_sentiment_in_scores:
         logging.info("Exploding bert_scores...")
         bert_scores = pd.DataFrame(bert_scores.to_list())
-        user_profiles = calculate_basic_user_profiles(reviews, bert_scores, mode=profile_mode)
+        user_profiles = calculate_basic_user_profiles_from_dataframe(reviews, bert_scores, mode=profile_mode)
     else:
-        user_profiles = calculate_basic_user_profiles(reviews, bert_scores, 'sum', mode=profile_mode)
+        user_profiles = calculate_basic_user_profiles_from_series(reviews, bert_scores, 'sum', mode=profile_mode)
 
         logging.info(f"Exploding bert_scores (late) & normalizing {profile_mode[:-3]} profiles...")
         user_profiles = pd.DataFrame([*user_profiles['bert_scores']], index=user_profiles.index).swifter.apply(normalize_user_profile, axis=1)
