@@ -1,5 +1,6 @@
 import gc
 import logging
+import random
 from pathlib import Path
 
 import pandas as pd
@@ -37,6 +38,7 @@ def main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_E
 
         logging.info("Starting training")
         model, optimizer = nn_trainer.train(model, optimizer, sub_epochs=SUB_EPOCHS, save_to_disk=(EPOCHS == 1), verbose=True)
+        logging.info(f"Current loss history: {[f'{val:.3}' for val in model.loss_history[-5:]]}")
         p_bar.update()
 
         for epoch in range(2, EPOCHS + 1):
@@ -56,14 +58,14 @@ def main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_E
             gc.collect()
 
         # Save statistics
-    model.plot_loss_progress(save_location=Path(f"{str(model.get_default_save_location())[:-2]}.png"))
+    model.plot_loss_progress(save_location=Path(f"{str(model.get_default_save_location())[:-3]}.png"))
     gc.collect()
 
 
 def main_all_models():
     # Parameters
     EPOCHS = 5
-    SUB_EPOCHS = 20
+    SUB_EPOCHS = 30
     LR = 0.0002
 
     logging.info("Reading Yelp Dataset")
@@ -76,9 +78,14 @@ def main_all_models():
                 combos_done = [line.rstrip() for line in done_file.readlines()]
             # If not found yet
             if f"{user_index}_{restaurant_index}" not in combos_done:
+                if random.random() <= 0.5:  # Chance to skip this configuration
+                    logging.warning(f"Skipped model {(user_index, restaurant_index)}")
+                    continue
+                logging.info(f"Running model {(user_index, restaurant_index)}")
                 main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
                 with open("done_combinations.txt", mode='a+', encoding='utf-8') as done_combinations:
                     done_combinations.write(f"{user_index}_{restaurant_index}\n")
+                exit(1)  # To clear up memory
             else:  # Skip
                 logging.warning(f"Skipped model {(user_index, restaurant_index)}")
     return 0
