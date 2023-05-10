@@ -37,7 +37,7 @@ def evaluate_model(sentences, model_name, percentage, divide_10=False, dim_reduc
         features = bertopic_model.umap_model.transform(features)
 
     logging.info('Loading in topics...')
-    topics = np.array(nlp_cache.load_scores(nlp_models.get_dir_for_model(model_name))['topic_id'])[:len(features.index)]
+    topics = np.array(nlp_cache.load_scores(nlp_models.get_dir_for_model(model_name))['topic_id'])[:features.shape[0]]
 
     logging.info('Ready to calculate clustering metrics')
     metrics = ClusteringMetrics(features=np.array(features), labels=topics)
