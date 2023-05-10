@@ -42,7 +42,7 @@ def evaluate_model(sentences, model_name, percentage, divide_10=False, dim_reduc
     logging.info('Ready to calculate clustering metrics')
     metrics = ClusteringMetrics(features=np.array(features), labels=topics)
 
-    with open('metrics_TMP.csv', 'a') as f:
+    with open('metrics_TMP2.csv', 'a') as f:
         logging.info("calculate_calinski_harabasz_score")
         metrics.calculate_calinski_harabasz_score()
         f.write(f"{metrics.calinski_harabasz_score},")
@@ -51,9 +51,9 @@ def evaluate_model(sentences, model_name, percentage, divide_10=False, dim_reduc
         metrics.calculate_davies_bouldin_index()
         f.write(f"{metrics.davies_bouldin_index},")
 
-        logging.info("calculate_dunn_index")
-        metrics.calculate_dunn_index()
-        f.write(f"{metrics.dunn_index},")
+        # logging.info("calculate_dunn_index")
+        # metrics.calculate_dunn_index()
+        # f.write(f"{metrics.dunn_index},")
 
         logging.info("calculate_silhouet_index")
         metrics.calculate_silhouet_index()

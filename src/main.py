@@ -7,6 +7,9 @@ import pandas as pd
 from torch import optim
 from tqdm import tqdm
 
+from NLP.profiles_creator import ProfileCreator
+from NLP.utils.evaluate_model import evaluate_model
+from NLP.utils.sentence_splitter import SentenceSplitter
 from data.data_preparer import DataPreparer
 from data.data_reader import DataReader
 from predictor.multilayer_perceptron import MultiLayerPerceptronPredictor
@@ -91,6 +94,23 @@ def main_all_models():
     return 0
 
 
+def main_evaluate_model(model_name):
+    print("hello world")
+    logging.basicConfig(level=logging.INFO)
+
+    sentences = SentenceSplitter()._load_splitted_reviews_from_cache()
+
+    logging.info('Finished reading in data, starting evaluation...')
+    logging.info("0.1% of the data")
+    evaluate_model(sentences, model_name, 1, True)
+    logging.info("0.5% of the data")
+    evaluate_model(sentences, model_name, 5, True)
+    logging.info("1% of the data")
+    evaluate_model(sentences, model_name, 1, False)
+    logging.info("2% of the data")
+    evaluate_model(sentences, model_name, 2, False)
+
+
 if __name__ == '__main__':
     # Note: force manual garbage collection is used to save on memory after heavy RAM and I/O instructions
     logging.basicConfig(
@@ -98,4 +118,6 @@ if __name__ == '__main__':
         datefmt='%H:%M:%S',
         format='%(asctime)s %(levelname)-8s %(message)s',
     )
-    main_all_models()
+    modelname = "online_model_400top_97.bert"
+    # modelname = "BERTopic_guided_maxtop_58.bert"
+    main_evaluate_model(modelname)

@@ -104,6 +104,9 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
     if part_of_dataset:
         user_profiles = user_profiles.loc[reviews.index]
 
+    # normalize the review profiles -> [0,1]
+    user_profiles = user_profiles.progress_apply(normalize_user_profile, axis=1)
+
     logging.info('Aggregating reviews by user_id or business_id...')
     # add the user id to the data, so we can concatenate the reviews and aggregate (sum) them per user
 
