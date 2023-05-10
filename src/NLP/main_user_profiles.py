@@ -72,7 +72,7 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
                                                          filter_string=filter_string,
                                                          sentiment=use_sentiment_in_scores):
         logging.warning(
-            f'Cache is not being used for selecting top n with n={top_n_topics}: allowed: {use_cache} - available: {nlp_cache.is_available_top_n(top_n_topics, approx_save_dir, normalized=normalize_after_selection, filter_string=filter_string, sentiment=use_sentiment_in_scores)}')
+            f'Cache is not being used for selecting top n with n={top_n_topics},{normalize_after_selection=},{filter_string},{use_sentiment_in_scores}: allowed: {use_cache} - available: {nlp_cache.is_available_top_n(top_n_topics, approx_save_dir, normalized=normalize_after_selection, filter_string=filter_string, sentiment=use_sentiment_in_scores)}')
         logging.info('Selecting top N topics for each sentence...')
         if normalize_after_selection:
             logging.info('+ Normalizing top_n_topics...')
@@ -102,6 +102,9 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
     # only select reviews we can use
     if part_of_dataset:
         user_profiles = user_profiles.loc[reviews.index]
+
+    # normalize the review profiles -> [0,1]
+    user_profiles = user_profiles.progress_apply(normalize_user_profile, axis=1)
 
     logging.info('Aggregating reviews by user_id or business_id...')
     # add the user id to the data, so we can concatenate the reviews and aggregate (sum) them per user

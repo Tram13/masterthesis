@@ -403,5 +403,6 @@ class ProfileCreator:
                                                top_n_topics=self.approx_amount_top_n,
                                                profile_mode=profile_mode,
                                                filter_select=filter_select,
-                                               part_of_dataset=True
+                                               part_of_dataset=True,
+                                               use_sentiment_in_scores=self.use_sentiment_in_scores
                                                )
