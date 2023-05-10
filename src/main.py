@@ -7,7 +7,6 @@ import pandas as pd
 from torch import optim
 from tqdm import tqdm
 
-from NLP.profiles_creator import ProfileCreator
 from NLP.utils.evaluate_model import evaluate_model
 from NLP.utils.sentence_splitter import SentenceSplitter
 from data.data_preparer import DataPreparer
@@ -119,5 +118,7 @@ if __name__ == '__main__':
         format='%(asctime)s %(levelname)-8s %(message)s',
     )
     modelname = "online_model_400top_97.bert"
-    # modelname = "BERTopic_guided_maxtop_58.bert"
+    main_evaluate_model(modelname)
+    logging.info("***************** Evaluating second model *****************")
+    modelname = "BERTopic_guided_maxtop_58.bert"
     main_evaluate_model(modelname)
