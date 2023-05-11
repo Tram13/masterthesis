@@ -386,6 +386,8 @@ class ProfileCreator:
             return 80, 8, 80
         elif model_name == "BERTopic_400_dim_red_100.bert":
             return 10, 8, 80
+        elif model_name == "BERTopic_guided_maxtop_58.bert":
+            return 10, 1, 10
 
     def get_user_profile(self, reviews: pd.DataFrame):
         if self.approx_mode:
