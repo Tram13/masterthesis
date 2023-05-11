@@ -7,6 +7,7 @@ import pandas as pd
 from torch import optim
 from tqdm import tqdm
 
+from NLP.main_user_profiles import main_user_profile_topic
 from NLP.utils.evaluate_model import evaluate_model
 from NLP.utils.sentence_splitter import SentenceSplitter
 from data.data_preparer import DataPreparer
@@ -93,6 +94,23 @@ def main_all_models():
     return 0
 
 
+def main_guided_topics_score_creation():
+    print("hello world")
+    logging.basicConfig(level=logging.INFO)
+
+    (_, reviews, _), _ = DataReader().read_data(no_train_test=True)
+
+    logging.info('Finished reading in data, starting NLP...')
+
+    logging.info('User profile')
+    main_user_profile_topic(reviews,
+                            profile_name="GUIDED_USER_58.parquet",
+                            model_name="BERTopic_guided_maxtop_58.bert",
+                            use_sentiment_in_scores=False,
+                            only_create_scores=True
+                            )
+
+
 def main_evaluate_model(model_name):
     print("hello world")
     logging.basicConfig(level=logging.INFO)
@@ -117,8 +135,7 @@ if __name__ == '__main__':
         datefmt='%H:%M:%S',
         format='%(asctime)s %(levelname)-8s %(message)s',
     )
-    modelname = "online_model_400top_97.bert"
-    main_evaluate_model(modelname)
-    logging.info("***************** Evaluating second model *****************")
+    logging.info("***************** Evaluating model *****************")
+    main_guided_topics_score_creation()
     modelname = "BERTopic_guided_maxtop_58.bert"
     main_evaluate_model(modelname)

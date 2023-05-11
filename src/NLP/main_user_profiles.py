@@ -135,7 +135,7 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
                             profile_name: str = "BASIC_USER_PROFILES.parquet", use_cache: bool = True,
                             scores_save_dir: str = "base", model_name: str = None,
                             use_sentiment_in_scores: bool = False, profile_mode: str = 'user_id',
-                            part_of_dataset: bool = False):
+                            part_of_dataset: bool = False, only_create_scores: bool = False):
     logging.info('Finished reading in data, starting NLP...')
     nlp_cache = NLPCache(amount_of_scores_batches=amount_of_batches)
     nlp_models = NLPModels()
@@ -156,6 +156,9 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
 
     logging.info('Loading in all scores...')
     scores = nlp_cache.load_scores(scores_save_dir)
+
+    if only_create_scores:
+        return
 
     # sentiment is only included in the base scores
     if scores_save_dir != "base" and use_sentiment_in_scores:
