@@ -138,3 +138,6 @@ if __name__ == '__main__':
     logging.info("***************** Evaluating model *****************")
     modelname = "offline_bertopic_100000.bert"
     main_evaluate_model(modelname)
+    logging.info("***************** Evaluating SECOND model *****************")
+    modelname = "BERTopic_400_dim_red_100.bert"
+    main_evaluate_model(modelname)
