@@ -42,7 +42,7 @@ def evaluate_model(sentences, model_name, percentage, divide_10=False, dim_reduc
     logging.info('Ready to calculate clustering metrics')
     metrics = ClusteringMetrics(features=np.array(features), labels=topics)
 
-    with open('metrics_TMP3.csv', 'a') as f:
+    with open('metrics_TMP4.csv', 'a') as f:
         logging.info("calculate_calinski_harabasz_score")
         metrics.calculate_calinski_harabasz_score()
         f.write(f"{metrics.calinski_harabasz_score},")
