@@ -136,6 +136,5 @@ if __name__ == '__main__':
         format='%(asctime)s %(levelname)-8s %(message)s',
     )
     logging.info("***************** Evaluating model *****************")
-    main_guided_topics_score_creation()
-    modelname = "BERTopic_guided_maxtop_58.bert"
+    modelname = "offline_bertopic_100000.bert"
     main_evaluate_model(modelname)
