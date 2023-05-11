@@ -51,7 +51,15 @@ class UserProfilesManager:
             approx_normalization=True,
             approx_amount_top_n=5,
             filter_useful_topics=False
-        ).get_build_parameters()
+        ).get_build_parameters(),
+        ProfileCreator(
+            model_name="BERTopic_guided_maxtop_58.bert",
+            use_sentiment_in_scores=False,
+            approx_mode=False,
+            approx_normalization=True,
+            approx_amount_top_n=5,
+            filter_useful_topics=False
+        ).get_build_parameters(),
     ]
 
     def __next__(self) -> dict:
