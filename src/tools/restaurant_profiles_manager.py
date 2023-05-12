@@ -20,14 +20,6 @@ class RestaurantProfilesManager:
             approx_amount_top_n=5,
             filter_useful_topics=False
         ).get_build_parameters(),
-        # ProfileCreator(  # TODO: opnieuw aanzetten
-        #     model_name="online_model_400top_97.bert",
-        #     use_sentiment_in_scores=False,
-        #     approx_mode=True,
-        #     approx_normalization=True,
-        #     approx_amount_top_n=10,
-        #     filter_useful_topics=True
-        # ).get_build_parameters(),
         ProfileCreator(
             model_name="online_model_50top_85.bert",
             use_sentiment_in_scores=False,
@@ -60,7 +52,18 @@ class RestaurantProfilesManager:
             approx_amount_top_n=5,
             filter_useful_topics=False
         ).get_build_parameters()
+        # ProfileCreator(  # TODO: opnieuw aanzetten
+        #     model_name="online_model_400top_97.bert",
+        #     use_sentiment_in_scores=False,
+        #     approx_mode=True,
+        #     approx_normalization=True,
+        #     approx_amount_top_n=10,
+        #     filter_useful_topics=True
+        # ).get_build_parameters(),
     ]
+
+    def get_best(self) -> dict:
+        return self.RESTAURANT_PROFILES_NLP[0]  # TODO: juiste waarde hier instellen
 
     def __next__(self) -> dict:
         if self.restaurant_index < len(self.RESTAURANT_PROFILES_NLP):
