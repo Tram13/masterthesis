@@ -79,3 +79,6 @@ class RestaurantProfilesManager:
     def __iter__(self):
         self.restaurant_index = 0
         return self
+
+    def __getitem__(self, i):
+        return self.RESTAURANT_PROFILES_NLP[i]
