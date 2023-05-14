@@ -52,14 +52,14 @@ class RestaurantProfilesManager:
             approx_amount_top_n=5,
             filter_useful_topics=False
         ).get_build_parameters(),
-        ProfileCreator(
-            model_name="offline_bertopic_100000.bert",
-            use_sentiment_in_scores=True,
-            approx_mode=False,
-            approx_normalization=True,
-            approx_amount_top_n=5,
-            filter_useful_topics=False
-        ).get_build_parameters(),
+        # ProfileCreator(  # TODO: opnieuw aanzetten
+        #     model_name="offline_bertopic_100000.bert",
+        #     use_sentiment_in_scores=True,
+        #     approx_mode=False,
+        #     approx_normalization=True,
+        #     approx_amount_top_n=5,
+        #     filter_useful_topics=False
+        # ).get_build_parameters(),
         # ProfileCreator(  # TODO: opnieuw aanzetten
         #     model_name="online_model_400top_97.bert",
         #     use_sentiment_in_scores=False,
