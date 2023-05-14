@@ -81,7 +81,7 @@ def main_all_models():
                 combos_done = [line.rstrip() for line in done_file.readlines()]
             # If not found yet
             if f"{user_index}_{restaurant_index}" not in combos_done:
-                if random.random() <= 0.1:  # Chance to skip this configuration
+                if random.random() <= 0.3:  # Chance to skip this configuration
                     logging.warning(f"Randomly skipped model {(user_index, restaurant_index)}")
                     continue
                 logging.info(f"Running model {(user_index, restaurant_index)}")
