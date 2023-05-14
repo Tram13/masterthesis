@@ -32,9 +32,6 @@ def evaluate_model(sentences, model_name, percentage, divide_10=False, dim_reduc
     if divide_10:
         features = features.head(len(features.index)//10)
 
-    print(f"FEATURES: {len(features.shape[0])}")
-    return
-
     if dim_reduction:
         # also apply dimensionality reduction to our embedding
         features = bertopic_model.umap_model.transform(features)

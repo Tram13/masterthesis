@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from collections import Counter
 
@@ -7,12 +9,17 @@ def online_bertopic_scoring_func(col, total_amount_topics, use_sentiment=True):
     output = np.zeros(total_amount_topics)
 
     # add to main topic: sentiment_score
-    if use_sentiment:
-        np.add.at(output, col[0], col[1] * col[2])
-    else:
-        # don't use sentiment and normalize later globally, so we know what topics are the most important
-        np.add.at(output, col[0], 1)
-        return output
+    try:
+        if use_sentiment:
+            np.add.at(output, col[0], col[1] * col[2])
+        else:
+            # don't use sentiment and normalize later globally, so we know what topics are the most important
+            np.add.at(output, col[0], 1)
+            return output
+    except IndexError:
+        logging.info("Unexpected values found")
+        logging.error(col[0])
+        exit(1)
 
     # normalize data per topic
     normalize_values = Counter(col[0])
