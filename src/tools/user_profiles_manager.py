@@ -79,7 +79,7 @@ class UserProfilesManager:
     ]
 
     def get_best(self) -> dict:
-        return self.USER_PROFILES_NLP[0]  # TODO: juiste waarde hier instellen
+        return self.USER_PROFILES_NLP[0]
 
     def __next__(self) -> dict:
         if self.user_index < len(self.USER_PROFILES_NLP):

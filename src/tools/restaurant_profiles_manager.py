@@ -71,7 +71,7 @@ class RestaurantProfilesManager:
     ]
 
     def get_best(self) -> dict:
-        return self.RESTAURANT_PROFILES_NLP[0]  # TODO: juiste waarde hier instellen
+        return self.RESTAURANT_PROFILES_NLP[3]
 
     def __next__(self) -> dict:
         if self.restaurant_index < len(self.RESTAURANT_PROFILES_NLP):
