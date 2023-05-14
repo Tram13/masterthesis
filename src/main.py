@@ -81,8 +81,8 @@ def main_all_models():
                 combos_done = [line.rstrip() for line in done_file.readlines()]
             # If not found yet
             if f"{user_index}_{restaurant_index}" not in combos_done:
-                if random.random() <= 0.5:  # Chance to skip this configuration
-                    logging.warning(f"Skipped model {(user_index, restaurant_index)}")
+                if random.random() <= 0.1:  # Chance to skip this configuration
+                    logging.warning(f"Randomly skipped model {(user_index, restaurant_index)}")
                     continue
                 logging.info(f"Running model {(user_index, restaurant_index)}")
                 main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
@@ -135,9 +135,4 @@ if __name__ == '__main__':
         datefmt='%H:%M:%S',
         format='%(asctime)s %(levelname)-8s %(message)s',
     )
-    logging.info("***************** Evaluating model *****************")
-    modelname = "offline_bertopic_100000.bert"
-    main_evaluate_model(modelname)
-    logging.info("***************** Evaluating SECOND model *****************")
-    modelname = "BERTopic_400_dim_red_100.bert"
-    main_evaluate_model(modelname)
+    main_all_models()
