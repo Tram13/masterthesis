@@ -15,7 +15,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
     def __init__(self, input_size: int, version: int):
         super(MultiLayerPerceptronPredictor, self).__init__()
 
-        if isinstance(self, MultiLayerPerceptronPredictor):
+        if type(self) == MultiLayerPerceptronPredictor:
             raise NotImplementedError("Cannot initialise base class for MultiLayer Perceptron model")
 
         self.flatten = nn.Flatten()
