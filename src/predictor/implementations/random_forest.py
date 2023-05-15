@@ -21,7 +21,7 @@ class RandomForest:
     def train(self, save_to_disk: bool = True):
         self.model.fit(self.input_ml_train, self.output_ml_train, eval_set=[(self.input_ml_test, self.output_ml_test)])
         if save_to_disk:
-            self.model.save_model("testlocatie.json")  # TODO: deftige locatie opgeven
+            self.model.save_model("random_forest.json")
 
     def validate(self, n: int = 500) -> tuple[float, pd.DataFrame]:
         test_input = self.input_ml_test.head(n)
