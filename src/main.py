@@ -44,14 +44,14 @@ def main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_E
 
         logging.info("Creating Multi-Layer Perceptron models")
         models = [
-            MultiLayerPerceptron1Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
-            MultiLayerPerceptron2Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
-            MultiLayerPerceptron3Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
-            MultiLayerPerceptron4Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
-            MultiLayerPerceptron5Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
-            MultiLayerPerceptron6Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
-            MultiLayerPerceptron7Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
-            MultiLayerPerceptron8Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1)
+            MultiLayerPerceptron1Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1]),
+            MultiLayerPerceptron2Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1]),
+            MultiLayerPerceptron3Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1]),
+            MultiLayerPerceptron4Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1]),
+            MultiLayerPerceptron5Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1]),
+            MultiLayerPerceptron6Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1]),
+            MultiLayerPerceptron7Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1]),
+            MultiLayerPerceptron8Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1])
         ]
         optimizers = [
             optim.Adagrad(models[0].parameters(), lr=LR),
@@ -80,8 +80,6 @@ def main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_E
             logging.info("Transforming data to DataLoaders")
             nn_trainer = NeuralNetworkTrainer(up_params, rp_params, *train_test_data)
             gc.collect()
-
-            logging.info("Creating Multi-Layer Perceptron model")
 
             logging.info("Starting training")
             for index, (model, optimizer) in tqdm(enumerate(zip(models, optimizers)), desc="Training models", leave=False):
