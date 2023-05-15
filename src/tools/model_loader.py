@@ -34,6 +34,6 @@ class ModelLoader:
         model_class = ModelLoader._get_model_by_version(version)
         input_size = MultiLayerPerceptronPredictor.get_input_size_from_file(model_path)
         # Optimizer doesn't matter anymore, so dummy model
-        trained_optimizer = optim.Adam(MultiLayerPerceptron1Predictor(input_size=input_size).parameters(), lr=0.002)
+        trained_optimizer = optim.Adam(model_class(input_size=input_size).parameters(), lr=0.002)
         trained_model, _ = MultiLayerPerceptronPredictor.load(trained_optimizer, model_path, model_class)
         return trained_model
