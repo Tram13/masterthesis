@@ -10,9 +10,9 @@ import torch.optim
 from tools.config_parser import ConfigParser
 
 
-class MultiLayerPerceptronPredictor(nn.Module):
+class MultiLayerPerceptron6Predictor(nn.Module):
     def __init__(self, input_size: int, output_size: int):
-        super(MultiLayerPerceptronPredictor, self).__init__()
+        super(MultiLayerPerceptron6Predictor, self).__init__()
         self.flatten = nn.Flatten()
         # Definition of netwok architecture
         self.linear_stack = nn.Sequential(
@@ -20,10 +20,11 @@ class MultiLayerPerceptronPredictor(nn.Module):
             nn.ReLU(),
             nn.Dropout(p=0.2),
             nn.Linear(int(input_size * 1.2), int(input_size * 0.9)),
-            nn.Dropout(p=0.2),
             nn.ReLU(),
+            nn.Dropout(p=0.2),
             nn.Linear(int(input_size * 0.9), input_size // 2),
             nn.ReLU(),
+            nn.Dropout(p=0.2),
             nn.Linear(input_size // 2, input_size // 4),
             nn.ReLU(),
             nn.Linear(input_size // 4, input_size // 8),
@@ -37,10 +38,10 @@ class MultiLayerPerceptronPredictor(nn.Module):
         torch.nn.init.xavier_uniform_(self.linear_stack[0].weight)
         torch.nn.init.xavier_uniform_(self.linear_stack[3].weight)
         torch.nn.init.xavier_uniform_(self.linear_stack[6].weight)
-        torch.nn.init.xavier_uniform_(self.linear_stack[8].weight)
-        torch.nn.init.xavier_uniform_(self.linear_stack[10].weight)
-        torch.nn.init.xavier_uniform_(self.linear_stack[12].weight)
-        torch.nn.init.xavier_uniform_(self.linear_stack[14].weight)
+        torch.nn.init.xavier_uniform_(self.linear_stack[9].weight)
+        torch.nn.init.xavier_uniform_(self.linear_stack[11].weight)
+        torch.nn.init.xavier_uniform_(self.linear_stack[13].weight)
+        torch.nn.init.xavier_uniform_(self.linear_stack[15].weight)
 
         # Run on GPU is available
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -70,7 +71,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
         else:
             file_name = ConfigParser().get_value('predictor_model', 'mlp_full_model_name').split('.')
         uuid = datetime.now().strftime("%Y-%m-%d_%Hh%M")
-        return Path(save_dir, f'{file_name[0]}_{uuid}__EPOCHS={self.current_epoch}_LOSS={self.loss_history[-1]:.3}.{file_name[1]}')
+        return Path(save_dir, f'{file_name[0]}_{uuid}6__EPOCHS={self.current_epoch}_LOSS={self.loss_history[-1]:.3}.{file_name[1]}')
 
     @staticmethod
     def get_latest_model_from_default_location(use_inference_model: bool = False) -> Path:  # Only for full model
@@ -82,7 +83,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
         # Search disk for models in that location
         found_models = [str(model.name) for model in list(os.scandir(save_dir))]
         # Just some date parsing to find the most recent model
-        found_models = [(model_name[len(file_name[0]) + 1: len(file_name[0]) + 17], model_name) for model_name in found_models]
+        found_models = [(model_name[len(file_name[0]) + 2: len(file_name[0]) + 17], model_name) for model_name in found_models]
         found_models = [(datetime.strptime(ts, "%Y-%m-%d_%Hh%M"), model_name) for ts, model_name in found_models]
         found_models.sort(reverse=True)
 
@@ -146,12 +147,12 @@ class MultiLayerPerceptronPredictor(nn.Module):
     @staticmethod
     def load(optimizer: torch.optim.Optimizer, path: os.PathLike = None) -> tuple[nn.Module, torch.optim.Optimizer]:
         if path is None:
-            path = MultiLayerPerceptronPredictor.get_latest_model_from_default_location()
+            path = MultiLayerPerceptron6Predictor.get_latest_model_from_default_location()
             logging.info(f"Using default save location: {path}")
         checkpoint = torch.load(path)
 
         input_size = checkpoint['input_size']
-        loaded_model = MultiLayerPerceptronPredictor(input_size, 1)
+        loaded_model = MultiLayerPerceptron6Predictor(input_size, 1)
 
         loaded_model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])

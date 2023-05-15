@@ -12,7 +12,14 @@ from NLP.utils.evaluate_model import evaluate_model
 from NLP.utils.sentence_splitter import SentenceSplitter
 from data.data_preparer import DataPreparer
 from data.data_reader import DataReader
-from predictor.multilayer_perceptron import MultiLayerPerceptronPredictor
+from predictor.implementations.multilayer_perceptron1 import MultiLayerPerceptron1Predictor
+from predictor.implementations.multilayer_perceptron2 import MultiLayerPerceptron2Predictor
+from predictor.implementations.multilayer_perceptron3 import MultiLayerPerceptron3Predictor
+from predictor.implementations.multilayer_perceptron4 import MultiLayerPerceptron4Predictor
+from predictor.implementations.multilayer_perceptron5 import MultiLayerPerceptron5Predictor
+from predictor.implementations.multilayer_perceptron6 import MultiLayerPerceptron6Predictor
+from predictor.implementations.multilayer_perceptron7 import MultiLayerPerceptron7Predictor
+from predictor.implementations.multilayer_perceptron8 import MultiLayerPerceptron8Predictor
 from predictor.neural_network_trainer import NeuralNetworkTrainer
 from tools.restaurant_profiles_manager import RestaurantProfilesManager
 from tools.user_profiles_manager import UserProfilesManager
@@ -35,13 +42,35 @@ def main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_E
         nn_trainer = NeuralNetworkTrainer(up_params, rp_params, *train_test_data)
         gc.collect()
 
-        logging.info("Creating Multi-Layer Perceptron model")
-        model = MultiLayerPerceptronPredictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1)
-        optimizer = optim.Adagrad(model.parameters(), lr=LR)
+        logging.info("Creating Multi-Layer Perceptron models")
+        models = [
+            MultiLayerPerceptron1Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
+            MultiLayerPerceptron2Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
+            MultiLayerPerceptron3Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
+            MultiLayerPerceptron4Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
+            MultiLayerPerceptron5Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
+            MultiLayerPerceptron6Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
+            MultiLayerPerceptron7Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1),
+            MultiLayerPerceptron8Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1], output_size=1)
+        ]
+        optimizers = [
+            optim.Adagrad(models[0].parameters(), lr=LR),
+            optim.Adagrad(models[1].parameters(), lr=LR),
+            optim.Adagrad(models[2].parameters(), lr=LR),
+            optim.Adagrad(models[3].parameters(), lr=LR),
+            optim.Adagrad(models[4].parameters(), lr=LR),
+            optim.Adagrad(models[5].parameters(), lr=LR),
+            optim.Adagrad(models[6].parameters(), lr=LR),
+            optim.Adagrad(models[7].parameters(), lr=LR)
+        ]
 
         logging.info("Starting training")
-        model, optimizer = nn_trainer.train(model, optimizer, sub_epochs=SUB_EPOCHS, save_to_disk=(EPOCHS == 1), verbose=True)
-        logging.info(f"Current loss history: {[f'{val:.3}' for val in model.loss_history[-5:]]}")
+
+        for index, (model, optimizer) in tqdm(enumerate(zip(models, optimizers)), desc="Training models", leave=False):
+            model, optimizer = nn_trainer.train(model, optimizer, sub_epochs=SUB_EPOCHS, save_to_disk=(EPOCHS == 1), verbose=True)
+            models[index] = model
+            optimizers[index] = optimizer
+            logging.info(f"Current loss history: {[f'{val:.3}' for val in model.loss_history[-5:]]}")
         p_bar.update()
 
         for epoch in range(2, EPOCHS + 1):
@@ -55,13 +84,17 @@ def main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_E
             logging.info("Creating Multi-Layer Perceptron model")
 
             logging.info("Starting training")
-            model, optimizer = nn_trainer.train(model, optimizer, sub_epochs=SUB_EPOCHS, save_to_disk=(epoch == EPOCHS), verbose=True)
-            logging.info(f"Current loss history: {[f'{val:.3}' for val in model.loss_history[-5:]]}")
+            for index, (model, optimizer) in tqdm(enumerate(zip(models, optimizers)), desc="Training models", leave=False):
+                model, optimizer = nn_trainer.train(model, optimizer, sub_epochs=SUB_EPOCHS, save_to_disk=(EPOCHS == 1), verbose=True)
+                models[index] = model
+                optimizers[index] = optimizer
+                logging.info(f"Current loss history: {[f'{val:.3}' for val in model.loss_history[-5:]]}")
             p_bar.update()
             gc.collect()
 
         # Save statistics
-    model.plot_loss_progress(save_location=Path(f"{str(model.get_default_save_location())[:-3]}.png"))
+    for model in models:
+        model.plot_loss_progress(save_location=Path(f"{str(model.get_default_save_location())[:-3]}.png"))
     gc.collect()
 
 
@@ -130,9 +163,19 @@ def main_evaluate_model(model_name):
 
 if __name__ == '__main__':
     # Note: force manual garbage collection is used to save on memory after heavy RAM and I/O instructions
+    EPOCHS = 5
+    SUB_EPOCHS = 30
+    LR = 0.0002
+
     logging.basicConfig(
         level=logging.INFO,
         datefmt='%H:%M:%S',
         format='%(asctime)s %(levelname)-8s %(message)s',
     )
-    main_all_models()
+    logging.info("Reading Yelp Dataset")
+    train_data, test_data = DataReader().read_data()
+    up_params = UserProfilesManager().get_best()
+    rp_params = RestaurantProfilesManager().get_best()
+
+    gc.collect()
+    main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
