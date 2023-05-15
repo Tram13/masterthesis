@@ -85,7 +85,7 @@ def main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_E
 
             logging.info("Starting training")
             for index, (model, optimizer) in tqdm(enumerate(zip(models, optimizers)), desc="Training models", leave=False):
-                model, optimizer = nn_trainer.train(model, optimizer, sub_epochs=SUB_EPOCHS, save_to_disk=(EPOCHS == 1), verbose=True)
+                model, optimizer = nn_trainer.train(model, optimizer, sub_epochs=SUB_EPOCHS, save_to_disk=(EPOCHS == epoch), verbose=True)
                 models[index] = model
                 optimizers[index] = optimizer
                 logging.info(f"Current loss history: {[f'{val:.3}' for val in model.loss_history[-5:]]}")
