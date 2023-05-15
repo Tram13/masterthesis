@@ -20,6 +20,7 @@ from predictor.implementations.multilayer_perceptron5 import MultiLayerPerceptro
 from predictor.implementations.multilayer_perceptron6 import MultiLayerPerceptron6Predictor
 from predictor.implementations.multilayer_perceptron7 import MultiLayerPerceptron7Predictor
 from predictor.implementations.multilayer_perceptron8 import MultiLayerPerceptron8Predictor
+from predictor.implementations.random_forest import RandomForest
 from predictor.neural_network_trainer import NeuralNetworkTrainer
 from tools.restaurant_profiles_manager import RestaurantProfilesManager
 from tools.user_profiles_manager import UserProfilesManager
@@ -179,6 +180,18 @@ def main_evaluate_model(model_name):
     evaluate_model(sentences, model_name, 2, False)
 
 
+def main_random_forest(train_data, test_data, up_params, rp_params):
+    training_input, test_input, training_output, test_output = parse_data_train_test(train_data, test_data, (up_params, rp_params))
+    forest = RandomForest(training_input, test_input, training_output, test_output)
+    logging.info("Fitting Random Forest")
+    forest.train()
+    logging.info("Testing Random Forest")
+    results = forest.validate()
+    logging.info("Random Forest results:")
+    logging.info(f"{results[0]}")
+    logging.info(f"{results[1]}")
+
+
 if __name__ == '__main__':
     # Note: force manual garbage collection is used to save on memory after heavy RAM and I/O instructions
     EPOCHS = 5
@@ -196,6 +209,9 @@ if __name__ == '__main__':
     rp_params = RestaurantProfilesManager().get_best()
 
     gc.collect()
-    main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
     logging.info("***************** generating batches *****************")
     main_user_profile_offline_bert()
+    logging.info("***************** alle netwerkconfiguraties proberen *****************")
+    main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
+    logging.info("***************** random forest trainen *****************")
+    main_random_forest(train_data, test_data, up_params, rp_params)
