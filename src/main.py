@@ -142,6 +142,26 @@ def main_guided_topics_score_creation():
                             )
 
 
+def main_user_profile_offline_bert():
+    print("hello world")
+    logging.basicConfig(level=logging.INFO)
+
+    (_, reviews, _), _ = DataReader().read_data(no_train_test=True)
+
+    logging.info('Finished reading in data, starting NLP...')
+
+    logging.info(f'review size: {reviews.shape}')
+
+    main_user_profile_topic(reviews,
+                            amount_of_batches=10,
+                            profile_name=f"offline_bert.parquet",
+                            use_cache=False,
+                            model_name="online_model_50top_85.bert",
+                            use_sentiment_in_scores=False,
+                            only_create_scores=True
+                            )
+
+
 def main_evaluate_model(model_name):
     print("hello world")
     logging.basicConfig(level=logging.INFO)
@@ -177,3 +197,5 @@ if __name__ == '__main__':
 
     gc.collect()
     main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
+    logging.info("***************** generating batches *****************")
+    main_user_profile_offline_bert()
