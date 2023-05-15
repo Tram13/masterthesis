@@ -25,7 +25,7 @@ class MultiLayerPerceptron3Predictor(nn.Module):
             nn.Linear(input_size // 4, input_size // 8),
             nn.Sigmoid(),
             nn.Dropout(p=0.2),
-            nn.Linear(input_size // 16, output_size)
+            nn.Linear(input_size // 8, output_size)
         )
 
         # Random initialisation

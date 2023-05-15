@@ -29,7 +29,7 @@ class MultiLayerPerceptron5Predictor(nn.Module):
             nn.ReLU(),
             nn.Linear(input_size // 4, input_size // 8),
             nn.Sigmoid(),
-            nn.Linear(input_size // 16, output_size)
+            nn.Linear(input_size // 8, output_size)
         )
 
         # Random initialisation
