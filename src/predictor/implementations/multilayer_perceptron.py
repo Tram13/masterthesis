@@ -7,14 +7,6 @@ import torch
 from matplotlib import pyplot as plt
 from torch import nn
 
-from predictor.implementations.multilayer_perceptron1 import MultiLayerPerceptron1Predictor
-from predictor.implementations.multilayer_perceptron2 import MultiLayerPerceptron2Predictor
-from predictor.implementations.multilayer_perceptron3 import MultiLayerPerceptron3Predictor
-from predictor.implementations.multilayer_perceptron4 import MultiLayerPerceptron4Predictor
-from predictor.implementations.multilayer_perceptron5 import MultiLayerPerceptron5Predictor
-from predictor.implementations.multilayer_perceptron6 import MultiLayerPerceptron6Predictor
-from predictor.implementations.multilayer_perceptron7 import MultiLayerPerceptron7Predictor
-from predictor.implementations.multilayer_perceptron8 import MultiLayerPerceptron8Predictor
 from tools.config_parser import ConfigParser
 
 
@@ -103,7 +95,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
             "user_profiles_params": self.user_profiles_params,
             "business_profiles_params": self.business_profiles_params,
             "parameters_configuration": self.parameters_configuration,
-            "input_size": self.input_size
+            "input_size": self.input_size,
+            "version": self.version
         }, path)
 
         with open(f"{str(path)[:-3]}.txt", 'w+', encoding='utf-8') as params_file:
@@ -113,51 +106,19 @@ class MultiLayerPerceptronPredictor(nn.Module):
         if verbose:
             logging.info(f"Model saved at {path}.")
 
-    def save_for_inference(self, path: os.PathLike, overwrite: bool = True):
-        if path is None:
-            path = self.get_default_save_location(use_inference_model=True)
-            logging.info(f"Using default save location: {path}")
-
-        if os.path.exists(path) and os.path.isfile(path):  # Model already exists
-            if overwrite:
-                logging.warning(f'Overwriting existing model at {path}')
-                os.remove(path)
-            else:
-                logging.warning(f"Existing model found at {path}. Aborting save!")
-                return
-        save_directory = os.path.dirname(path)
-        if not os.path.exists(save_directory):  # The save directory does not exist
-            os.makedirs(save_directory, exist_ok=True)
-
-        torch.save(self.state_dict(), path)
-        logging.info(f"Inference Model saved at {path}.")
-
     @staticmethod
-    def _get_model_by_version(version: int):
-        return {
-            1: MultiLayerPerceptron1Predictor,
-            2: MultiLayerPerceptron2Predictor,
-            3: MultiLayerPerceptron3Predictor,
-            4: MultiLayerPerceptron4Predictor,
-            5: MultiLayerPerceptron5Predictor,
-            6: MultiLayerPerceptron6Predictor,
-            7: MultiLayerPerceptron7Predictor,
-            8: MultiLayerPerceptron8Predictor
-        }[version]
-
-    @staticmethod
-    def load(optimizer: torch.optim.Optimizer, path: os.PathLike) -> tuple[nn.Module, torch.optim.Optimizer]:
+    def load(optimizer: torch.optim.Optimizer, path: os.PathLike, model_class: nn.Module) -> tuple[nn.Module, torch.optim.Optimizer]:
         checkpoint = torch.load(path)
 
         input_size = checkpoint['input_size']
-        model_class = MultiLayerPerceptronPredictor._get_model_by_version(int(Path(path).stem[3]))
-        loaded_model = model_class(input_size, 1)
+        loaded_model = model_class(input_size)
 
         loaded_model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         loaded_model.current_epoch = checkpoint['epoch']
         loaded_model.loss_history = checkpoint['loss']
         loaded_model.note = checkpoint['note']
+        loaded_model.version = checkpoint['version']
         loaded_model.user_profiles_params = checkpoint['user_profiles_params']
         loaded_model.business_profiles_params = checkpoint['business_profiles_params']
         loaded_model.parameters_configuration = checkpoint['parameters_configuration']
@@ -175,16 +136,10 @@ class MultiLayerPerceptronPredictor(nn.Module):
         checkpoint = torch.load(path)
         return checkpoint['input_size']
 
-    def load_for_inference(self, path: os.PathLike = None) -> nn.Module:
-        if path is None:
-            path = self.get_latest_model_from_default_location(use_inference_model=True)
-            logging.info(f"Using default save location: {path}")
-        if not os.path.exists(path) or not os.path.isfile(path):  # Model not found
-            logging.error(f"Model not found at {path}. Aborting!")
-            raise FileNotFoundError(f"Could not load {path}")
-        self.load_state_dict(torch.load(path))
-        logging.info(f"Inference Model loaded from {path}.")
-        return self
+    @staticmethod
+    def get_version_from_file(path: os.PathLike) -> int:
+        checkpoint = torch.load(path)
+        return checkpoint['version']
 
     def plot_loss_progress(self, title: str = "MLP", display_note: bool = True, save_location: os.PathLike = None) -> tuple[plt.Figure, plt.Axes]:
         subplot = plt.subplots()
