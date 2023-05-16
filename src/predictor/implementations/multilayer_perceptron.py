@@ -149,7 +149,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
         if display_note:
             title = f"{title} Loss: {self.note}{' - ' if self.note else ''}{self.version} verborgen lagen"
         ax.set_title(title)
-        ax.set_xlabel("Totaal Sub-Epochs")
+        ax.set_xlabel("Epoch")
         ax.set_ylabel("MSE (normalized scores)")
 
         if save_location:
