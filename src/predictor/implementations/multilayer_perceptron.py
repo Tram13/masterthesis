@@ -141,15 +141,16 @@ class MultiLayerPerceptronPredictor(nn.Module):
         checkpoint = torch.load(path)
         return checkpoint['version']
 
-    def plot_loss_progress(self, title: str = "MLP", display_note: bool = True, save_location: os.PathLike = None) -> tuple[plt.Figure, plt.Axes]:
+    def plot_loss_progress(self, title: str = "Model", display_note: bool = True, save_location: os.PathLike = None) -> tuple[plt.Figure, plt.Axes]:
         subplot = plt.subplots()
         fig: plt.Figure = subplot[0]
         ax: plt.Axes = subplot[1]
         ax.plot(range(self.current_epoch), self.loss_history)
         if display_note:
-            title = f"{title} Loss: {self.note}"
+            title = f"{title} Loss: {self.note}{' - ' if self.note else ''}{self.version} verborgen lagen"
         ax.set_title(title)
-        ax.set_xlabel("Epoch")
+        ax.set_xlabel("Totaal Sub-Epochs")
+        ax.set_ylabel("MSE (normalized scores)")
 
         if save_location:
             fig.savefig(save_location)
