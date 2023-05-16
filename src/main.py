@@ -54,15 +54,15 @@ def main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_E
             MultiLayerPerceptron7Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1]),
             MultiLayerPerceptron8Predictor(input_size=nn_trainer.train_loader.dataset.x_train.shape[1])
         ]
-        optimizers = [
-            optim.Adagrad(models[0].parameters(), lr=LR),
-            optim.Adagrad(models[1].parameters(), lr=LR),
-            optim.Adagrad(models[2].parameters(), lr=LR),
-            optim.Adagrad(models[3].parameters(), lr=LR),
-            optim.Adagrad(models[4].parameters(), lr=LR),
-            optim.Adagrad(models[5].parameters(), lr=LR),
-            optim.Adagrad(models[6].parameters(), lr=LR),
-            optim.Adagrad(models[7].parameters(), lr=LR)
+        optimizers = [  # TODO: onderzoek de optimizer!
+            optim.SGD(models[0].parameters(), lr=LR),
+            optim.SGD(models[1].parameters(), lr=LR),
+            optim.SGD(models[2].parameters(), lr=LR),
+            optim.SGD(models[3].parameters(), lr=LR),
+            optim.SGD(models[4].parameters(), lr=LR),
+            optim.SGD(models[5].parameters(), lr=LR),
+            optim.SGD(models[6].parameters(), lr=LR),
+            optim.SGD(models[7].parameters(), lr=LR)
         ]
 
         logging.info("Starting training")
@@ -209,8 +209,6 @@ if __name__ == '__main__':
     rp_params = RestaurantProfilesManager().get_best()
 
     gc.collect()
-    logging.info("***************** generating batches *****************")
-    main_user_profile_offline_bert()
     logging.info("***************** alle netwerkconfiguraties proberen *****************")
     main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
     logging.info("***************** random forest trainen *****************")
