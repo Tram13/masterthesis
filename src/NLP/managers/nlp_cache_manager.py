@@ -11,7 +11,7 @@ class NLPCache:
 
     def __init__(self, amount_of_scores_batches: int = 10, amount_of_zero_shot_batches: int = 30,
                  amount_of_approximation_batches: int = 1, amount_of_top_n_batches: int = 10,
-                 amount_of_embeddings_batches: int = 100, amount_of_sentiment_batches: int = 1):
+                 amount_of_embeddings_batches: int = 100, amount_of_sentiment_batches: int = 10):
         self.cache_path = Path(ConfigParser().get_value('cache', 'nlp_cache_dir'))
         self.user_profiles_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'user_profiles_dir')))
         self.business_profile_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'business_profiles_dir')))
