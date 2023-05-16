@@ -7,6 +7,7 @@ import pandas as pd
 from torch import optim
 from tqdm import tqdm
 
+from NLP.df_NLP_manipulation.df_sentiment_analysis import sentiment_analysis_sentences
 from NLP.main_user_profiles import main_user_profile_topic
 from NLP.utils.evaluate_model import evaluate_model
 from NLP.utils.sentence_splitter import SentenceSplitter
@@ -123,13 +124,22 @@ def main_user_profile_offline_bert():
 
     main_user_profile_topic(reviews,
                             amount_of_batches=10,
-                            profile_name=f"offline_bert.parquet",
+                            profile_name=f"irrelevant.parquet",
                             use_cache=False,
                             model_name="online_model_50top_85.bert",
                             use_sentiment_in_scores=False,
-                            only_create_scores=True
+                            only_create_scores=True,
+                            calculate_sentiment=True
                             )
 
+    main_user_profile_topic(reviews,
+                            amount_of_batches=10,
+                            profile_name=f"offline_bert.parquet",
+                            use_cache=False,
+                            model_name="offline_bertopic_100000.bert",
+                            use_sentiment_in_scores=False,
+                            only_create_scores=True
+                            )
 
 def main_evaluate_model(model_name):
     print("hello world")
