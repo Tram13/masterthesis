@@ -28,9 +28,9 @@ from tools.user_profiles_manager import UserProfilesManager
 
 def parse_data_train_test(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], profile_params: tuple[dict, dict]) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     logging.info("Parsing train set")
-    training_input, training_output = DataPreparer.transform_data(*train_data, *profile_params)
+    training_input, training_output = DataPreparer.transform_data(*train_data, *profile_params, profile_size=0.5)  # TODO: in het verslag vermelden!
     logging.info("Parsing test set")
-    test_input, test_output = DataPreparer.transform_data(*test_data, *profile_params)
+    test_input, test_output = DataPreparer.transform_data(*test_data, *profile_params, profile_size=0.7)
     gc.collect()
     return training_input, test_input, training_output, test_output
 
