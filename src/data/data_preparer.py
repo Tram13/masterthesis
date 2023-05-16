@@ -71,7 +71,7 @@ class DataPreparer:
     @staticmethod
     def transform_data(businesses: pd.DataFrame, reviews: pd.DataFrame, users: pd.DataFrame, up_creator_params: dict, rp_creator_params: dict) -> tuple[pd.DataFrame, pd.Series]:
         logging.info("Splitting in generation and prediction sets")
-        reviews_generation, reviews_prediction = DataPreparer.get_profiles_split(reviews, profile_dataframe_size=0.7)
+        reviews_generation, reviews_prediction = DataPreparer.get_profiles_split(reviews, profile_dataframe_size=0.5)  # TODO: dit terug groter maken!
 
         logging.info("Creating User Profile")
         user_profiles_nlp = ProfileCreator.load_from_dict(up_creator_params).get_user_profile(reviews_generation)

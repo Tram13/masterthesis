@@ -7,7 +7,6 @@ import pandas as pd
 from torch import optim
 from tqdm import tqdm
 
-from NLP.df_NLP_manipulation.df_sentiment_analysis import sentiment_analysis_sentences
 from NLP.main_user_profiles import main_user_profile_topic
 from NLP.utils.evaluate_model import evaluate_model
 from NLP.utils.sentence_splitter import SentenceSplitter
@@ -82,8 +81,8 @@ def main_all_models():
                 combos_done = [line.rstrip() for line in done_file.readlines()]
             # If not found yet
             if f"{user_index}_{restaurant_index}" not in combos_done:
-                if random.random() <= 0.5:  # Chance to skip this configuration
-                    logging.warning(f"Skipped model {(user_index, restaurant_index)}")
+                if random.random() <= 0.3:  # Chance to skip this configuration
+                    logging.warning(f"Randomly skipped model {(user_index, restaurant_index)}")
                     continue
                 logging.info(f"Running model {(user_index, restaurant_index)}")
                 main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)

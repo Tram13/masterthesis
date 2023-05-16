@@ -1,5 +1,59 @@
 \chapter{Huidige technieken}
 \label{sec:chapt2}
+
+\section{Machine Learning}
+\label{sec:chapt2_machine_learning}
+Machine learning is een brede noemer voor alle types artificiële intelligentie waarbij een computer autonoom verbanden legt tussen datapunten (input) en een conclusie (output) zonder expliciet daarvoor geprogrammeerd te zijn. \cite{ml_textbook} Machine learning-algoritmen gebruiken data in twee stages om een model op te stellen: de train- en teststage. Tijdens het trainen wordt het model voorzien van een inputvector met een daarbij horende gekende outputvector. Het model tracht dan op basis van de input zichzelf verbanden aan te leren om tot diezelfde outputvector te komen. Daarna testen we het model op ongeziene data en verifiëren we de output. De fout tussen de verwachte output en de voorspelde output noemen we de loss, en wordt berekend met een bijhorende lossfunctie. Het doel is dus om de loss te minimaliseren.
+
+Wanneer een machine learning-algoritme niet complex genoeg is om het verband tussen input en output te modelleren, spreken we van underfitting. In dat geval is het aangewezen om een geavanceerdere techniek of architectuur te gebruiken. Het probleem kan ook bij de data liggen, bijvoorbeeld als er te weinig data is, te veel ruis in de data zit of de inputvector te weinig nuttige features bevat. Het optimaliseren van de intputvector noemen we feature engineering. Wanneer een model de traindata van buiten leert, zonder algemene verbanden te gebruiken, spreken we van overfitting. Dit is ook een probleem, want bij ongeziene data zal het model geen nuttige conclusie kunnen vormen. Dit is de reden voor het gebruik van afzonderlijke testdata. \cite{overfitting_underfitting}
+
+\mijnfiguur[H]{width=16cm}{fig/chapt2/overfitting_underfitting.png}{Underfitting en overfitting gevisualiseerd \cite{overfitting_img}}{fig:chapt2_overfitting_underfitting}
+
+Het belang van feature engineering mag bij machine learning niet onderschat worden. Met goed gemodelleerde inputvectoren is een machine learning-algoritme veel krachtiger. Dit ligt in lijn met het \q{Garbage in, garbage out}-principe. \cite{feature_engineering_ml} Feature engineering kan verschillende vormen aannemen, zoals het aggregeren van verschillende datapunten naar één overkoepelende feature, door bijvoorbeeld een gemiddelde te nemen. Hierdoor verkleint de dimensie van de inputvector, en helpen we het model om een eerste verband te leggen. Normalisatie van de inputvector valt ook onder feature engineering. Veel machine learning-technieken zijn gevoeliger voor grote waarden. Zonder normalisatie zouden deze grote features domineren over de kleine features, en zou het vermogen om informatie te extraheren uit de kleine features sterk beperkt worden voor het machine learning-algoritme. Hiervoor gebruikt men vaak min-max scaling of varianten.
+
+\subsection{Neurale netwerken}
+Neurale netwerken vormen een klasse binnen machine learning. Een neuraal netwerk bestaan uit neuronen, geordend per laag. Deze lagen zijn geordend, en neuronen van een laag kunnen enkel signalen krijgen van de laag erboven. De eerste laag noemt de inputlaag en heeft evenveel neuronen als de inputvector. De neuronen van de inputlaag zijn dan verbonden met de neuronen van de eerste verborgen laag. In een typisch neuraal netwerk zijn er meerdere verborgen lagen. De laatste verborgen laag is verbonden met de outputlaag, die de outputvector voorstelt. Bij een fully-connected netwerk zijn de neuronen van iedere laag steeds paarsgewijs verbonden met alle neuronen uit de volgende en vorige laag.
+% TODO: bron toevoegen
+\mijnfiguur[H]{width=14cm}{fig/chapt2/fully_connected_network.png}{Voorbeeld van een fully-connected neuraal netwerk met 2 verborgen lagen}{fig:chapt2_fully_connected_network}
+
+Iedere neuron uit een laag berekent een gewogen som van diens ontvangen signalen, samen met een biasterm. Dit resultaat wordt dan door een activatiefunctie verwerkt tot een nieuw signaal dat wordt doorgestuurd naar de verbonden neuronen van de volgende laag. Voorbeelden van activatiefuncties zijn ReLU en de Sigmoïdefunctie (\autoref{fig:chapt2_activation_functions}).
+
+\mijnfiguur[H]{width=10cm}{fig/chapt2/activation_functions.png}{De ReLU en Sigmoïdefunctie}{fig:chapt2_activation_functions}
+
+Sommige implementaties van neurale netwerken voegen een extra coëfficiënt $dp$ toe aan de output van een neuron, waarbij $dp \in {0, 1}$. Er is dan een kans $p$ dat $dp = 0$, waardoor die neuron het signaal $0$ zal uitsturen naar de volgende laag. Deze coëfficiënt noemen we de dropout. Tijdens training wordt $dp$ herberekend per inputvector. Bij testing geldt altijd $dp = 1$. \cite{nn_dropout} Als tijdens training $dp = 0$, komt dit conceptueel overeen met het tijdelijk breken van de verbinding tussen de huidige neuron en de verbonden neuronen uit de volgende laag. Hierdoor zal iedere inputvector verwerkt worden door een verschillend subnetwerk van neurons. Het is een techniek die gebruikt wordt om overfitting te voorkomen.
+
+Het principe van neurale netwerken in computerwetenschappen is een relatief nieuwe techniek die vaak accurater is dan traditionele algoritmen. Ze worden gekozen voor problemen waarbij de accuraatheid van voorspellingen op basis van een inputvector het hoofddoel is. Neurale netwerken vormen de fundering van zeer complexe toepassingen, zoals ChatGPT en Stable Diffusion. \cite{chatgpt_voorbeeld_transformers_arno, stable_diffusion}
+
+\subsubsection{Lossfuncties}
+\label{sec:chapt2_ml_loss_functions}
+De lossfunctie beschrijft de fout tussen de voorspelde output $\hat{R}$ en de verwachte output $R$ van een verzameling van inputvectoren $V$. Bij een regressieprobleem kan dit bijvoorbeeld intuïtief als volgt berekend worden:
+\begin{equation}
+    MSE = \frac{\sum_{v \in V} \lvert R_v - \hat{R_v}\rvert}{\lvert V \rvert}   
+    \label{eq:chapt2_mse}
+\end{equation}
+Deze specifieke lossfunctie noemen we de Mean Squared Error (MSE). Er bestaan varianten op MSE, zoals Mean Absolute Error (MAE) en Root Mean Squared Error ($RMSE = \sqrt{MSE}$). Het is ook mogelijk om een eigen implementatie voor de lossfunctie te voorzien als dat meer toepasbaar is voor het specifieke onderzoeksdomein. In onderzoeken naar aanbevelingstechnieken wordt RMSE vaak vermeld om te vergelijken met andere bestaande algoritmen. \cite{narre, deepconn, wide_deep_learning_paper} De gradiënt van de lossfunctie bepaalt hoe een optimizer de gewichten van de neuronen aanpast.
+
+\subsubsection{Optimizers}
+Optimizers zijn algoritmen die als doel hebben om de loss van het neurale netwerk te minimaliseren. Tijdens het trainen van een neuraal netwerk worden de gewichten van de neuronen aangepast om dichter bij de verwachte output te komen. De optimizer bepaalt hoe die gewichten aangepast moeten worden. Initieel krijgen alle neuronen willekeurige waarden toegekend voor de gewichten.
+
+Stochastic Gradient Descent (SGD) is een relatief eenvoudige optimizer, die op zoek gaat naar een lokaal optimum in de lossfunctie. SGD neemt een subset van de data, berekent de loss op die subset en past de gewichten aan op basis van de gradiënt. \cite{SGD_paper} De grootte van de stap die een optimizer maakt, noemen we de learning rate (LR). Een hogere learning rate zorgt dat het mogelijk is om een beter lokaal optimum te bereiken door grotere stappen te kunnen nemen. Doordat de gewichten per stap grotere updates krijgen, zal het trainen ook sneller convergeren. Echter zorgt een grotere learning rate ook een minder stabiele loss tijdens training en een grotere kans om het optimum te overshooten. \newline
+ADAM is een alternatieve optimizer die probeert het beste van beide werelden te bereiken door een adaptieve learning rate te implementeren op basis van de geschiedenis van de gradiënten. \cite{adam_paper}
+
+\mijnfiguur[H]{width=10cm}{fig/chapt2/sgd.png}{Visualisatie van Stochastic Gradient Descent \cite{sgd_img}}{fig:chapt2_sgd}
+
+
+\subsection{Random Forest}
+Een beslissingsboom (Eng.: Decision Tree) vormt een klasse binnen machine learning. Aan de hand van de features wordt de inputvector geclassificeerd. Een variant hierop is een regressieboom, waarbij de output van de boom een getal is, en geen klasse. De boom wordt opgesteld door steeds de data te splitsen in groepen op basis van de waarde voor een specifieke feature. Iedere waarde van die feature zal dan een aparte tak opleveren. Dit proces wordt dan recursief herhaalt voor iedere tak. Merk dus op dat aparte takken dus onafhankelijk beslissingen maken over welke feature er als volgende wordt geselecteerd. Bij regressiebomen worden takken gemaakt op basis van intervallen. Deze technieken zijn vaak zeer onstabiel, daar de keuze van de eerste paar features een zeer grote rol heeft op het eindresultaat. De bomen zijn vaak beperkt in diepte, om de generalisatie van het model te verbeteren en overfitting te vermijden.
+
+\mijnfiguur[H]{width=10cm}{fig/chapt2/decision_tree.png}{Visualisatie van een beslissingsboom \cite{sgd_img}}{fig:chapt2_decision_tree}
+
+Dit probleem kan beperkt worden door Random Forest-modellen te gebruiken. Dit type model combineert verschillende beslissings- of regressiebomen in één model. Het voorziet iedere boom van een subset van de data, beperkt in zowel het aantal features als het aantal inputvectoren. Door het splitsen op features wordt de stabiliteit verbeterd. Door het splitsen op het aantal rijen gaan we overfitting tegen. Random Forest-modellen zijn zeer snel en flexibel om te trainen. Ze kunnen relatief makkelijk omgaan met hoogdimensionele data door de data op te splitsen in subsets voor verschillende bomen. Het is triviaal om te achterhalen hoe een voorspelling is gemaakt. Als deze eigenschappen belangrijk zijn, zijn Random Forest-modellen een goede optie. Als de precisie het hoofddoel is, dan hebben neurale netwerken meer potentieel. \cite{cursus_ML_supervised}
+
+
+
+
+
+
 \section{Aanbevelingssystemen}
 \label{sec:chapt2_huidige_technieken_aanbevelingssystemen}
 In essentie probeert een aanbevelingssysteem te voorspellen welke producten een gebruiker nuttig zal vinden. Dit gebeurt in de meeste toepassingen \cite{overzicht_technieken} door te voorspellen welke score een gebruiker aan ieder item zou toekennen, en dan de best scorende producten terug te geven. 
