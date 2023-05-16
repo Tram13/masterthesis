@@ -135,7 +135,8 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
                             profile_name: str = "BASIC_USER_PROFILES.parquet", use_cache: bool = True,
                             scores_save_dir: str = "base", model_name: str = None,
                             use_sentiment_in_scores: bool = False, profile_mode: str = 'user_id',
-                            part_of_dataset: bool = False, only_create_scores: bool = False):
+                            part_of_dataset: bool = False, only_create_scores: bool = False,
+                            calculate_sentiment: bool = False):
     logging.info('Finished reading in data, starting NLP...')
     nlp_cache = NLPCache(amount_of_scores_batches=amount_of_batches)
     nlp_models = NLPModels()
@@ -150,7 +151,8 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
         for index, batch in enumerate(tqdm(np.array_split(reviews, amount_of_batches), desc="Score Batches")):
             print()
             scores = create_scores_from_online_model_by_topic(batch['text'], use_cache=False, model_name=model_name,
-                                                              save_in_cache=False, early_return=True)
+                                                              save_in_cache=False, early_return=True,
+                                                              calculate_sentiment=calculate_sentiment)
             scores.columns = [str(x) for x in scores.columns]
             nlp_cache.save_scores(scores, index, scores_save_dir)
 
@@ -160,8 +162,8 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
     if only_create_scores:
         return
 
-    # sentiment is only included in the base scores
-    if scores_save_dir != "base" and use_sentiment_in_scores:
+    # add sentiment
+    if use_sentiment_in_scores:
         sentiment = nlp_cache.load_sentiment()
         scores = pd.concat([sentiment, scores["topic_id"]], axis=1)
 

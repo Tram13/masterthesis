@@ -157,7 +157,7 @@ def main_user_profile_offline_bert():
                             amount_of_batches=10,
                             profile_name=f"offline_bert.parquet",
                             use_cache=False,
-                            model_name="online_model_50top_85.bert",
+                            model_name="offline_bertopic_100000.bert",
                             use_sentiment_in_scores=False,
                             only_create_scores=True
                             )
@@ -203,13 +203,17 @@ if __name__ == '__main__':
         datefmt='%H:%M:%S',
         format='%(asctime)s %(levelname)-8s %(message)s',
     )
+
     logging.info("Reading Yelp Dataset")
     train_data, test_data = DataReader().read_data()
     up_params = UserProfilesManager().get_best()
     rp_params = RestaurantProfilesManager().get_best()
-
     gc.collect()
-    logging.info("***************** alle netwerkconfiguraties proberen *****************")
-    main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
-    logging.info("***************** random forest trainen *****************")
-    main_random_forest(train_data, test_data, up_params, rp_params)
+
+    logging.info("***************** generating batches *****************")
+    main_user_profile_offline_bert()
+
+    # logging.info("***************** alle netwerkconfiguraties proberen *****************")
+    # main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, LR)
+    # logging.info("***************** random forest trainen *****************")
+    # main_random_forest(train_data, test_data, up_params, rp_params)

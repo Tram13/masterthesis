@@ -11,12 +11,12 @@ class NLPCache:
 
     def __init__(self, amount_of_scores_batches: int = 10, amount_of_zero_shot_batches: int = 30,
                  amount_of_approximation_batches: int = 1, amount_of_top_n_batches: int = 10,
-                 amount_of_embeddings_batches: int = 100):
+                 amount_of_embeddings_batches: int = 100, amount_of_sentiment_batches: int = 1):
         self.cache_path = Path(ConfigParser().get_value('cache', 'nlp_cache_dir'))
         self.user_profiles_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'user_profiles_dir')))
         self.business_profile_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'business_profiles_dir')))
         self.scores_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'scores_dir')))
-        self.sentiment_path = self.scores_path
+        self.sentiment_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'sentiment_dir')))
         self.approximation_path = self.scores_path
         self.zero_shot_classes_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'zero_shot_dir')))
         self.guided_topics_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'guided_topics')))
@@ -30,6 +30,7 @@ class NLPCache:
         self._amount_of_approximation_batches = amount_of_approximation_batches
         self._amount_of_top_n_batches = amount_of_top_n_batches
         self._amount_of_embeddings_batches = amount_of_embeddings_batches
+        self._amount_of_sentiment_batches = amount_of_sentiment_batches
 
     def _make_dirs(self):
         self._create_path_if_not_exists(self.cache_path)
@@ -66,6 +67,9 @@ class NLPCache:
 
         top_n_selected.to_parquet(Path(base_path, f"selected_top_{n}{'_with_sentiment' if sentiment else ''}{'_normalized' if normalized else ''}{filter_string}_part_{index}.parquet"), engine='fastparquet')
 
+    def save_sentiment(self, sentiment: pd.DataFrame, index: int = 0):
+        sentiment.to_parquet(Path(self.sentiment_path, f"sentiment_{index}.parquet"), engine='fastparquet')
+
     def save_scores(self, scores: pd.DataFrame, index: int = 0, model_dir: str = 'base'):
         base_path = Path(self.scores_path, model_dir)
         self._create_path_if_not_exists(base_path)
@@ -99,7 +103,11 @@ class NLPCache:
         return pd.read_parquet(Path(self.user_profiles_path, name), engine='fastparquet')
 
     def load_sentiment(self) -> pd.DataFrame:
-        return self.load_scores(batches=10)[['review_id', 'label_sentiment', 'score_sentiment']]
+        sentiment = pd.read_parquet(Path(self.sentiment_path, f"sentiment_0.parquet"), engine='fastparquet')
+        for index in range(1, self._amount_of_sentiment_batches):
+            to_add = pd.read_parquet(Path(self.sentiment_path, f"sentiment_{index}.parquet"), engine='fastparquet')
+            sentiment = pd.concat([sentiment, to_add], ignore_index=True)
+        return sentiment
 
     def load_scores(self, model_dir: str = 'base', batches: int = None) -> pd.DataFrame:
         if batches is None:
@@ -172,4 +180,6 @@ class NLPCache:
         return required_files.issubset(available_files)
 
     def is_available_sentiment(self) -> bool:
-        return self.is_available_scores()
+        available_files = {file.name for file in os.scandir(self.sentiment_path)}
+        required_files = {f"sentiment_{index}.parquet" for index in range(self._amount_of_sentiment_batches)}
+        return required_files.issubset(available_files)
