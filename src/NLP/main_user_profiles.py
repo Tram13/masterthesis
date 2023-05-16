@@ -162,8 +162,8 @@ def main_user_profile_topic(reviews: pd.DataFrame, amount_of_batches: int = 10,
     if only_create_scores:
         return
 
-    # sentiment is only included in the base scores
-    if scores_save_dir != "base" and use_sentiment_in_scores:
+    # add sentiment
+    if use_sentiment_in_scores:
         sentiment = nlp_cache.load_sentiment()
         scores = pd.concat([sentiment, scores["topic_id"]], axis=1)
 

@@ -123,22 +123,13 @@ def main_user_profile_offline_bert():
 
     main_user_profile_topic(reviews,
                             amount_of_batches=10,
-                            profile_name=f"irrelevant.parquet",
-                            use_cache=False,
-                            model_name="online_model_50top_85.bert",
-                            use_sentiment_in_scores=False,
-                            only_create_scores=True,
-                            calculate_sentiment=True
-                            )
-
-    main_user_profile_topic(reviews,
-                            amount_of_batches=10,
                             profile_name=f"offline_bert.parquet",
                             use_cache=False,
                             model_name="offline_bertopic_100000.bert",
                             use_sentiment_in_scores=False,
                             only_create_scores=True
                             )
+
 
 def main_evaluate_model(model_name):
     print("hello world")
