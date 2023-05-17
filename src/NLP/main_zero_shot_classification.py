@@ -21,13 +21,12 @@ def main_calculate_zero_shot_classification(reviews: pd.Series, classes: list[st
             f'Cache is not being used: allowed: {use_cache} - available: {nlp_cache.is_available_zero_shot_classes()}')
         logging.info('Calculating zero shot classification scores...')
         for index, batch in enumerate(tqdm(np.array_split(reviews, amount_of_batches), desc="Scores ZSC")):
-            if index == 14:
-                print()
-                zero_shot_features = zero_shot_class(batch, classes=classes)
-                zero_shot_features.columns = [str(x) for x in zero_shot_features.columns]
-                zero_shot_features.to_parquet(
-                    nlp_cache.zero_shot_classes_path.joinpath(Path(f"zero_shot_classes_{index}.parquet")),
-                    engine='fastparquet')
+            print()
+            zero_shot_features = zero_shot_class(batch, classes=classes)
+            zero_shot_features.columns = [str(x) for x in zero_shot_features.columns]
+            zero_shot_features.to_parquet(
+                nlp_cache.zero_shot_classes_path.joinpath(Path(f"zero_shot_classes_{index}.parquet")),
+                engine='fastparquet')
 
     logging.info('Completed calculation, loading in data to return...')
     return nlp_cache.load_zero_shot_classes()

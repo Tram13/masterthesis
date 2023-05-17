@@ -35,7 +35,7 @@ class SentenceSplitter:
     def _save_splitted_reviews_in_cache(self, splitted_reviews: pd.DataFrame):
         splitted_reviews.to_parquet(Path(self.cache_path, self.cache_fname), engine='fastparquet')
 
-    def split_reviews(self, reviews: pd.Series, read_cache=True, save_in_cache=True):
+    def split_reviews(self, reviews: pd.Series, read_cache: bool = True, save_in_cache: bool = True):
         if read_cache:
             splitted_reviews = self._load_splitted_reviews_from_cache()
             if splitted_reviews is not None:

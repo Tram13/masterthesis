@@ -48,6 +48,7 @@ def create_scores_from_online_model_by_topic(reviews: pd.Series, model_name: str
                                              early_return: bool = False, calculate_sentiment: bool = False):
     # load in model
     model_online_BERTopic: BERTopic = _load_model(model_name, verbose)
+    model_online_BERTopic.verbose = verbose
 
     # split reviews into sentences
     logging.info('Splitting Sentences...')
@@ -88,7 +89,8 @@ def create_scores_from_online_model_by_topic(reviews: pd.Series, model_name: str
         return reviews[['review_id', 'topic_id']]
 
     assert calculate_sentiment, """sentiment must be calculated when directly calculating user_profile scores.
-                                Recommended is using an early return and using a precalculated sentiment in base"""
+                                Recommended is using an early return and using a precalculated sentiment in 
+                                the sentiment folder"""
 
     # merge sentences back to one review
     reviews = reviews.groupby('review_id').aggregate(lambda item: item.tolist())
@@ -108,7 +110,8 @@ def create_scores_from_online_model_by_topic(reviews: pd.Series, model_name: str
     return pd.DataFrame(bert_scores.to_list())
 
 
-def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 500_000, model_name: str = None, dim_red_components: int = 15,
+def create_model_online_BERTopic(reviews: pd.Series, sentence_batch_size: int = 500_000, model_name: str = None,
+                                 dim_red_components: int = 15,
                                  max_topics: int = 200, guided_topics: list[list[str]] = None):
     # split reviews into sentences
     logging.info("Splitting Sentences...")
