@@ -275,6 +275,7 @@ dir_model = nlp_models.get_dir_for_model("model_name_here")
 # Evalueren van een clustering voor een model
 
 We kunnen clusteringsmetrieken uitrekenen voor de verschillende BERTopic modellen. Dit kan aan de hand van de volgende functie uit `src/NLP/utils/evaluate_model.py`. Deze methode zal respectievelijk de `calinski_harabasz_score`, `davies_bouldin_index` en `silhoutte_score` uitrekenen en vervolgens op een nieuwe lijn gescheiden door een komma toevoegen aan `src/metrics.csv`.
+Deze functie maakt gebruik van de metrieken geïmplementeerd in `src/NLP/utils/ClusteringMetrics.py`.
 
 - `sentences`: De zinnen die gebruikt moeten worden voor (Let op: deze worden enkel gebruikt indien de cache geen embeddings bevat!)
 - `model_name`: Naam van het model waarvan we de clustering moeten evalueren.
