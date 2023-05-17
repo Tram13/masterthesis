@@ -1,3 +1,191 @@
+# Gebruik van de NLP cache (disk)
+
+De code voor het opslaan en inlezen van de cache is te vinden in `src/NLP/managers/nlp_cache_manager.py`. De caches worden automatisch gebruikt indien de bestanden beschikbaar zijn. Deze klasse handmatig gebruiken is enkel nodig indien men de bestanden zelf wil bekijken
+
+De eerste stap is een instantie van de klasse `NLPCache` aanmaken en de volgende parameters correct in te vullen. Onderstaande parameters bepalen hoeveel bestanden ingelezen moeten worden, zie use cases van de cache.
+De locatie van de bestanden wordt vastgelegd in het `config.ini` bestand. Hieronder is een voorbeeld gegeven een instantie van de klasse `NLPCache` aangemaakt kan worden.
+
+```python
+from NLP.managers.nlp_cache_manager import NLPCache
+
+nlp_cache = NLPCache(amount_of_scores_batches=10,
+                     amount_of_zero_shot_batches=30,
+                     amount_of_approximation_batches=1,
+                     amount_of_top_n_batches=10,
+                     amount_of_embeddings_batches=100,
+                     amount_of_sentiment_batches=10
+            )
+```
+
+Na het aanmaken van een cache kunnen we gebruiken voor de volgende elementen:
+
+- Inlezen van voorafgedefinieërde topics met de naam `name`
+```python
+    def read_guided_topics(self, name: str = "NLP_categories.txt"):     # inladen van de voorafgedefineerde topics met de naam `name`
+```
+- Inlezen, opslaan en controleren of ze bestaan van embeddings
+```python
+    def save_embeddings(self, embeddings, index):   # opslaan op bepaalde index
+    def load_embeddings(self, total: int = None):   # inladen van de eerste N embeddings, indien total=None dan is N=amount_of_embeddings_batches
+    def is_available_embeddings(self):              # True als alle embeddings van 0 tot amount_of_embeddings_batches beschikbaar zijn
+```
+
+- Inlezen en opslaan van gebruikers- en restaurantprofielen op basis van naam
+```python
+    def save_user_profiles(self, user_profiles: pd.DataFrame, name: str = "BASIC_USER_PROFILES.parquet"):               # opslaan van gebruikersprofiel met de naam `name`
+    def load_user_profiles(self, name: str = "BASIC_USER_PROFILES.parquet"):                                            # inladen van gebruikersprofiel met de naam `name`
+
+    def save_business_profiles(self, business_profiles: pd.DataFrame, name: str = "BASIC_BUSINESS_PROFILES.parquet"):   # opslaan van restaurantprofiel met de naam `name`
+    def load_business_profiles(self, name: str = "BASIC_BUSINESS_PROFILES.parquet"):                                    # inladen van restaurantprofiel met de naam `name`
+```
+
+- Inlezen, opslaan en controleren of ze bestaan van sentimentscores
+```python
+    def load_sentiment(self):                                           # laad alle sentiment bestanden van 0 tot amount_of_sentiment_batches in
+    def save_sentiment(self, sentiment: pd.DataFrame, index: int = 0):  # opslaan van 1 bestand gebaseerd op index, indien al aanwezig wordt deze overschreven
+    def is_available_sentiment(self):                                   # True als alle sentiment bestanden van 0 tot amount_of_sentiment_batches beschikbaar zijn
+```
+
+- Inlezen, opslaan en controleren of ze bestaan van de toegewezen topic (=scores) per zin, beschikbaar per model
+```python
+    def load_scores(self, model_dir: str = 'base', batches: int = None):                    # laad de topic bestanden in van 0 tot batches uit de cache/bert_scores/'model_dir'. Indien batches=None dan is laden we van 0 tot amount_of_scores_batches
+    def save_scores(self, scores: pd.DataFrame, index: int = 0, model_dir: str = 'base'):   # opslaan van 1 topic bestand gebaseerd op index, indien al aanwezig wordt deze overschreven
+    def is_available_scores(self, model_dir: str = 'base'):                                 # True als alle topic bestanden van 0 tot amount_of_scores_batches in cache/bert_scores/'model_dir' beschikbaar zijn
+```
+
+- Inlezen, opslaan en controleren of ze bestaan van de approximation scores (= op basis van representatie) per zin, beschikbaar per model
+```python
+    def load_approximation(self, model_dir: str = 'base'):                                                  # laad de approximation scores (= op basis van representatie) bestanden in van 0 tot amount_of_approximation_batches uit de cache/bert_scores/'model_dir'. 
+    def save_approximation(self, approximation: pd.DataFrame, index: int = 0, model_dir: str = 'base'):     # opslaan van 1 approximation score bestand gebaseerd op index, indien al aanwezig wordt deze overschreven
+    def is_available_approximation(self, model_dir: str = 'base'):                                          # True als alle approximation score bestanden van 0 tot amount_of_approximation_batches in cache/bert_scores/'model_dir' beschikbaar zijn
+```
+
+- Inlezen, opslaan en controleren of ze bestaan van de geselecteerde top n approximation scores
+```python
+    # PARAMETERS:
+    # `n`: aantal geselecteerde topics, hyperparameter van gebruikersprofielen op basis van representatie zoals beschreven in de thesis
+    # `model_dir`: De directory van het gebruikte model. Hier worden de bestanden opgeslagen: cache/bert_scores/'model_dir'. 
+    # `normalized`: Indien de top n approximation scores genormaliseerd zijn zoals beschreven in de thesis
+    # `filter_string`: Indien de top n approximation scores gefilterd zijn: ''=niet gefilterd, 'USER'=gefilterd voor gebruikers, 'BUSINESS'=gefilterd voor restaurants
+    # `sentiment`: Indien sentiment analysis werd toegepast zoals beschreven in de thesis
+    def load_top_n_filter(self, n: int = 5, model_dir: str = 'base', normalized: bool = False, filter_string: str = "", sentiment: bool = False):                                                   # laad de top n approximation scores bestanden (op basis van de ingevulde parameters) in van 0 tot amount_of_top_n_batches uit de cache/bert_scores/'model_dir'. 
+    def save_top_n_filter(self, top_n_selected: pd.DataFrame, n: int = 5, index: int = 0, model_dir: str = 'base', normalized: bool = False, filter_string: str = "", sentiment: bool = False):     # opslaan van 1 top n approximation scores bestand (op basis van de ingevulde parameters) gebaseerd op index, indien al aanwezig wordt deze overschreven
+    def is_available_top_n(self, n: int = 5, model_dir: str = 'base', normalized: bool = False, filter_string: str = "", sentiment: bool = False):                                                  # True als alle top n approximation scores bestanden (op basis van de ingevulde parameters) van 0 tot amount_of_top_n_batches in cache/bert_scores/'model_dir' beschikbaar zijn
+``` 
+
+- Inlezen en controleren of ze bestaan van zero shot classification scores (wordt niet gebruikt, noch vermeld in de thesis)
+```python
+    def load_zero_shot_classes(self):           # laad de zero shot classification bestanden in van 0 tot amount_of_zero_shot_batches. 
+    def is_available_zero_shot_classes(self):   # True als alle zero shot classification bestande van 0 tot amount_of_zero_shot_batches beschikbaar zijn
+``` 
+
+De structuur van de cache ligt volledig vast door de volgende sectie in het config bestand:
+```
+[cache]
+nlp_cache_dir = NLP/cache/
+user_profiles_dir = user_profiles
+business_profiles_dir = business_profiles
+scores_dir = bert_scores
+sentiment_dir = sentiments
+zero_shot_dir = zero_shot_classification
+guided_topics = guided_topics
+embeddings = sentence_embeddings
+[available_models]
+amount = 5
+model_0 = online_model_50top_85.bert
+directory_0 = base
+model_1 = online_model_400top_97.bert
+directory_1 = bert_online_400
+model_2 = BERTopic_guided_maxtop_58.bert
+directory_2 = bert_guided_58
+model_3 = BERTopic_400_dim_red_100.bert
+directory_3 = bert_online_400_high_dim
+model_4 = offline_bertopic_100000.bert
+directory_4 = offline_bert_100000
+```
+De structuur van de cache met bovenstaande parameters is als volgt:
+
+```
+src
+    - NLP
+        - cache
+            - bert_scores    
+                - base
+                    - scores ...
+                    - approximations ...
+                    - top n approximations ...
+                - bert_online_400
+                    - scores ...
+                    - approximations ...
+                    - top n approximations ...
+                - ...
+            - business_profiles
+                - business_profile0.parquet
+                - business_profile1.parquet
+                - ...
+            - guided_topics
+                - NLP_categories.txt
+                - ...
+            - sentence_embeddings
+                - embedding_part_0.parquet
+                - embedding_part_1.parquet
+                - ...
+            - sentiments
+                - sentiment_0.parquet
+                - sentiment_1.parquet
+                - ...
+            - user_profiles
+                - user_profile0.parquet
+                - user_profile1.parquet
+                - ...
+            - zero_shot_classification
+                - zero_shot_classes_0.parquet
+                - zero_shot_classes_1.parquet
+                - ...
+```
+
+# Opsplitsen van zinnen
+Aangezien de BERTopic modellen niet de volledige reviews als input nemen, maar deze opsplitsen in zinnen is er code om deze op te splitsen. Dit zal gebeuren aan de hand van de klasse `SentenceSplitter` te vinden in `src/NLP/utils/sentence_splitter.py`. Deze klasse neemt één boolean parameter namelijk `verbose`, indien `verbose=True` zal er een progressbar getoond worden terwijl de zinnen gesplitst worden.
+Deze splitsing hoeft slechts eenmaal te gebeuren en duur voor de volledige dataset ongeveer 22 minuten. Na het splitsen wordt deze lokaal opgeslagen. Merk op dat deze cache altijd alle data zal bevatten, indien we een kleiner deel moet gesplitst worden kan dit opnieuwe gedaan worden of deels uitgelezen.
+
+Na het aanmaken van een instantie van de klasse `SentenceSplitter` gebruiken we de volgende methode om de reviews op te splitsen:
+
+- `reviews`: Een Pandas Series waarbij de kolom die de tekstuele reviews bevat `'text'` noemt. 
+- `read_cache`: Indien mogelijk, laad de volledige dataset van opgesplitste reviews in van disk.  
+- `save_in_cache`: Indien we niet van disk lezen zullen we de opgesplitste zinnen opslaan en indien ze al bestaan overschrijven.
+
+```python
+def split_reviews(self, reviews: pd.Series, read_cache: bool = True, save_in_cache: bool = True):
+```
+
+Een voorbeeld hoe we de volledige dataset opsplitsen in zinnen, indien mogelijk inlezen van de data cache anders uitrekenen en opslaan.
+
+```python
+from data.data_reader import DataReader
+from NLP.utils.sentence_splitter import SentenceSplitter
+
+
+# Inladen van alle data (om te splitsen)
+(_, reviews, _), _ = DataReader().read_data(no_train_test=True)
+
+# aanmaken van een SentenceSplitter object met progressbar
+sentence_splitter = SentenceSplitter(verbose=True)
+
+# Tekstuele deel van reviews opsplitsen in zinnen (inlezen van data cache indien deze bestaan (NIET DE NLP CACHE)), indien deze niet bestaan mogen ze opgeslagen worden
+splitted_reviews = sentence_splitter.split_reviews(reviews['text'], read_cache=True, save_in_cache=True)
+```
+
+# Sentiment analysis uitvoeren op bepaalde data
+
+Dit kan via de functie hieronder beschreven, deze is te vinden in `src/NLP/df_NLP_manipulation/df_sentiment_analysis.py`. De functie zal enkel de sentiment analysis uitreken en teruggeven, het opslaan zal via de NLP cache gebruiker (zie later). Deze functie heeft de volgende parameters:
+
+- `reviews`: Een Pandas Dataframe die minstens de tekstuele reviews in de kolom `'text'` bevat.
+- `verbose`: Boolean of er een progressbar moet getoond worden.
+
+```python
+def sentiment_analysis_sentences(reviews: pd.DataFrame, verbose: bool = True):
+```
+
 # BERTopic model trainen
 
 Voor een offline model (niet aanbevolen om offline modellen te trainen) kan dit via de volgende functie uit `src/NLP/main_offline_BERTopic.py`:
@@ -40,7 +228,51 @@ def create_model_online_BERTopic(reviews: pd.Series,
                                  guided_topics: list[list[str]] = None):
 ```
 
-# Evalueren van een clustering
+# Inlezen en opslaan van een getraind BERTopic model
+Aan de hand van de klasse `NLPModels` kunnen we getrainde BERTopic modellen opslaan en inladen. Het is ook mogelijk de directory van het model in de cache op te vragen, dit is bepaald door het `config.ini` bestand. Door de volgende secties wordt de `NLPModels` klasse volledig bepaald:
+
+
+```
+[model]
+model_dir = NLP/Models/                                 # locatie waar de modellen worden opgeslagen (vanaf de src directory)
+current_bert_model_index = 0                            # default index van model dat wordt ingeladen indien geen andere naam is gespecifieerd
+save_bert_model_name = onlineBERTopic_final_model.bert  # standaard naam voor het opslaan van het model indien geen andere naam is gespecifieerd
+[available_models]
+amount = 5
+model_0 = online_model_50top_85.bert
+directory_0 = base
+model_1 = online_model_400top_97.bert
+directory_1 = bert_online_400
+model_2 = BERTopic_guided_maxtop_58.bert
+directory_2 = bert_guided_58
+model_3 = BERTopic_400_dim_red_100.bert
+directory_3 = bert_online_400_high_dim
+model_4 = offline_bertopic_100000.bert
+directory_4 = offline_bert_100000
+```
+
+Een voorbeeld van het gebruik van de klasse `NLPModels` wordt hieronder weergegeven.
+
+```python
+from NLP.managers.nlp_model_manager import NLPModels
+
+# voorbeeldmodel, zie de sectie trainen van een BERTopic model voor uitleg
+trained_BERTopic_model = train_some_model()
+
+# maak een instantie van de klasse
+nlp_models = NLPModels()
+
+# opslaan van het model
+nlp_models.save_model(trained_BERTopic_model, "model_name_here")
+
+# inladen van hetzelfde model
+loaded_model = nlp_models.load_model("model_name_here")
+
+# opvragen van de directory van het model in de NLPCache. De directory MOET in de config staan!
+dir_model = nlp_models.get_dir_for_model("model_name_here")
+```
+
+# Evalueren van een clustering voor een model
 
 We kunnen clusteringsmetrieken uitrekenen voor de verschillende BERTopic modellen. Dit kan aan de hand van de volgende functie uit `src/NLP/utils/evaluate_model.py`. Deze methode zal respectievelijk de `calinski_harabasz_score`, `davies_bouldin_index` en `silhoutte_score` uitrekenen en vervolgens op een nieuwe lijn gescheiden door een komma toevoegen aan `src/metrics.csv`.
 
@@ -85,7 +317,8 @@ evaluate_model(sentences, model_name, 1, False)
 # using 2% of the data
 logging.info("2% of the data")
 evaluate_model(sentences, model_name, 2, False)
-```
+``` 
+
 # Gebruikers- en restaurantprofielen genereren
 
 Het is mogelijk om de functies in `src/NLP/main_user_profiles.py` te gebruiken, maar dit is niet aanbevolen. De makkelijkste manier is via de `ProfileCreator` in `src/NLP/profile_creator.py`. De werking hiervan wordt hieronder beschreven:
@@ -144,78 +377,10 @@ user_profiles = profile_generator.get_user_profile(reviews)
 restaurant_profiles = profile_generator.get_restaurant_profile(reviews)
 ```
 
-# Opsplitsen van zinnen
-Aangezien de BERTopic modellen niet de volledige reviews als input nemen, maar deze opsplitsen in zinnen is er code om deze op te splitsen. Dit zal gebeuren aan de hand van de klasse `SentenceSplitter` te vinden in `src/NLP/utils/sentence_splitter.py`. Deze klasse neemt één boolean parameter namelijk `verbose`, indien `verbose=True` zal er een progressbar getoond worden terwijl de zinnen gesplitst worden.
-Deze splitsing hoeft slechts eenmaal te gebeuren en duur voor de volledige dataset ongeveer 22 minuten. Na het splitsen wordt deze lokaal opgeslagen. Merk op dat deze cache altijd alle data zal bevatten, indien we een kleiner deel moet gesplitst worden kan dit opnieuwe gedaan worden of deels uitgelezen.
-
-Na het aanmaken van een instantie van de klasse `SentenceSplitter` gebruiken we de volgende methode om de reviews op te splitsen:
-
-- `reviews`: Een Pandas Series waarbij de kolom die de tekstuele reviews bevat `'text'` noemt. 
-- `read_cache`: Indien mogelijk, laad de volledige dataset van opgesplitste reviews in van disk.  
-- `save_in_cache`: Indien we niet van disk lezen zullen we de opgesplitste zinnen opslaan en indien ze al bestaan overschrijven.
-
-```python
-def split_reviews(self, reviews: pd.Series, read_cache: bool = True, save_in_cache: bool = True):
-```
-
-Een voorbeeld hoe we de volledige dataset opsplitsen in zinnen, indien mogelijk inlezen van de cache anders uitrekenen en opslaan.
-
-```python
-from data.data_reader import DataReader
-from NLP.utils.sentence_splitter import SentenceSplitter
-
-
-# Inladen van alle data (om te splitsen)
-(_, reviews, _), _ = DataReader().read_data(no_train_test=True)
-
-# aanmaken van een SentenceSplitter object met progressbar
-sentence_splitter = SentenceSplitter(verbose=True)
-
-# Tekstuele deel van reviews opsplitsen in zinnen (inlezen van cache indien deze bestaan), indien deze niet bestaan mogen ze opgeslagen worden
-splitted_reviews = sentence_splitter.split_reviews(reviews['text'], read_cache=True, save_in_cache=True)
-```
-
-
-# Gebruik van caches (disk)
-
-De code voor het opslaan en inlezen van de cache is te vinden in `src/NLP/managers/nlp_cache_manager.py`. Deze cache kunnen we gebruiken voor de volgende elementen:
-
-TODO uitleggen hoe we aanmaken + batches parameters
-
-- Inlezen van voorafgedefinieërde topics met de naam `name`
-```python
-def read_guided_topics(self, name: str = "NLP_categories.txt"):
-```
-- Inlezen, opslaan en controleren of ze bestaan van embeddings
-```python
-    def save_embeddings(self, embeddings, index):   # opslaan op bepaalde index
-    def load_embeddings(self, total: int = None):   # inladen van de eerste N embeddings
-    def is_available_embeddings(self):              # True als alle embeddings van 0 tot amount_of_embeddings_batches beschikbaar zijn
-```
-
-- Inlezen en opslaan van gebruikers- en restaurantprofielen op basis van naam
-```python
-  def save_user_profiles(self, user_profiles: pd.DataFrame, name: str = "BASIC_USER_PROFILES.parquet"):
-  def load_user_profiles(self, name: str = "BASIC_USER_PROFILES.parquet"):
-
-  def save_business_profiles(self, business_profiles: pd.DataFrame, name: str = "BASIC_BUSINESS_PROFILES.parquet"):
-  def load_business_profiles(self, name: str = "BASIC_BUSINESS_PROFILES.parquet"):
-```
-
-- 
-
-todo structuur
-```
-
-```
-
-# Inlezen van een getraind BERTopic model
-todo
-
 # Overige informatie
 
 - De implementatie van formules om gebruikers- en restaurantprofielen te genereren staan in `src/NLP/utils/scoring_functions.py`
-- todo zero shot classification
-- modellen in models folder
-- helperklassen in ModelsImplementations
-- configfile?
+- Zero shot classification werd geïmplementeerd, maar uiteindelijk niet gebruikt. Analoog voor de manueel gelabelde data in `src/NLP/manual`
+- De getrainde BERTopic modellen staan in `src/NLP/Models`, dit pad wordt vastgelegd in het `config.ini` bestand
+- helperklassen voor `Sentiment Analysis`, `Custom BERTopic`, `Sentence-BERT` en `Zero Shot Classification` staan in `src/NLP/ModelsImplementations`
+- Delen van het `config.ini` bestand dat niet vermeld worden zijn niet specifiek voor het NLP-gedeelte.

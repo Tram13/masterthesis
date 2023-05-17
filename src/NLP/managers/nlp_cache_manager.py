@@ -9,9 +9,14 @@ import os
 
 class NLPCache:
 
-    def __init__(self, amount_of_scores_batches: int = 10, amount_of_zero_shot_batches: int = 30,
-                 amount_of_approximation_batches: int = 1, amount_of_top_n_batches: int = 10,
-                 amount_of_embeddings_batches: int = 100, amount_of_sentiment_batches: int = 10):
+    def __init__(self,
+                 amount_of_scores_batches: int = 10,
+                 amount_of_zero_shot_batches: int = 30,
+                 amount_of_approximation_batches: int = 1,
+                 amount_of_top_n_batches: int = 10,
+                 amount_of_embeddings_batches: int = 100,
+                 amount_of_sentiment_batches: int = 10):
+
         self.cache_path = Path(ConfigParser().get_value('cache', 'nlp_cache_dir'))
         self.user_profiles_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'user_profiles_dir')))
         self.business_profile_path = self.cache_path.joinpath(Path(ConfigParser().get_value('cache', 'business_profiles_dir')))
@@ -61,8 +66,8 @@ class NLPCache:
     def save_user_profiles(self, user_profiles: pd.DataFrame, name: str = "BASIC_USER_PROFILES.parquet"):
         user_profiles.to_parquet(Path(self.user_profiles_path, name), engine='fastparquet')
 
-    def save_top_n_filter(self, top_n_selected: pd.DataFrame, n: int = 5, index: int = 0, save_dir: str = 'base', normalized: bool = False, filter_string: str = "", sentiment: bool = False):
-        base_path = Path(self.approximation_path, save_dir)
+    def save_top_n_filter(self, top_n_selected: pd.DataFrame, n: int = 5, index: int = 0, model_dir: str = 'base', normalized: bool = False, filter_string: str = "", sentiment: bool = False):
+        base_path = Path(self.approximation_path, model_dir)
         self._create_path_if_not_exists(base_path)
 
         top_n_selected.to_parquet(Path(base_path, f"selected_top_{n}{'_with_sentiment' if sentiment else ''}{'_normalized' if normalized else ''}{filter_string}_part_{index}.parquet"), engine='fastparquet')
@@ -76,8 +81,14 @@ class NLPCache:
 
         scores.to_parquet(Path(base_path, f"score_part_{index}.parquet"), engine='fastparquet')
 
-    def load_top_n_filter(self, n: int = 5, save_dir: str = 'base', normalized: bool = False, filter_string: str = "", sentiment: bool = False):
-        base_path = Path(self.approximation_path, save_dir)
+    def save_approximation(self, approximation: pd.DataFrame, index: int = 0, model_dir: str = 'base'):
+        base_path = Path(self.approximation_path, model_dir)
+        self._create_path_if_not_exists(base_path)
+
+        approximation.to_parquet(Path(base_path, f"approximation_part_{index}.parquet"), engine='fastparquet')
+
+    def load_top_n_filter(self, n: int = 5, model_dir: str = 'base', normalized: bool = False, filter_string: str = "", sentiment: bool = False):
+        base_path = Path(self.approximation_path, model_dir)
 
         scores = pd.read_parquet(base_path.joinpath(Path(f"selected_top_{n}{'_with_sentiment' if sentiment else ''}{'_normalized' if normalized else ''}{filter_string}_part_{0}.parquet")), engine='fastparquet')
         for index in range(1, self._amount_of_top_n_batches):
