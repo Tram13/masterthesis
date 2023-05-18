@@ -179,8 +179,6 @@ def main_guided_topics_score_creation():
 
 def main_user_profile_offline_bert():
     print("hello world")
-    logging.basicConfig(level=logging.INFO)
-
     (_, reviews, _), _ = DataReader().read_data(no_train_test=True)
 
     logging.info('Finished reading in data, starting NLP...')
