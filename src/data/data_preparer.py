@@ -105,8 +105,8 @@ class DataPreparer:
         return training_input, test_input, training_output, test_output
 
     @staticmethod
-    def make_nn_caches(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], up_params: dict, rp_params: dict, n: int = 30):
-        for i in tqdm(range(n), desc="Creating input/output data"):
+    def make_nn_caches(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], up_params: dict, rp_params: dict, n: int = 30, resume_from: int = 0):
+        for i in tqdm(range(resume_from, n), desc="Creating input/output data"):
             DataPreparer._make_nn_cache(train_data, test_data, up_params, rp_params, i)
 
     @staticmethod
