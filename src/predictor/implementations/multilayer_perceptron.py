@@ -31,6 +31,8 @@ class MultiLayerPerceptronPredictor(nn.Module):
         # Config parameters
         self.input_size = input_size
         self.version = version
+        self.optimizer = "ADAGRAD"  # Default optimizer
+        self.lr = 0  # Default LR
 
         # Needs to be implemented by inheritance class
         self.linear_stack = None
@@ -51,7 +53,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
         else:
             file_name = ConfigParser().get_value('predictor_model', 'mlp_full_model_name').split('.')
         uuid = datetime.now().strftime("%Y-%m-%d_%Hh%M")
-        return Path(save_dir, f'{file_name[0]}{self.version}_{uuid}__EPOCHS={self.current_epoch}_LOSS={self.loss_history[-1]:.3}.{file_name[1]}')
+        return Path(save_dir, f'{file_name[0]}{self.version}_{uuid}__EPOCHS={self.current_epoch}_LOSS={self.loss_history[-1]:.3}_LR={self.lr}.{file_name[1]}')
 
     @staticmethod
     def get_latest_model_from_default_location(use_inference_model: bool = False) -> Path:  # Only for full model
@@ -96,7 +98,9 @@ class MultiLayerPerceptronPredictor(nn.Module):
             "business_profiles_params": self.business_profiles_params,
             "parameters_configuration": self.parameters_configuration,
             "input_size": self.input_size,
-            "version": self.version
+            "version": self.version,
+            "optimizer": self.optimizer,
+            "lr": self.lr
         }, path)
 
         with open(f"{str(path)[:-3]}.txt", 'w+', encoding='utf-8') as params_file:
@@ -122,6 +126,10 @@ class MultiLayerPerceptronPredictor(nn.Module):
         loaded_model.user_profiles_params = checkpoint['user_profiles_params']
         loaded_model.business_profiles_params = checkpoint['business_profiles_params']
         loaded_model.parameters_configuration = checkpoint['parameters_configuration']
+        if 'optimizer' in checkpoint:
+            loaded_model.optimizer = checkpoint['optimizer']
+        if 'lr' in checkpoint:
+            loaded_model.lr = checkpoint['lr']
         logging.info(f"Model loaded from {path}.")
 
         return loaded_model, optimizer
