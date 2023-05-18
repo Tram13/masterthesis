@@ -116,6 +116,8 @@ class NeuralNetworkTrainer:
             history['test_loss'].append(test_loss)
             history['test_acc'].append(test_acc)
             model.update_epoch(test_loss)
+            if verbose:
+                loop_iterator.set_postfix_str(f"Current loss history: {[f'{val:.3}' for val in model.loss_history[-5:]]}")
 
         if save_to_disk:
             model.save(optimizer, verbose=verbose)
