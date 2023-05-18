@@ -1,10 +1,14 @@
 import gc
 import logging
+import os
+from pathlib import Path
 
 import pandas as pd
 import torch
+from tqdm import tqdm
 
 from NLP.profiles_creator import ProfileCreator
+from tools.config_parser import ConfigParser
 
 
 class DataPreparer:
@@ -83,3 +87,45 @@ class DataPreparer:
         input_ml, output_ml = DataPreparer.get_df_for_ml(businesses, reviews_prediction, users, user_profiles_nlp, business_profiles_nlp)
         gc.collect()
         return input_ml, output_ml
+
+    @staticmethod
+    def parse_data_train_test(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], profile_params: tuple[dict, dict], cache_index_if_available: int | None = None) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+        if cache_index_if_available is not None:
+            try:
+                logging.info(f"Reading ML input/output from cache {cache_index_if_available}")
+                return DataPreparer._read_nn_cache(cache_index_if_available)
+            except OSError:
+                logging.warning(f"ML input/output not available in cache {cache_index_if_available}")
+                pass
+        logging.info("Parsing train set")
+        training_input, training_output = DataPreparer.transform_data(*train_data, *profile_params, profile_size=0.5)  # TODO: in het verslag vermelden!
+        logging.info("Parsing test set")
+        test_input, test_output = DataPreparer.transform_data(*test_data, *profile_params, profile_size=0.7)
+        gc.collect()
+        return training_input, test_input, training_output, test_output
+
+    @staticmethod
+    def make_nn_caches(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], up_params: dict, rp_params: dict, n: int = 30):
+        for i in tqdm(range(n), desc="Creating input/output data"):
+            DataPreparer._make_nn_cache(train_data, test_data, up_params, rp_params, i)
+
+    @staticmethod
+    def _make_nn_cache(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], up_params: dict, rp_params: dict, i: int):
+        save_dir = Path(ConfigParser().get_value("best_profiles", "save_dir"))
+        training_input, test_input, training_output, test_output = DataPreparer.parse_data_train_test(train_data, test_data, (up_params, rp_params), cache_index_if_available=None)
+        sub_dir = Path(save_dir, f"split_{str(i).zfill(5)}")
+        os.makedirs(sub_dir, exist_ok=True)
+        training_input.to_parquet(Path(sub_dir, "training_input.parquet"), engine="fastparquet")
+        test_input.to_parquet(Path(sub_dir, "test_input.parquet"), engine="fastparquet")
+        training_output.to_csv(Path(sub_dir, "training_output.csv"))
+        test_output.to_csv(Path(sub_dir, "test_output.csv"))
+
+    @staticmethod
+    def _read_nn_cache(index: int) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+        save_dir = Path(ConfigParser().get_value("best_profiles", "save_dir"))
+        sub_dir = Path(save_dir, f"split_{str(index).zfill(5)}")
+        training_input = pd.read_parquet(Path(sub_dir, "training_input.parquet"))
+        test_input = pd.read_parquet(Path(sub_dir, "test_input.parquet"))
+        training_output = pd.read_csv(Path(sub_dir, "training_output.csv"), index_col=0)
+        test_output = pd.read_csv(Path(sub_dir, "test_output.csv"), index_col=0)
+        return training_input, test_input, training_output, test_output
