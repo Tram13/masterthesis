@@ -126,6 +126,6 @@ class DataPreparer:
         sub_dir = Path(save_dir, f"split_{str(index).zfill(5)}")
         training_input = pd.read_parquet(Path(sub_dir, "training_input.parquet"))
         test_input = pd.read_parquet(Path(sub_dir, "test_input.parquet"))
-        training_output = pd.read_csv(Path(sub_dir, "training_output.csv"), index_col=0)
-        test_output = pd.read_csv(Path(sub_dir, "test_output.csv"), index_col=0)
+        training_output = pd.read_csv(Path(sub_dir, "training_output.csv"), index_col=0).squeeze()
+        test_output = pd.read_csv(Path(sub_dir, "test_output.csv"), index_col=0).squeeze()
         return training_input, test_input, training_output, test_output
