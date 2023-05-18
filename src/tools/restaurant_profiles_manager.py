@@ -52,7 +52,7 @@ class RestaurantProfilesManager:
             approx_amount_top_n=5,
             filter_useful_topics=False
         ).get_build_parameters(),
-        # ProfileCreator(  # TODO: Code fixen
+        # ProfileCreator(
         #     model_name="offline_bertopic_100000.bert",
         #     use_sentiment_in_scores=True,
         #     approx_mode=False,
@@ -60,9 +60,9 @@ class RestaurantProfilesManager:
         #     approx_amount_top_n=5,
         #     filter_useful_topics=False
         # ).get_build_parameters(),
-        # ProfileCreator(  # TODO: te weinig RAM
+        # ProfileCreator(
         #     model_name="online_model_400top_97.bert",
-        #     use_sentiment_in_scores=False,
+        #     use_sentiment_in_scores=True,
         #     approx_mode=True,
         #     approx_normalization=True,
         #     approx_amount_top_n=10,
