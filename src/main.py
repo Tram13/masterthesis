@@ -99,11 +99,10 @@ def main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_E
             process_map(single_model_multiprocessed, args, max_workers=5)
         else:
             for index, (model, optimizer) in tqdm(enumerate(zip(models, optimizers)), desc="Training models", leave=False):
-                if index == 9:
-                    model, optimizer = nn_trainer.train(model, optimizer, sub_epochs=SUB_EPOCHS, save_to_disk=(EPOCHS == 1), verbose=True)
-                    models[index] = model
-                    optimizers[index] = optimizer
-                    logging.info(f"Current loss history: {[f'{val:.3}' for val in model.loss_history[-5:]]}")
+                model, optimizer = nn_trainer.train(model, optimizer, sub_epochs=SUB_EPOCHS, save_to_disk=(EPOCHS == 1), verbose=True)
+                models[index] = model
+                optimizers[index] = optimizer
+                logging.info(f"Current loss history: {[f'{val:.3}' for val in model.loss_history[-5:]]}")
         p_bar.update()
         logging.info(f"Validation check: {models[11].current_epoch} epochs in models[2]")
 
@@ -122,11 +121,10 @@ def main_single_model(train_data, test_data, up_params, rp_params, EPOCHS, SUB_E
                 process_map(single_model_multiprocessed, args, max_workers=4)
             else:
                 for index, (model, optimizer) in tqdm(enumerate(zip(models, optimizers)), desc="Training models", leave=False):
-                    if index == 9:
-                        model, optimizer = nn_trainer.train(model, optimizer, sub_epochs=SUB_EPOCHS, save_to_disk=(EPOCHS == epoch), verbose=True)
-                        models[index] = model
-                        optimizers[index] = optimizer
-                        logging.info(f"Current loss history: {[f'{val:.3}' for val in model.loss_history[-5:]]}")
+                    model, optimizer = nn_trainer.train(model, optimizer, sub_epochs=SUB_EPOCHS, save_to_disk=(EPOCHS == epoch), verbose=True)
+                    models[index] = model
+                    optimizers[index] = optimizer
+                    logging.info(f"Current loss history: {[f'{val:.3}' for val in model.loss_history[-5:]]}")
             logging.info(f"Validation check: {models[11].current_epoch} epochs in models[2]")
             p_bar.update()
 
