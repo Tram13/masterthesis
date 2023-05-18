@@ -39,12 +39,18 @@ class NeuralNetworkTrainer:
         return str(note)
 
     @staticmethod
-    def train_epoch(model: Module, optimizer: Optimizer, dataloader: DataLoader, loss_fn) -> float:
+    def train_epoch(model: Module, optimizer: Optimizer, dataloader: DataLoader, loss_fn, verbose: bool = True) -> float:
         model.train()  # Prepare layers of model for training
         # Prepare statistics
         total_loss = 0
         num_batches = len(dataloader)
-        for restaurant_reviews, ratings in tqdm(dataloader, desc=f"Training network in batches", leave=False):
+
+        if verbose:
+            loop_iterator = tqdm(dataloader, desc=f"Training network in batches", leave=False)
+        else:
+            loop_iterator = dataloader
+
+        for restaurant_reviews, ratings in loop_iterator:
             # Prepare data
             restaurant_reviews, ratings = DataPreparer.get_tensor_for_ml(restaurant_reviews, ratings)
             # Compute predictions and loss
@@ -84,7 +90,7 @@ class NeuralNetworkTrainer:
         accuracy = correct / size
         return mean_loss, accuracy
 
-    def train(self, model: Module, optimizer: Optimizer, sub_epochs: int = 2, plot_loss: bool = False, save_to_disk: bool = True, verbose=True) -> tuple[Module, Optimizer]:
+    def train(self, model: Module, optimizer: Optimizer, sub_epochs: int = 2, plot_loss: bool = False, save_to_disk: bool = True, verbose: bool = True) -> tuple[Module, Optimizer]:
         model.parameters_configuration = self._get_parameters_string(model, optimizer, sub_epochs)
         model.user_profiles_params = self.user_profiles_params
         model.business_profiles_params = self.business_profiles_params
@@ -97,8 +103,13 @@ class NeuralNetworkTrainer:
         }
         criterion = MSELoss()
 
-        for _ in tqdm(range(sub_epochs), desc="Sub-Epochs", leave=False):
-            train_loss = self.train_epoch(model, optimizer, self.train_loader, criterion)
+        if verbose:
+            loop_iterator = tqdm(range(sub_epochs), desc="Sub-Epochs", leave=False)
+        else:
+            loop_iterator = range(sub_epochs)
+
+        for _ in loop_iterator:
+            train_loss = self.train_epoch(model, optimizer, self.train_loader, criterion, verbose=verbose)
             test_loss, test_acc = self.validate_epoch(model, self.test_loader, criterion)
 
             history['train_loss'].append(train_loss)
