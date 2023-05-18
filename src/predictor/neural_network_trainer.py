@@ -31,8 +31,8 @@ class NeuralNetworkTrainer:
     def _get_parameters_string(model: Module, optimizer: Optimizer, sub_epochs: int):
         # Save all parameters as string, which will then be saved with the model
         note = {
-            'model': model.__class__,
-            'optimizer': optimizer.__class__,
+            'model': model.__name__,
+            'optimizer': optimizer.__name__,
             'learning_rate': optimizer.defaults['lr'],
             'sub_epochs': sub_epochs
         }
