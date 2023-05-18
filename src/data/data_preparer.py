@@ -106,7 +106,7 @@ class DataPreparer:
 
     @staticmethod
     def make_nn_caches(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], up_params: dict, rp_params: dict, n: int = 30):
-        for i in tqdm(range(n), desc="Creating input/output data"):
+        for i in tqdm(range(20, n), desc="Creating input/output data"):  # TODO: TEMP voor ARNOUD!
             DataPreparer._make_nn_cache(train_data, test_data, up_params, rp_params, i)
 
     @staticmethod
