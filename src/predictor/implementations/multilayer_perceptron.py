@@ -6,6 +6,7 @@ from pathlib import Path
 import torch
 from matplotlib import pyplot as plt
 from torch import nn
+from torch.optim import SGD, Adagrad
 
 from tools.config_parser import ConfigParser
 
@@ -148,6 +149,18 @@ class MultiLayerPerceptronPredictor(nn.Module):
     def get_version_from_file(path: os.PathLike) -> int:
         checkpoint = torch.load(path)
         return checkpoint['version']
+
+    @staticmethod
+    def get_optimizer_from_file(path: os.PathLike) -> tuple[type[torch.optim.Optimizer], float]:
+        checkpoint = torch.load(path)
+        if 'optimizer' in checkpoint and 'lr' in checkpoint:
+            if checkpoint['optimizer'] == "SGD":
+                return SGD, checkpoint['lr']
+            elif checkpoint['optimizer'] == "ADAGRAD":
+                return Adagrad, checkpoint['lr']
+            else:
+                raise NotImplementedError(f"This optimizer is not supported yet: {checkpoint['optimizer']}")
+        return Adagrad, 0.0002  # Defaults
 
     def plot_loss_progress(self, title: str = "Model", display_note: bool = True, save_location: os.PathLike = None) -> tuple[plt.Figure, plt.Axes]:
         subplot = plt.subplots()
