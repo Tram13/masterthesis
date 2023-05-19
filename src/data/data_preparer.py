@@ -9,6 +9,8 @@ from tqdm import tqdm
 
 from NLP.profiles_creator import ProfileCreator
 from tools.config_parser import ConfigParser
+from tools.restaurant_profiles_manager import RestaurantProfilesManager
+from tools.user_profiles_manager import UserProfilesManager
 
 
 class DataPreparer:
@@ -73,7 +75,8 @@ class DataPreparer:
         return restaurant_reviews, ratings
 
     @staticmethod
-    def transform_data(businesses: pd.DataFrame, reviews: pd.DataFrame, users: pd.DataFrame, up_creator_params: dict, rp_creator_params: dict, profile_size: float = 0.7) -> tuple[pd.DataFrame, pd.Series]:
+    def transform_data(businesses: pd.DataFrame, reviews: pd.DataFrame, users: pd.DataFrame, up_creator_params: dict, rp_creator_params: dict,
+                       profile_size: float = 0.7) -> tuple[pd.DataFrame, pd.Series]:
         logging.info("Splitting in generation and prediction sets")
         reviews_generation, reviews_prediction = DataPreparer.get_profiles_split(reviews, profile_dataframe_size=profile_size)
 
@@ -89,8 +92,16 @@ class DataPreparer:
         return input_ml, output_ml
 
     @staticmethod
-    def parse_data_train_test(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], profile_params: tuple[dict, dict], cache_index_if_available: int | None = None) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-        if cache_index_if_available is not None:
+    def parse_data_train_test(
+            train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame],
+            test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame],
+            profile_params: tuple[dict, dict],
+            cache_index_if_available: int | None = None
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+
+        if cache_index_if_available is not None \
+                and profile_params[0] == UserProfilesManager().get_best() \
+                and profile_params[1] == RestaurantProfilesManager().get_best():
             try:
                 logging.info(f"Reading ML input/output from cache {cache_index_if_available}")
                 return DataPreparer._read_nn_cache(cache_index_if_available)
@@ -105,14 +116,17 @@ class DataPreparer:
         return training_input, test_input, training_output, test_output
 
     @staticmethod
-    def make_nn_caches(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], up_params: dict, rp_params: dict, n: int = 30, resume_from: int = 0):
+    def make_nn_caches(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], up_params: dict,
+                       rp_params: dict, n: int = 30, resume_from: int = 0):
         for i in tqdm(range(resume_from, n), desc="Creating input/output data"):
             DataPreparer._make_nn_cache(train_data, test_data, up_params, rp_params, i)
 
     @staticmethod
-    def _make_nn_cache(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], up_params: dict, rp_params: dict, i: int):
+    def _make_nn_cache(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], up_params: dict,
+                       rp_params: dict, i: int):
         save_dir = Path(ConfigParser().get_value("best_profiles", "save_dir"))
-        training_input, test_input, training_output, test_output = DataPreparer.parse_data_train_test(train_data, test_data, (up_params, rp_params), cache_index_if_available=None)
+        training_input, test_input, training_output, test_output = DataPreparer.parse_data_train_test(train_data, test_data, (up_params, rp_params),
+                                                                                                      cache_index_if_available=None)
         sub_dir = Path(save_dir, f"split_{str(i).zfill(5)}")
         os.makedirs(sub_dir, exist_ok=True)
         training_input.to_parquet(Path(sub_dir, "training_input.parquet"), engine="fastparquet")
