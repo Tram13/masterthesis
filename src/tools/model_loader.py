@@ -1,7 +1,5 @@
 import os
 
-from torch import optim
-
 from predictor.implementations.multilayer_perceptron import MultiLayerPerceptronPredictor
 from predictor.implementations.multilayer_perceptron1 import MultiLayerPerceptron1Predictor
 from predictor.implementations.multilayer_perceptron2 import MultiLayerPerceptron2Predictor
@@ -34,6 +32,7 @@ class ModelLoader:
         model_class = ModelLoader._get_model_by_version(version)
         input_size = MultiLayerPerceptronPredictor.get_input_size_from_file(model_path)
         # Optimizer doesn't matter anymore, so dummy model
-        trained_optimizer = optim.Adam(model_class(input_size=input_size).parameters(), lr=0.002)
+        optimizer_class, lr = MultiLayerPerceptronPredictor.get_optimizer_from_file(model_path)
+        trained_optimizer = optimizer_class(model_class(input_size=input_size).parameters(), lr=lr)
         trained_model, _ = MultiLayerPerceptronPredictor.load(trained_optimizer, model_path, model_class)
         return trained_model
