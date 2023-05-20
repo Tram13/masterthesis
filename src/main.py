@@ -35,9 +35,12 @@ def main_train_models_with_same_data_splits(train_data, test_data, up_params, rp
 
         # If no models are provided, use the default implementation
         if models is None:
+            lr = 0.0002
             logging.info("Using default Multi-Layer Perceptron model")
-            models = [MultiLayerPerceptron5Predictor(nn_trainer.train_loader.dataset.x_train.shape[1])]  # Invullen met het juiste standaardmodel
-            optimizers = [Adagrad(models[0].parameters(), 0.0002)]  # Invullen met het juiste standaardmodel
+            models = [MultiLayerPerceptron6Predictor(nn_trainer.train_loader.dataset.x_train.shape[1])]  # Invullen met het juiste standaardmodel
+            optimizers = [Adagrad(models[0].parameters(), lr)]  # Invullen met het juiste standaardmodel
+            models[0].lr = lr
+            models[0].optimizer = "ADAGRAD"
 
         logging.info("Starting training")
         for index, (model, optimizer) in tqdm(enumerate(zip(models, optimizers)), desc="Training models", leave=False, total=len(models)):
@@ -163,34 +166,6 @@ def main():
     up_params = UserProfilesManager().get_best()
     rp_params = RestaurantProfilesManager().get_best()
     gc.collect()
-
-    logging.info("***************** alle netwerkconfiguraties proberen *****************")
-    dummy_data = DataPreparer.parse_data_train_test(train_data, test_data, (up_params, rp_params), cache_index_if_available=0)
-    dummy_trainer = NeuralNetworkTrainer(up_params, rp_params, *dummy_data)
-    models = [
-        MultiLayerPerceptron1Predictor(input_size=dummy_trainer.train_loader.dataset.x_train.shape[1]),
-        MultiLayerPerceptron2Predictor(input_size=dummy_trainer.train_loader.dataset.x_train.shape[1]),
-        MultiLayerPerceptron3Predictor(input_size=dummy_trainer.train_loader.dataset.x_train.shape[1]),
-        MultiLayerPerceptron4Predictor(input_size=dummy_trainer.train_loader.dataset.x_train.shape[1]),
-        MultiLayerPerceptron5Predictor(input_size=dummy_trainer.train_loader.dataset.x_train.shape[1]),
-        MultiLayerPerceptron6Predictor(input_size=dummy_trainer.train_loader.dataset.x_train.shape[1]),
-        MultiLayerPerceptron7Predictor(input_size=dummy_trainer.train_loader.dataset.x_train.shape[1]),
-        MultiLayerPerceptron8Predictor(input_size=dummy_trainer.train_loader.dataset.x_train.shape[1])
-    ]
-    optimizers = [
-        optim.Adagrad(models[0].parameters(), lr=LR),
-        optim.Adagrad(models[1].parameters(), lr=LR),
-        optim.Adagrad(models[2].parameters(), lr=LR),
-        optim.Adagrad(models[3].parameters(), lr=LR),
-        optim.Adagrad(models[4].parameters(), lr=LR),
-        optim.Adagrad(models[5].parameters(), lr=LR),
-        optim.Adagrad(models[6].parameters(), lr=LR),
-        optim.Adagrad(models[7].parameters(), lr=LR)
-    ]
-    # Setting default parameter correctly
-    for i_model in models:
-        i_model.optimizer = "ADAGRAD"
-        i_model.lr = LR
 
     main_train_models_with_same_data_splits(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, models, optimizers)
 
