@@ -166,7 +166,7 @@ class MultiLayerPerceptronPredictor(nn.Module):
         subplot = plt.subplots()
         fig: plt.Figure = subplot[0]
         ax: plt.Axes = subplot[1]
-        ax.plot(range(self.current_epoch), self.loss_history)
+        ax.plot(range(self.current_epoch), self.loss_history, color='#1E64C8')
         if display_note:
             title = f"{title} Loss: {self.note}{' - ' if self.note else ''}{self.version} verborgen lagen"
         ax.set_title(title)
