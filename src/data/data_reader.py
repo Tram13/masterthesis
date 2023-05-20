@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import re
 import sys
@@ -85,7 +86,7 @@ class DataReader:
         self.file_paths = [Path(data_path, file) for file in self.EXPECTED_FILES]
 
     def read_data(self, use_cache: bool = True, save_as_cache: bool = True, part: int = None,
-                  total_parts: int = None, no_train_test: bool = False) -> \
+                  total_parts: int = None, no_train_test: bool = False, at_least: int = None, at_most: int = None) -> \
             tuple[tuple[DataFrame, DataFrame, DataFrame], tuple[DataFrame, DataFrame, DataFrame]]:
         if part is not None or total_parts is not None:
             raise NotImplementedError("Dit wordt niet meer ondersteund")
@@ -105,9 +106,9 @@ class DataReader:
             except OSError:
                 raise FileNotFoundError('Please regenerate original caches')
         if use_cache:
-            return self._read_from_cache()
+            return self._read_from_cache(at_least, at_most)
 
-        (b_train, r_train, u_train), (b_test, r_test, u_test) = self._read_from_disk()
+        (b_train, r_train, u_train), (b_test, r_test, u_test) = self._read_from_disk(at_least, at_most)
         if save_as_cache:
             b_train.to_parquet(Path(self.cache_path, 'businesses_train_test.parquet'), engine='fastparquet')
             r_train.to_parquet(Path(self.cache_path, 'reviews_train.parquet'), engine='fastparquet')
@@ -128,7 +129,7 @@ class DataReader:
         # businesses = businesses[start_index:end_index]
         # return businesses, reviews, tips, users
 
-    def _read_from_disk(self) -> tuple[tuple[DataFrame, DataFrame, DataFrame], tuple[DataFrame, DataFrame, DataFrame]]:
+    def _read_from_disk(self, at_least: int, at_most: int) -> tuple[tuple[DataFrame, DataFrame, DataFrame], tuple[DataFrame, DataFrame, DataFrame]]:
         with tqdm(total=5, desc="Reading files from disk", leave=False) as p_bar:
             p_bar.set_postfix_str('(current: businesses)')
             businesses = self._parse_businesses(self.file_paths[0])
@@ -148,14 +149,22 @@ class DataReader:
                 businesses, reviews_train, reviews_test, users_train, users_test
             )
 
+            p_bar.update()
+
+            if at_least:
+                reviews_train = self._get_coldstart_at_least_n_reviews(reviews_train, at_least)
+                reviews_test = self._get_coldstart_at_least_n_reviews(reviews_test, at_least)
+
+            elif at_most:
+                reviews_train = self._get_coldstart_at_most_n_reviews(reviews_train, at_most)
+                reviews_test = self._get_coldstart_at_most_n_reviews(reviews_test, at_most)
+
             train_set = (businesses, reviews_train, users_train)
             test_set = (businesses.copy(deep=True), reviews_test, users_test)
 
-            p_bar.update()
-
         return train_set, test_set
 
-    def _read_from_cache(self) -> tuple[tuple[DataFrame, DataFrame, DataFrame], tuple[DataFrame, DataFrame, DataFrame]]:
+    def _read_from_cache(self, at_least: int, at_most: int) -> tuple[tuple[DataFrame, DataFrame, DataFrame], tuple[DataFrame, DataFrame, DataFrame]]:
         try:
             with tqdm(total=3, desc="Reading files from cache", leave=False) as p_bar:
                 p_bar.set_postfix_str('(current: businesses)')
@@ -172,8 +181,33 @@ class DataReader:
                 p_bar.update()
         except OSError:
             print("Could not reach caches!", file=sys.stderr)
-            (b_train, r_train, u_train), (b_test, r_test, u_test) = self._read_from_disk()
+            return self._read_from_disk(at_least, at_most)
+
+        if at_least:
+            r_train = self._get_coldstart_at_least_n_reviews(r_train, at_least)
+            r_test = self._get_coldstart_at_least_n_reviews(r_test, at_least)
+
+        elif at_most:
+            r_train = self._get_coldstart_at_most_n_reviews(r_train, at_most)
+            r_test = self._get_coldstart_at_most_n_reviews(r_test, at_most)
+
         return (b_train, r_train, u_train), (b_test, r_test, u_test)
+
+    @staticmethod
+    def _get_coldstart_at_least_n_reviews(reviews: pd.DataFrame, n: int) -> pd.DataFrame:
+        user_review_counts = reviews.groupby(['user_id']).count()['business_id'].rename('count')
+        user_at_least_n_reviews = user_review_counts[user_review_counts >= n].index
+        filtered_reviews = reviews[reviews['user_id'].isin(user_at_least_n_reviews)]
+        logging.info(f"Kept {(len(filtered_reviews) / len(reviews) * 100):.2f}% of dataset after coldstart at least {n} filter")
+        return filtered_reviews
+
+    @staticmethod
+    def _get_coldstart_at_most_n_reviews(reviews: pd.DataFrame, n: int) -> pd.DataFrame:
+        user_review_counts = reviews.groupby(['user_id']).count()['business_id'].rename('count')
+        user_at_most_n_reviews = user_review_counts[user_review_counts <= n].index
+        filtered_reviews = reviews[reviews['user_id'].isin(user_at_most_n_reviews)]
+        logging.info(f"Kept {(len(filtered_reviews) / len(reviews) * 100):.2f}% of dataset after coldstart at most {n} filter")
+        return filtered_reviews
 
     # Check if ALL and NOTHING BUT the data files are present in the provided directory
     def _assert_cache_dir_exists(self):
