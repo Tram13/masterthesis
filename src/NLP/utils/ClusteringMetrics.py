@@ -10,16 +10,16 @@ class ClusteringMetrics:
     def __init__(self, features: np.array, labels: np.array) -> None:
         self.features = features
         self.labels = labels
-        self.silhouet_index = None          # -1 to 1 => close to 1 is good
+        self.silhouette_index = None          # -1 to 1 => close to 1 is good
         self.dunn_index = None              #
         self.davies_bouldin_index = None    # as high as possible
         self.calinski_harabasz_score = None
 
-    def calculate_silhouet_index(self) -> float:
-        if self.silhouet_index is None:
-            self.silhouet_index = silhouette_score(self.features, self.labels)
+    def calculate_silhouette_index(self) -> float:
+        if self.silhouette_index is None:
+            self.silhouette_index = silhouette_score(self.features, self.labels)
 
-        return self.silhouet_index
+        return self.silhouette_index
 
     def calculate_dunn_index(self) -> float:
         if self.dunn_index is None:
@@ -40,8 +40,8 @@ class ClusteringMetrics:
         return self.calinski_harabasz_score
 
     def calculate_all_indices(self):
-        print("calculating silhouet...")
-        self.calculate_silhouet_index()
+        print("calculating silhouette...")
+        self.calculate_silhouette_index()
         print("calculating dunn...")
         self.calculate_dunn_index()
         print("calculating davies_bouldin...")
@@ -51,7 +51,7 @@ class ClusteringMetrics:
 
     def __str__(self):
         return f"""Scores:
-        Silhouet_index: {self.silhouet_index}
+        Silhouette_index: {self.silhouette_index}
         Dunn_index: {self.dunn_index}
         Davies_bouldin_index: {self.davies_bouldin_index}
         Calinski_harabasz_score: {self.calinski_harabasz_score}

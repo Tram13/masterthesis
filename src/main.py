@@ -120,7 +120,7 @@ def main_user_profile_offline_bert():
     logging.info(f'review size: {reviews.shape}')
 
     main_user_profile_topic(reviews,
-                            amount_of_batches=10,
+                            amount_of_batches=20,
                             profile_name=f"offline_bert.parquet",
                             use_cache=False,
                             model_name="offline_bertopic_100000.bert",
@@ -136,14 +136,14 @@ def main_evaluate_model(model_name):
     sentences = SentenceSplitter()._load_splitted_reviews_from_cache()
 
     logging.info('Finished reading in data, starting evaluation...')
-    logging.info("0.1% of the data")
-    evaluate_model(sentences, model_name, 1, True)
-    logging.info("0.5% of the data")
-    evaluate_model(sentences, model_name, 5, True)
+    # logging.info("0.1% of the data")
+    # evaluate_model(sentences, model_name, 1, True)
+    # logging.info("0.5% of the data")
+    # evaluate_model(sentences, model_name, 5, True)
     logging.info("1% of the data")
     evaluate_model(sentences, model_name, 1, False)
-    logging.info("2% of the data")
-    evaluate_model(sentences, model_name, 2, False)
+    # logging.info("2% of the data")
+    # evaluate_model(sentences, model_name, 2, False)
 
 
 def main():

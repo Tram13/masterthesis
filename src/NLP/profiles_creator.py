@@ -404,8 +404,8 @@ class ProfileCreator:
         # hardcoded here
         # score batches, approximation batches, top_n batches
         if model_name == "offline_bertopic_100000.bert":
-            # offline bertopic does not have the approximations in cache (yet)
-            return 10, None, None
+            # offline bertopic does not have the approximations in cache
+            return 80, None, None
         elif model_name == "online_model_50top_85.bert":
             return 10, 1, 10
         elif model_name == "online_model_400top_97.bert":

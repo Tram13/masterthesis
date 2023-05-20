@@ -50,9 +50,8 @@ def main_user_profile_approximation(reviews: pd.DataFrame, amount_of_batches_for
             approximation = create_scores_by_approximate_distribution(batch['text'], model_name=model_name,
                                                                       use_cache=amount_of_batches_for_approximations == 1)
             approximation.columns = [str(x) for x in approximation.columns]
-            approximation.to_parquet(
-                nlp_cache.approximation_path.joinpath(Path(approx_save_dir, f"approximation_part_{index}.parquet")),
-                engine='fastparquet')
+            nlp_cache.save_approximation(approximation, index=index, model_dir=approx_save_dir)
+
 
     logging.info('Loading in approximations...')
     user_profiles = nlp_cache.load_approximation(approx_save_dir)
