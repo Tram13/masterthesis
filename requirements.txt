@@ -16,3 +16,4 @@ BERTopic
 seaborn
 xgboost
 swifter
+openpyxl
