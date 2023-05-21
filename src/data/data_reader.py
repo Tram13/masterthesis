@@ -151,13 +151,17 @@ class DataReader:
 
             p_bar.update()
 
-            if at_least:
-                reviews_train = self._get_coldstart_at_least_n_reviews(reviews_train, at_least)
-                reviews_test = self._get_coldstart_at_least_n_reviews(reviews_test, at_least)
+            if at_least or at_most:
+                original_size = len(reviews_train)
+                if at_least:
+                    reviews_train = self._get_coldstart_at_least_n_reviews(reviews_train, at_least)
+                    reviews_test = self._get_coldstart_at_least_n_reviews(reviews_test, at_least)
 
-            elif at_most:
-                reviews_train = self._get_coldstart_at_most_n_reviews(reviews_train, at_most)
-                reviews_test = self._get_coldstart_at_most_n_reviews(reviews_test, at_most)
+                if at_most:
+                    reviews_train = self._get_coldstart_at_most_n_reviews(reviews_train, at_most)
+                    reviews_test = self._get_coldstart_at_most_n_reviews(reviews_test, at_most)
+
+                logging.info(f"Kept {(len(reviews_train) / original_size * 100):.2f}% of dataset after coldstart with at least {at_least}, at most {at_most} filter")
 
             train_set = (businesses, reviews_train, users_train)
             test_set = (businesses.copy(deep=True), reviews_test, users_test)
@@ -183,13 +187,17 @@ class DataReader:
             print("Could not reach caches!", file=sys.stderr)
             return self._read_from_disk(at_least, at_most)
 
-        if at_least:
-            r_train = self._get_coldstart_at_least_n_reviews(r_train, at_least)
-            r_test = self._get_coldstart_at_least_n_reviews(r_test, at_least)
+        if at_least or at_most:
+            original_size = len(r_train)
+            if at_least:
+                r_train = self._get_coldstart_at_least_n_reviews(r_train, at_least)
+                r_test = self._get_coldstart_at_least_n_reviews(r_test, at_least)
 
-        elif at_most:
-            r_train = self._get_coldstart_at_most_n_reviews(r_train, at_most)
-            r_test = self._get_coldstart_at_most_n_reviews(r_test, at_most)
+            if at_most:
+                r_train = self._get_coldstart_at_most_n_reviews(r_train, at_most)
+                r_test = self._get_coldstart_at_most_n_reviews(r_test, at_most)
+
+            logging.info(f"Kept {(len(r_train) / original_size * 100):.2f}% of dataset after coldstart with at least {at_least}, at most {at_most} filter")
 
         return (b_train, r_train, u_train), (b_test, r_test, u_test)
 
@@ -198,7 +206,6 @@ class DataReader:
         user_review_counts = reviews.groupby(['user_id']).count()['business_id'].rename('count')
         user_at_least_n_reviews = user_review_counts[user_review_counts >= n].index
         filtered_reviews = reviews[reviews['user_id'].isin(user_at_least_n_reviews)]
-        logging.info(f"Kept {(len(filtered_reviews) / len(reviews) * 100):.2f}% of dataset after coldstart at least {n} filter")
         return filtered_reviews
 
     @staticmethod
@@ -206,7 +213,6 @@ class DataReader:
         user_review_counts = reviews.groupby(['user_id']).count()['business_id'].rename('count')
         user_at_most_n_reviews = user_review_counts[user_review_counts <= n].index
         filtered_reviews = reviews[reviews['user_id'].isin(user_at_most_n_reviews)]
-        logging.info(f"Kept {(len(filtered_reviews) / len(reviews) * 100):.2f}% of dataset after coldstart at most {n} filter")
         return filtered_reviews
 
     # Check if ALL and NOTHING BUT the data files are present in the provided directory
