@@ -1,0 +1,601 @@
+\chapter{Huidige technieken}
+\label{sec:chapt2}
+
+\section{Machine Learning}
+\label{sec:chapt2_machine_learning}
+Machine learning is een brede noemer voor alle types artificiële intelligentie waarbij een computer autonoom verbanden legt tussen datapunten (input) en een conclusie (output) zonder expliciet daarvoor geprogrammeerd te zijn. \cite{ml_textbook} Machine learning-algoritmen gebruiken data in twee stages om een model op te stellen: de train- en teststage. Tijdens het trainen wordt het model voorzien van een inputvector met een daarbij horende gekende outputvector. Het model tracht dan op basis van de input zichzelf verbanden aan te leren om tot diezelfde outputvector te komen. Daarna testen we het model op ongeziene data en verifiëren we de output. De fout tussen de verwachte output en de voorspelde output noemen we de loss, en wordt berekend met een bijhorende lossfunctie. Het doel is dus om de loss te minimaliseren.
+
+Wanneer een machine learning-algoritme niet complex genoeg is om het verband tussen input en output te modelleren, spreken we van underfitting. In dat geval is het aangewezen om een geavanceerdere techniek of architectuur te gebruiken. Het probleem kan ook bij de data liggen, bijvoorbeeld als er te weinig data is, te veel ruis in de data zit of de inputvector te weinig nuttige features bevat. Het optimaliseren van de intputvector noemen we feature engineering. Wanneer een model de traindata van buiten leert, zonder algemene verbanden te gebruiken, spreken we van overfitting. Dit is ook een probleem, want bij ongeziene data zal het model geen nuttige conclusie kunnen vormen. Dit is de reden voor het gebruik van afzonderlijke testdata. \cite{overfitting_underfitting}
+
+\mijnfiguur[H]{width=16cm}{fig/chapt2/overfitting_underfitting.png}{Underfitting en overfitting gevisualiseerd \cite{overfitting_img}}{fig:chapt2_overfitting_underfitting}
+
+Het belang van feature engineering mag bij machine learning niet onderschat worden. Met goed gemodelleerde inputvectoren is een machine learning-algoritme veel krachtiger. Dit ligt in lijn met het \q{Garbage in, garbage out}-principe. \cite{feature_engineering_ml} Feature engineering kan verschillende vormen aannemen, zoals het aggregeren van verschillende datapunten naar één overkoepelende feature, door bijvoorbeeld een gemiddelde te nemen. Hierdoor verkleint de dimensie van de inputvector, en helpen we het model om een eerste verband te leggen. Normalisatie van de inputvector valt ook onder feature engineering. Veel machine learning-technieken zijn gevoeliger voor grote waarden. Zonder normalisatie zouden deze grote features domineren over de kleine features, en zou het vermogen om informatie te extraheren uit de kleine features sterk beperkt worden voor het machine learning-algoritme. Hiervoor gebruikt men vaak min-max scaling of varianten.
+
+\subsection{Neurale netwerken}
+Neurale netwerken vormen een klasse binnen machine learning. Een neuraal netwerk bestaan uit neuronen, geordend per laag. Deze lagen zijn geordend, en neuronen van een laag kunnen enkel signalen krijgen van de laag erboven. De eerste laag noemt de inputlaag en heeft evenveel neuronen als de inputvector. De neuronen van de inputlaag zijn dan verbonden met de neuronen van de eerste verborgen laag. In een typisch neuraal netwerk zijn er meerdere verborgen lagen. De laatste verborgen laag is verbonden met de outputlaag, die de outputvector voorstelt. Bij een fully-connected multilayer perceptron netwerk zijn de neuronen van iedere laag steeds directioneel paarsgewijs verbonden met alle neuronen uit de volgende laag. \cite{multilayer_perceptron_model_cursus}
+\mijnfiguur[H]{width=14cm}{fig/chapt2/fully_connected_network.png}{Voorbeeld van een fully-connected neuraal netwerk met 2 verborgen lagen}{fig:chapt2_fully_connected_network}
+
+Iedere neuron uit een laag berekent een gewogen som van diens ontvangen signalen, samen met een biasterm. Dit resultaat wordt dan door een activatiefunctie verwerkt tot een nieuw signaal dat wordt doorgestuurd naar de verbonden neuronen van de volgende laag. Voorbeelden van activatiefuncties zijn ReLU en de Sigmoïdefunctie (\autoref{fig:chapt2_activation_functions}).
+
+\mijnfiguur[H]{width=10cm}{fig/chapt2/activation_functions.png}{De ReLU en Sigmoïdefunctie}{fig:chapt2_activation_functions}
+
+Sommige implementaties van neurale netwerken voegen een extra coëfficiënt $dp$ toe aan de output van een neuron, waarbij $dp \in {0, 1}$. Er is dan een kans $p$ dat $dp = 0$, waardoor die neuron het signaal $0$ zal uitsturen naar de volgende laag. Deze coëfficiënt noemen we de dropout. Tijdens training wordt $dp$ herberekend per inputvector. Bij testing geldt altijd $dp = 1$. \cite{nn_dropout} Als tijdens training $dp = 0$, komt dit conceptueel overeen met het tijdelijk breken van de verbinding tussen de huidige neuron en de verbonden neuronen uit de volgende laag. Hierdoor zal iedere inputvector verwerkt worden door een verschillend subnetwerk van neurons. Het is een techniek die gebruikt wordt om overfitting te voorkomen.
+
+Het principe van neurale netwerken in computerwetenschappen is een relatief nieuwe techniek die vaak accurater is dan traditionele algoritmen doordat ze in staat zijn om niet-lineaire verbanden zelf te ontdekken. Ze worden gekozen voor problemen waarbij de accuraatheid van voorspellingen op basis van een inputvector het hoofddoel is. Neurale netwerken vormen de fundering van zeer complexe toepassingen, zoals ChatGPT en Stable Diffusion. \cite{chatgpt_voorbeeld_transformers_arno, stable_diffusion}
+
+\subsubsection{Lossfuncties}
+\label{sec:chapt2_ml_loss_functions}
+De lossfunctie beschrijft de fout tussen de voorspelde output $\hat{R}$ en de verwachte output $R$ van een verzameling van inputvectoren $V$. Bij een regressieprobleem kan dit bijvoorbeeld intuïtief als volgt berekend worden:
+\begin{equation}
+    MSE = \frac{\sum_{v \in V} \lvert R_v - \hat{R_v}\rvert}{\lvert V \rvert}   
+    \label{eq:chapt2_mse}
+\end{equation}
+Deze specifieke lossfunctie noemen we de Mean Squared Error (MSE). Er bestaan varianten op MSE, zoals Mean Absolute Error (MAE) en Root Mean Squared Error ($RMSE = \sqrt{MSE}$). Het is ook mogelijk om een eigen implementatie voor de lossfunctie te voorzien als dat meer toepasbaar is voor het specifieke onderzoeksdomein. In onderzoeken naar aanbevelingstechnieken wordt RMSE vaak vermeld om te vergelijken met andere bestaande algoritmen. \cite{narre, deepconn, wide_deep_learning_paper} De gradiënt van de lossfunctie bepaalt hoe een optimizer de gewichten van de neuronen aanpast.
+
+\subsubsection{Optimizers}
+Optimizers zijn algoritmen die als doel hebben om de loss van het neuraal netwerk te minimaliseren. Tijdens het trainen van een neuraal netwerk worden de gewichten van de neuronen aangepast om dichter bij de verwachte output te komen. De optimizer bepaalt hoe die gewichten aangepast moeten worden. Initieel krijgen alle neuronen willekeurige waarden toegekend voor de gewichten.
+
+Stochastic Gradient Descent (SGD) is een relatief eenvoudige optimizer, die op zoek gaat naar een lokaal optimum in de lossfunctie. SGD neemt een subset van de data, berekent de loss op die subset en past de gewichten aan op basis van de gradiënt. \cite{SGD_paper} De grootte van de stap die een optimizer maakt, noemen we de learning rate (LR). Een hogere learning rate zorgt dat het mogelijk is om een beter lokaal optimum te bereiken door grotere stappen te kunnen nemen. Doordat de gewichten per stap grotere updates krijgen, zal het trainen ook sneller convergeren. Echter zorgt een grotere learning rate ook een minder stabiele loss tijdens training en een grotere kans om het optimum te overshooten. \newline
+ADAGRAD is een alternatieve optimizer die probeert het beste van beide werelden te bereiken door een adaptieve learning rate te implementeren op basis van de geschiedenis van de gradiënten (momentum). \cite{adagrad_paper}
+
+\mijnfiguur[H]{width=10cm}{fig/chapt2/sgd.png}{Visualisatie van Stochastic Gradient Descent \cite{sgd_img}}{fig:chapt2_sgd}
+
+
+\subsection{Random Forest}
+Een beslissingsboom (Eng.: Decision Tree) vormt een klasse binnen machine learning. Aan de hand van de features wordt de inputvector geclassificeerd. Een variant hierop is een regressieboom, waarbij de output van de boom een getal is, en geen klasse. De boom wordt opgesteld door steeds de data te splitsen in groepen op basis van de waarde voor een specifieke feature. Iedere waarde van die feature zal dan een aparte tak opleveren. Dit proces wordt dan recursief herhaalt voor iedere tak. Merk dus op dat aparte takken dus onafhankelijk beslissingen maken over welke feature er als volgende wordt geselecteerd. Bij regressiebomen worden takken gemaakt op basis van intervallen. Deze technieken zijn vaak zeer onstabiel, daar de keuze van de eerste paar features een zeer grote rol heeft op het eindresultaat. De bomen zijn vaak beperkt in diepte, om de generalisatie van het model te verbeteren en overfitting te vermijden.
+
+\mijnfiguur[H]{width=10cm}{fig/chapt2/decision_tree.png}{Visualisatie van een beslissingsboom \cite{sgd_img}}{fig:chapt2_decision_tree}
+
+Dit probleem kan beperkt worden door Random Forest-modellen te gebruiken. Dit type model combineert verschillende beslissings- of regressiebomen in één model. Het voorziet iedere boom van een subset van de data, beperkt in zowel het aantal features als het aantal inputvectoren. Door het splitsen op features wordt de stabiliteit verbeterd. Door het splitsen op het aantal rijen gaan we overfitting tegen. Random Forest-modellen zijn zeer snel en flexibel om te trainen. Ze kunnen relatief makkelijk omgaan met hoogdimensionele data door de data op te splitsen in subsets voor verschillende bomen. Het is triviaal om te achterhalen hoe een voorspelling is gemaakt. Als deze eigenschappen belangrijk zijn, zijn Random Forest-modellen een goede optie. Als de precisie het hoofddoel is, dan hebben neurale netwerken meer potentieel. \cite{cursus_ML_supervised}
+
+
+
+
+
+
+\section{Aanbevelingssystemen}
+\label{sec:chapt2_huidige_technieken_aanbevelingssystemen}
+In essentie probeert een aanbevelingssysteem te voorspellen welke producten een gebruiker nuttig zal vinden. Dit gebeurt in de meeste toepassingen \cite{overzicht_technieken} door te voorspellen welke score een gebruiker aan ieder item zou toekennen, en dan de best scorende producten terug te geven. 
+
+We kunnen dit formeel noteren als
+\begin{equation}
+U \times I \rightarrow \hat{R}
+\label{def:chap2_aanbevelingssysteem_formeel}    
+\end{equation}
+waarbij $U$ een vector is die de gebruikers voorstelt, $I$ een vector is die de items voorstelt en $\hat{R}$ de verwachte scores zijn. \cite{cursus_hs2} $\hat{R}$ is dan een matrix, waarbij iedere kolom overeenkomt met een item en iedere rij overeenkomt met een gebruiker.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{c|ccc}
+        & $Item_0$ & $Item_1$ & $Item_2$ \\ \hline
+$User_0$ & 0.5     & 0.6     & 0.7     \\
+$User_1$ & 0.8     & 0.8     & 0.9     \\
+$User_2$ & 0.3     & 0.9     & 0.8    
+\end{tabular}
+\caption{Voorbeeld voor $\hat{R}$ met fictieve data}
+\end{table}
+
+Hieruit volgt dat een aanbeveling voor de top $N$ beste producten voor een gebruiker neerkomt op de volgende berekening:
+\begin{lstlisting}[language=python]
+    scores = []
+    for item in items:
+        scores.append(score(user, item))
+    scores.sort_desc()
+    scores[0:N]
+\end{lstlisting}
+
+Het design van een aanbevelingssysteem kan gezien worden als een optimalisatieprobleem waarbij we $|(R - \hat{R})|$ minimaliseren, met $R$ de effectieve scores zijn die de gebruikers zouden toekennen aan de items.
+
+Er zijn dus 3 factoren die invloed hebben op de fout $|(R - \hat{R})|$ van een aanbevelingssysteem: $U$, $I$ en de operator $\times$, die $U$ en $I$ verwerkt tot een score. $U$ en $I$ zijn gebaseerd op de oorspronkelijke data, en worden met feature engineering-technieken omgezet tot numerieke features. De $\times$-operator kan op veel verschillende manieren deze features combineren tot een voorspelling $\hat{R}$. Bij het ontwerp van een aanbevelingssysteem is het dus belangrijk om deze 3 parameters te bestuderen.
+
+De technieken besproken in \autoref{sec:chapt2_huidige_technieken_aanbevelingssystemen} worden gebruikt als baseline om de performantie van ons eigen model te kaderen.
+
+
+\subsection{Niet-gepersonaliseerde systemen}
+\label{sec:chapt2_non_persionalised}
+Niet-gepersonaliseerde aanbevelingssystemen gebruiken geen gegevens over de gebruiker om aanbevelingen te maken. Met andere woorden, $U$ is de eenheidsvector. Er wordt enkel beroep gedaan op data van de producten, zoals het aantal verkochte exemplaren of het aantal positieve reviews. Verschillende metrieken kunnen met feature engineering gecombineerd worden om zo betere resultaten te bekomen. De aanbevelingen zijn dus voor iedere gebruiker hetzelfde, wat deze techniek computationeel minder intensief maakt. Er is ook geen nood om gebruikersgegevens te verzamelen.
+
+\subsection{Gebruikersprofielen}
+\label{sub:chapt2_gebruikersprofielen}
+Om voor iedere gebruiker steeds een goede aanbeveling te maken, is het voor een aanbevelingssysteem uitermate belangrijk om de voorkeuren van die gebruiker goed te kunnen modelleren. Bij veel methoden wordt er per gebruiker een 'gebruikersprofiel' opgesteld: dit profiel is een vector waarvan iedere dimensie een eigenschap van een gebruiker of producten voorstelt. Deze methoden groeperen we onder 'gepersonaliseerde aanbevelingssystemen', en zijn doorgaans veel accurater dan niet-gepersonaliseerde systemen. Het opstellen van een gebruikersprofiel gebeurt impliciet aan de hand van de aankoopgeschiedenis/reviews... van de gebruiker. Het is ook mogelijk om de gebruiker in een vragenlijst expliciet om zijn voorkeuren te vragen.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{c|ccc}
+         & $Property_0$ & $Property_1$ & $Property_2$ \\ \hline
+$User_0$ & 0.2          & 0            & 0.7          \\
+$User_1$ & 0.1          & 0.8          & 0.6          \\
+$User_2$ & 0.9          & 0.9          & 0.2         
+\end{tabular}
+\caption{Voorbeeld voor $U$ met fictieve data}
+\label{tab:chap2_user_profiles}
+\end{table}
+
+Door \autoref{tab:chap2_user_profiles} is het duidelijk dat in de praktijk $U$ een matrix is in definitie \ref{def:chap2_aanbevelingssysteem_formeel}. Dit zal zo zijn voor iedere techniek die gebruikersprofielen gebruikt, ongeacht hoe die profielen worden opgesteld.
+
+\subsection{Traditionele methoden}
+\label{sec:chapt2_traditionele_methoden}
+Er bestaan verschillende technieken om gepersonaliseerde aanbevelingssystemen te implementeren. Traditionele algoritmen zoals Content-Based Filtering (CB) en Collaborative Filtering (CF) zijn wijd toepasbaar in verschillende contexten. "CB en CF werken door prioriteiten toe te kennen aan de beschikbare informatie en hierop te filteren." \cite{overzicht_technieken} Voor al deze technieken is er steeds een éénduidig gedefinieerde operator $\times$.
+
+
+\subsubsection{Content-Based Filtering}
+\label{seq:chapt2_cb}
+Deze techniek is gebaseerd op de metadata van de producten. Er wordt per gebruiker een profiel aangemaakt dat de voorkeuren voor eigenschappen van producten weerspiegeld. Toegepast op een aanbevelingssysteem voor restaurants zijn deze eigenschappen bijvoorbeeld de prijsklasse, keuken en kindvriendelijkheid. Hoe meer metadata beschikbaar is, hoe preciezer de voorkeuren van de gebruiker gemodelleerd kunnen worden. Het gebruikersprofiel wordt dan vergeleken met alle beschikbare items, om zo de items die het dichtste aansluiten bij het gebruikersprofiel aan te bieden. Formeel geldt bij Content-Based Filtering voor gebruiker $i$:
+
+
+\begin{equation}
+    U_i = \sum_{n=1}^{N} I_n
+    \label{eq:chap2_cb_user_profile}
+\end{equation}
+met $N$ het aantal producten en $I_n$ een vector die de aanwezigheid van iedere mogelijke eigenschap aanduidt. Dit gebruikersprofiel kan dan vergeleken worden met ieder product via de cosinusgelijkenis $S_C$:
+\begin{equation}
+    S_C(U_i, I_j) = \frac{U_i \cdot I_j}{\Vert U_i \Vert \Vert I_j \Vert}
+    \label{eq:chap2_cb_cosine_similarity}
+\end{equation}
+
+Er bestaan heel veel alternatieve formules voor het opstellen van gebruikersprofielen. Er kan op verschillende plaatsen genormaliseerd worden en technieken zoals Term Frequenqy - Inverse Document Frequency (TF-IDF) kunnen toegepast worden op de eigenschappen. Scores kunnen herschaald worden om negatieve waarden toe te kennen aan eigenschappen of producten met negatieve scores kunnen lagere gewichten krijgen. De optimale combinatie van technieken hangt steeds af van het probleem.
+
+\subsubsection{Collaborative Filtering}
+\label{sec:chapt2_cf}
+Bij Collaborative Filtering maken we geen gebruik van metadata. Bij User-User Collaborative Filtering (UUCF) kijken we in de plaats naar het gedrag van andere gebruikers. Hierbij worden opnieuw gebruikersprofielen opgesteld, zoals in definitie \ref{eq:chap2_cb_user_profile}. Hierna worden deze met elkaar vergeleken met Pearsons correlatiecoëfficiënt $C_p$:
+
+\begin{equation}
+    C_p(U_i, U_j) = \frac{\sum_{k = 1}^{m}(r_{i, k} - \overline{r_i})(r_{j, k} - \overline{r_j})}{\sqrt{\sum_{k = 1}^{m}(r_{i, k} - \overline{r_i})^2} \sqrt{\sum_{k = 1}^{m}(r_{j, k} - \overline{r_j})^2}}
+    \label{eq:chapt2_pearson_corr}
+\end{equation}
+\cite{UUCF_original_paper}, waarbij $r_{i, k}$ de score voorstelt die gebruiker $i$ gaf aan product $k$.
+Pearsons correlatiecoëfficiënt is een veralgemening van de cosinusgelijkenis (\ref{eq:chap2_cb_cosine_similarity}). Er bestaan nog verschillende variaties \cite{UUCF_alternative_implementations} op deze formule die bijvoorbeeld gebruik maken van normalisatie en significance weighting \cite{CF_significance_weighting}. Dit laatste is een techniek waarbij twee gebruikers die weinig gemeenschappelijke items hebben een lagere score krijgen.
+
+Na het berekenen van Pearsons correlatiecoëfficiënt kunnen nu aanbevelingen gegenereerd worden. De aanbevelingen voor gebruiker $i$ komen dan uit gebruiker(s) $j$, waarvoor geldt:
+\begin{equation}
+    C_p(U_i, U_j) = \max_{k \in U}(C_p(U_i, U_k))    
+    \label{eq:chapt2_neighbour_calculation}
+\end{equation}
+
+We noemen $I_j$ dan een buur van $I_i$. UUCF veronderstelt dat gelijk gedrag in het verleden wijst op gelijk gedrag in de toekomst. Ook stelt UUCF dat de niet-overlappende interessedomeinen van twee buren toch interessant zijn voor elkaar. UUCF gaat er dus impliciet van uit dat de overlap van interesses volledig is (\autoref{fig:chapt2_user_profiles_overlap}).
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/user_profiles_overlap.png}{Visualisatie overlap interesses van twee buren}{fig:chapt2_user_profiles_overlap}
+
+Het aantal buren dat in rekening wordt gebracht kan variëren tussen implementaties. Het is mogelijk om een top $K$ buren te nemen en dan de verwachte score voor een product $p$ als volgt te berekenen:
+\begin{equation}
+    \hat{r}_{i, p} = \overline{r_i} + \frac{\sum_{u=1}^{K}(r_{u, p} - \overline{r_u}) \cdot C_p(U_i, U_u)}{\sum_{u=1}^{K} C_p(U_i, U_u)}
+    \label{eq:chapt2_uucf_finding_predictions_from_neighbours}
+\end{equation}
+In definitie \ref{eq:chapt2_neighbour_calculation} is het aantal buren $K = 1$. Een groter aantal buren zorgt voor een stabieler maar minder specifiek resultaat door het toevoegen van ruis in het beslissingsproces. \cite{cursus_hs8}
+
+Een andere variant van Collaborative Filtering is Item-Item Collaborative Filtering (IICF). Waar UUCF gelijkaardige gebruikers met elkaar verbindt, zal IICF gelijkaardige items zoeken. \cite{IICF_original_paper} Hiervoor gebruiken we geen metadata zoals in Content-Based systemen. We kijken in de plaats naar de andere items die ook gekozen werden door gebruikers die het oorspronkelijke item kozen. Als een item door veel andere gebruikers ook gekozen werd, noemen we dat item een buur van het oorspronkelijke item. Net zoals UUCF, gaat IICF er van uit dat de voorkeuren van een gebruiker stabiel blijven, zodanig dat de buren steeds relevant blijven \cite{cursus_hs9}. In de praktijk bestaan er 'seizoensgebonden' items, zoals een kerstbar, maar deze zijn eerder uitzonderlijk.
+
+Om producten met elkaar te vergelijken, maken we opnieuw gebruik van Pearsons correlatiecoëfficiënt, analoog als in formule \ref{eq:chapt2_pearson_corr}. We vervangen dan de paren van gebruikers door paren van items.
+Intuïtief komt UUCF overeen met het zoeken naar vergelijkbare rijen en IICF met het zoeken naar vergelijkbare kolommen in \autoref{tab:chapt2_uucf_iicf_example}:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{c|ccc}
+         & $Item_0$ & $Item_1$ & $Item_2$ \\ \hline
+$User_0$ & 0.2      & 0        & 0.7      \\
+$User_1$ & 0.1      & 0.8      & 0.6      \\
+$User_2$ & 0.9      & 0.9      & 0.2     
+\end{tabular}
+\caption{Voorbeeld voor $R$ met fictieve data}
+\label{tab:chapt2_uucf_iicf_example}
+\end{table}
+
+In de praktijk hebben niet alle gebruikers alle items een score gegeven, en zullen dus niet alle elementen van $R$ ingevuld zijn. Ook bij IICF bestaan er verschillende varianten op Pearsons correlatiecoëfficiënt om de gelijkheid tussen twee items te bepalen. Analoog aan definities \ref{eq:chapt2_neighbour_calculation} en \ref{eq:chapt2_uucf_finding_predictions_from_neighbours} kunnen het vereist aantal buren gevonden worden en de verwachte scores voor nieuwe producten berekend worden \cite{IICF_original_paper}.
+
+Een groot voordeel van IICF aanbevelingssystemen is de schaalbaarheid bij grote itemsets. Als er veel verschillende items zijn, is het bij UUCF niet altijd mogelijk om een buur te vinden die dat specifieke item al een score heeft gegeven. In dat geval is het dus niet mogelijk om een score voor de huidige gebruiker te voorspellen. Als itemset $\gg$ userset, dan stelt dit probleem zich niet bij IICF. In de praktijk is dit een vaker voorkomend scenario \cite{recsys_handbook}.
+
+\subsection{Methoden gebaseerd op machine learning}
+\label{sec:chapt2_machine_learning_modellen}
+De afgelopen jaren is er een explosie aan nieuwe technieken voor aanbevelingssystemen gebaseerd op machine learning (ML). Dit is ook zichtbaar in \autoref{fig:chapt2_research_trend_recsys_ml}.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/recommender-system-machine-learning_edit.png}{Stijgend aantal publicaties over Recommender Systems en ML \cite{recsys_ml_popularity}}{fig:chapt2_research_trend_recsys_ml}
+
+ Deze nieuwe technieken zijn vaak in staat om significant accuratere nieuwe scores te voorspellen. Dit gaat echter ten koste van 'explainability', of de mogelijkheid om te verklaren waarom het aanbevelingssysteem een specifieke score voorspelt \cite{overzicht_technieken}. Machine learning-technieken zijn vaak ook geoptimaliseerd voor een specifiek probleem met een specifieke dataset, en vereisen dat tot tientallen hyperparameters worden gefinetuned bij een implementatie in een nieuwe context. Het zijn ook de enige technieken die ongestructureerde data zoals tekst of afbeeldingen kunnen verwerken en omzetten naar kennis. Zo bestaat er bijvoorbeeld een aanbevelingssysteem dat zich toespitst op het aanbevelen van social media posts, gebaseerd op de tekst van de post en de inhoud van de bijhorende foto \cite{recsys_afbeeldingen_social_network}.
+
+ Uit tientallen papers kozen we twee state-of-the-art algoritmen om te bespreken. We kozen deze op basis van volgende criteria:
+\begin{itemize}
+     \item Recente datum van publicatie
+     \item Goede performantie over verschillende datasets
+     \item Gebruik van machine learning
+     \item Implementatie in code beschikbaar
+     \item Link met eigen onderzoek (op basis van tekst of labels)
+\end{itemize}
+
+De eerste paper is 'Joint Deep Modeling of Users and Items Using Reviews for Recommendation' (2017) waarin de DeepCoNN-architectuur wordt voorgesteld \cite{deepconn}. DeepCoNN gebruikt enkel geschreven reviews om aanbevelingen op te stellen. De architectuur bestaat uit twee parallelle neurale netwerken. Het ene netwerk verwerkt de reviews, gegroepeerd per gebruiker. Op die manier wordt een gebruikersprofiel gemaakt. Analoog verwerkt het tweede neuraal netwerk alle reviews, gegroepeerd per item. Zo wordt dan een itemprofiel gemaakt. Slechts in de laatste laag van het DeepCoNN-netwerk worden de parallelle netwerken met elkaar verbonden via een fully-connected layer en wordt de loss berekend.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/deepconn_architectuur.png}{DeepCoNN Architectuur \cite{deepconn}}{fig:chapt2_deepconn_architecture}
+
+De tweede paper die we bestuderen is 'Wide \& Deep Learning for Recommender Systems' (2016) \cite{wide_deep_learning_paper}. De input van het Wide \& Deep-netwerk zijn gewone labels. Het 'wide' gedeelte verwijst naar een simpel lineair neuraal netwerk. Dit netwerk kan eenvoudige, expliciete feature-interacties modelleren. Aan de andere kant bestaat het 'deep'-component: hiermee kunnen de complexere, non-lineaire interacties tussen features gemodelleerd worden. 
+
+Op het einde worden de 'Wide' en 'Deep' netwerken gecombineerd in een fully-connected layer om een score te berekenen en een aanbeveling te maken. De architectuur staat visueel weergegeven in \autoref{fig:chapt2_deep_wide_architecture}
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/wide_deep_architectuur.png}{Wide \& Deep Architectuur \cite{wide_deep_learning_paper}}{fig:chapt2_deep_wide_architecture}
+
+\subsection{Hybride modellen}
+\label{sec:chapt2_hybride_modellen}
+
+Hybride modellen, of ensemble modellen, implementeren meerdere technieken in één model. Er bestaan zes hybridisatiemodellen:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\multicolumn{1}{l|}{Hybridisatiemodel} & Beschrijving \\ \hline
+\multicolumn{1}{l|}{} &  \\
+\multicolumn{1}{l|}{Gewichten} & \begin{tabular}[c]{@{}l@{}}De scores van verschillende technieken combineren\\ met een gewicht voor één product\end{tabular} \\
+\multicolumn{1}{l|}{} &  \\
+\multicolumn{1}{l|}{Wisselen} & \begin{tabular}[c]{@{}l@{}}Om de beurt een andere techniek gebruiken per\\ product\end{tabular} \\
+\multicolumn{1}{l|}{} &  \\
+\multicolumn{1}{l|}{Features combineren} & \begin{tabular}[c]{@{}l@{}}De werkwijze van de ene techniek nabootsen\\ in de andere techniek\end{tabular} \\
+\multicolumn{1}{l|}{} &  \\
+\multicolumn{1}{l|}{Feature augmentatie} & \begin{tabular}[c]{@{}l@{}}Het resultaat van de ene techniek wordt \\ toegevoegd aan de input van een andere techniek\end{tabular} \\
+\multicolumn{1}{l|}{} &  \\
+\multicolumn{1}{l|}{Cascade} & \begin{tabular}[c]{@{}l@{}}De ene techniek toepassen op een subset van de\\ items gegenereerd door de andere techniek\end{tabular} \\
+\multicolumn{1}{l|}{} &  \\
+\multicolumn{1}{l|}{Meta-level} & \begin{tabular}[c]{@{}l@{}}Het aangeleerde model van de ene techniek wordt\\ gebruikt als input bij de andere techniek\end{tabular} \\
+ & 
+\end{tabular}                                                 
+\caption{Verschillende hybridisatiemodellen voor aanbevelingssystemen \cite{hybrid_recsys_models, cursus_hs11}}
+\label{tab:chapt2_hybridisatiemodellen}
+\end{table}
+
+Het doel van een hybridemodel is zwaktes elimineren van alleenstaande modellen. Stel een voorbeeld van een hybride aanbevelingssysteem met gewichten 0.7 voor IICF en 0.3 voor CB. We weten dat in de meeste gevallen IICF beter zal presteren. Daarom krijgt het een hogere score. Echter, we hebben gemeten dat in sommige gevallen IICF een compleet foute aanbeveling maakt. Door het gebruik van een hybride aanbevelingssysteem kan deze fout opgevangen worden door de CB recommender die dan een zeer lage score zal toewijzen, waardoor de gewogen eindscore van dit slechte product toch laag zal zijn en niet aanbevolen zal worden.
+
+Het is duidelijk dat het gebruik van hybridemodellen zowel de accuraatheid als consistentie van een aanbevelingssysteem kan verbeteren. Een hybridemodel correct toepassen vereist wel een zeer goed begrip in de alleenstaande technieken en een goed inzicht in de omstandigheden waarin deze technieken soms falen. In de praktijk zijn hybridemodellen op basis van gewichten de meest voorkomende implementatie. \cite{hybrid_recsys_literature_overview}
+
+De Netflix Prize competitie daagde onderzoekers uit om het inhouse aanbevelingsalgoritme Cinematch te verslaan in RMSE. Het winnende team kon zo 1 miljoen USD binnenhalen. BigChaos, een hybride model dat bestond uit meer dan 100 verschillende algoritmen, won deze competitie met een  10\% lagere RSME dan Cinematch. \cite{netflix_hybrid}
+
+Wij onderzoeken een feature augmentatie-hybridemodel: we verwerken een deel van de dataset met NLP-technieken tot nieuwe inputvectoren, die dan worden toegevoegd aan de originele inputdata. Deze gecombineerde input wordt dan door een machine learning-aanbevelingssysteem verwerkt.
+
+\subsection{Uitdagingen}
+De technieken in \autoref{sec:chapt2_huidige_technieken_aanbevelingssystemen} staan beschreven in chronologische volgorde. Iedere techniek is steeds een evolutie op de vorige door de accuraatheid, snelheid, schaalbaarheid... te verbeteren. Echter kunnen we niet zeggen dat in alle gevallen de nieuwste methode de beste is. Aanbevelingssytemen zijn vaak zeer gevoelig aan de context waarin ze gebruikt worden, en het doel dat voor ogen is.
+
+
+\subsubsection{Cold-Startprobleem}
+\label{sec:chapt2_cold_start}
+"Het Cold-Startprobleem beschrijft de problematiek van het maken van aanbevelingen wanneer de gebruiker of het item nieuw is." \cite{coldstart_cf} We kunnen dit probleem dus in twee subproblemen opdelen: nieuwe gebruikers en nieuwe items.
+
+Bij nieuwe items zullen CB-technieken weinig problemen ondervinden, daar deze onmiddellijk aan de hand van de metadata kunnen gelinkt worden aan bestaande items. Bij UUCF is dit moeilijker: daar wordt een item pas aanbevolen indien het geconsumeerd wordt door buren van een gebruiker. Doordat het een nieuw item is, heeft geen enkele gebruiker het item geconsumeerd, en wordt het dus ook bij geen enkele buur aanbevolen. Er kan een analoog besluit gevormd worden voor IICF. Collaborative Filtering heeft traditioneel dus geen oplossing voor het Cold-Startprobleem \cite{recsys_diversity}.  Bij machine learning-modellen hangt de invloed van het Cold-Startprobleem vast aan de gebruikte features bij de input. Hoe meer features afhangen van het aantal reviews/scores over het item, hoe slechter het zal presteren. Doordat DeepCoNN meer informatie uit weinig geschreven reviews kan halen dan de Wide \& Deep Learning-architectuur, is het DeepCoNN hier minder gevoelig aan. \cite{deepconn}
+
+Nieuwe gebruikers vormen een groter probleem: als we niets weten over de voorkeuren van een gebruiker, is het moeilijk om een persoonlijke aanbeveling te maken. Om dit op te lossen, kan een hybride aanbevelingssysteem ingezet worden. Dit hybride model bevat dan onder andere een niet-gepersonaliseerde techniek, zoals beschreven in \autoref{sec:chapt2_non_persionalised}. Dit hybride model zorgt dan voor een vloeiende overgang van niet-gepersonaliseerde technieken zolang er te weinig gebruikersgegevens zijn, tot volledig gepersonaliseerde aanbevelingen eens de voorkeuren van de gebruiker gekend zijn. Een alternatieve aanpak is de gebruiker expliciet vragen om zijn voorkeuren in een korte enquête. Hoewel dit ervoor zorgt dat de aanbevelingen vanaf het begin gepersonaliseerd zijn, gaat het afnemen wel ten koste van de gebruikerservaring (UX).
+
+Aanbevelingssystemen kunnen helpen om gebruikers kennis te laten maken met long-tail items. Echter stelt Fleder et al. \cite{recsys_diversity} dat doordat CF-algoritmen producten aanraadt op basis van consumpties en reviews, ze niet om kunnen met producten met beperkte beschikbare data. Hierdoor kan een Mattheüs-effect optreden waarbij populaire items nog populairder worden en onbekende items nooit aanbevolen worden. Het is dus belangrijk om het effect van het Cold-Startprobleem te minimaliseren.
+
+\subsubsection{Datakwaliteit}
+Het spreekt voor zich dat hoe preciezer de gebruikers en producten beschreven staan in de data, hoe makkelijker het is om correcte conclusies te trekken. Echter zijn niet alle algoritmen hier even gevoelig voor: Content-Based Filtering baseert zich enkel op de labels die bij de producten staan om aanbevelingen te maken. De correctheid, consistentie en precisie van deze labels is dus uitermate belangrijk voor CB. Om een dataset te laten voldoen aan deze eigenschappen is een significante investering nodig. Bij sommige datasets is het zelfs niet mogelijk om de items te verdelen in groepen en categorieën. Dit was de reden waarom in 1992 de eerste Collaborative Filtering-methode werd ontwikkeld. \cite{UUCF_original_paper} Bij machine learning-algoritmen is de gevoeligheid aan datakwaliteit implementatieafhankelijk. In tegenstelling tot Wide \& Deep Learning, verwacht DeepCoNN geen gelabelde dataset. De performantie van DeepCoNN blijft wel verbonden aan de kwaliteit van de ongestructureerde data: de geschreven reviews.
+\subsubsection{Grootte dataset}
+De performantie van machine learning-technieken schaalt logaritmisch met de grootte van de dataset. \cite{dataset_size_for_deep_learning} Het is dus belangrijk voor deze technieken om een zo groot mogelijke dataset te verzamelen zodat het model voldoende getraind kan worden.
+
+Bij CB en CF is het niet nodig om een model te trainen. Deze zijn dus minder gevoelig aan de grootte van de dataset. Merk wel op dat er een schaarsheidprobleem kan optreden bij UUCF: als er veel items zijn, en gebruikers geven weinig feedback over deze items, dan is het mogelijk dat sommige gebruikers geen buren vinden of dat deze buren het doelitem nog niet beoordeeld hebben. \cite{cursus_hs9}
+\subsubsection{Contextspecifiek}
+De context is de combinatie van de dataset en het domein met diens specifieke eisen voor aanbevelingen. Een contextspecifieke techniek is een techniek waarbij een andere configuratie noodzakelijk is bij een wissel van context. Zo is in het domein van muziekaanbevelingen vaak de bedoeling om variëteit aan te brengen, zonder een scherpe verandering van genre/mood. Bij webwinkels is het dan weer anders: als een gebruiker daar een nieuwe laptop zoekt, zal een aanbevelingssysteem bijvoorbeeld alternatieven tonen die zo dicht mogelijk aansluiten bij de huidige keuze.
+
+Traditionele methoden zijn weinig contextspecifiek. Er zijn weinig parameters (zoals het aantal buren in UUCF) om te optimaliseren. De gebruikte formules hebben slechts enkele varianten, zoals beschreven in \autoref{sec:chapt2_traditionele_methoden}. Dit staat lijnrecht tegenover de machine learning-technieken. Om de hoogste performantie te halen bij deze technieken is het noodzakelijk het effect van alle hyperparameters goed te begrijpen. DeepCoNN heeft bijvoorbeeld 14 hyperparameters die samen de volledige architectuur bepalen. \cite{deepconn_github}
+\subsubsection{Explainability}
+\label{sec:chapt2_explainability}
+De explainability, of 'uitlegbaarheid' van een techniek is de mogelijkheid om te verklaren waarom die techniek een specifiek item aan een specifieke gebruiker heeft aanbevolen. Doordat de formules bij de traditionele methoden gekend zijn, is het quasi triviaal om dit te achterhalen. Zo kan men bij een UUCF-aanbevelingssysteem de buren van een gebruiker opvragen en zo uitrekenen waarom een item aanbevolen werd. Opnieuw staat dit lijnrecht tegenover de machine learning-methoden, waarbij zeker de technieken die gebruik maken van neurale netwerken beschreven worden als 'black box'. Het is mogelijk explainability in te bouwen in deze modellen, maar dit gaat ten koste van precisie. \cite{explainable_ai_recsys, explainable_recsys_autoencoders}
+
+Explainability is belangrijk om gebruikers vertrouwen te laten hebben in het systeem. Zonder vertrouwen zal de gebruiker de aanbevelingen negeren. Dit kan een directe impact hebben op KPI van de diensten die men aanbiedt: als de gebruiker het systeem kan vertrouwen verhoogt de user experience en zal de gebruiker de dienst meer/langer gebruiken. Zo voorspelde een aanbevelingssysteem van Target (Amerikaanse warenhuiswinkelketen) dat een tienermeisje zwanger was. De vader reageerde hierop met 'Are you trying to encourage her to get pregnant?'. Het aanbevelingssysteem zag dat de dochter veel geurloze lotion kocht, wat typisch is voor zwangere vrouwen. Hierdoor bood het systeem meer artikels aan die zwangere vrouwen vaak kopen. \cite{recsys_baby_lotion_target} Deze reactie zou kunnen vermeden zijn, moest er een uitleg bij de aanbevelingen aangeboden werden.
+
+Als de gebruiker weet waarom een item aanbevolen wordt, kan die ook rechtstreeks waardevolle feedback geven aan het aanbevelingssysteem. Zo gaf onder andere YouTube recent de mogelijkheid om diens aanbevelingen rechtstreeks te beïnvloeden door items te verwijderen uit de feed en feedback te geven waarom. \cite{youtube_on_recommendations} Deze feedback wordt dan gebruikt om de nieuwe aanbevelingen nog beter te kunnen personaliseren.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/youtube_recs.png}{Gebruikersfeedback op een aanbeveling op YouTube}{fig:chapt2_youtube_feedback_recsys}
+
+\subsubsection{Diversiteit}
+Fleder et al. \cite{recsys_diversity} stelt dat het gebruik van aanbevelingssystemen kan zorgen voor een toename van diversiteit op individueel niveau, maar een daling in de geaggregeerde diversiteit. Hoofdzakelijk algoritmen die zich baseren op labels, zoals CB filtering, zijn hier vatbaar voor. Deze algoritmen kunnen een 'echo-kamer' maken doordat steeds items met vergelijkbare labels worden aangeraden. Indien deze items geconsumeerd worden, wordt het gebruikersprofiel nog verder in die trend versterkt en ontstaat er een feedbackloop. Er zijn gevallen bekend waar gebruikers van YouTube geradicaliseerd zijn door het aanbevelingssysteem dat steeds extremere video's aanbiedt.
+
+\cite{youtube_radicalisation} Onderzoek toont dat consumenten services als Spotify en Apple Music gebruiken om nieuwe muziek te leren kennen en daarvoor vertrouwen op aanbevelingssystemen. \cite{recsys_serendipity_music} Muzieksmaak evolueert per gebruiker verschillend. Providers moeten daarom ook proberen 'serendipity' te introduceren in hun aanbevelingen: nieuwe items die ver liggen van het gebruikersprofiel maar dat toch positief ontvangen worden. Het is echter niet triviaal om dergelijke items te voorspellen zonder vertrouwen te verliezen van de gebruiker: de 'serendipity' van een item meten werkt het best met (dure) expliciete feedback van een gebruiker.
+
+Een oplossing hiervoor is willekeurige items toevoegen aan de aanbevelingen of expliciete feeds maken voor 'nieuwe' content. \cite{youtube_randomness, youtube_new_to_you} Zo heeft Spotify een 'Discover Weekly' playlist met deels nieuwe muziek voor de gebruiker en heeft YouTube een tabblad met 'New to you' video's over nieuwe onderwerpen (\autoref{fig:chapt2_youtube_new_to_you}).
+
+\mijnfiguur[H]{width=5cm}{fig/chapt2/new_to_you_youtube.png}{'New to you' feed op YouTube}{fig:chapt2_youtube_new_to_you}
+
+\section{Natural Language Processing}
+Natural Language Processing (NLP) \cite{what_is_nlp} betreft het onderzoeksdomein waarin een model de menselijk taal probeert te beheersen. Idealiter kan dit model de taal begrijpen, verwerken en vervolgens correct genereren. NLP heeft toepassingen in meerdere gebieden \cite{nlp_use_cases} zoals vertalen, sentiment analysis, teksten samenvatten, spraakherkenning...
+
+Het voorgestelde aanbevelingssysteem in deze thesis gebruikt NLP om geschreven reviews te verwerken en om te zetten naar numerieke features die via feature augmentation gebruikt kunnen worden in een neuraal netwerk. We gebruiken hiervoor BERT, een taalmodel dat gebaseerd is op de transformerarchitectuur. Meer specifiek, voor onze toepassing gebruiken we BERTopic om het onderwerp uit iedere zin te extraheren en verwerken. In dit onderdeel halen we aan hoe ieder van deze state-of-the-arttechnieken werken.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/trend_NLP.png}{Stijgend aantal publicaties over Natural Language Processing \cite{NLP_popularity}}{fig:chapt2_research_trend_NLP}
+
+Een sterke groei is duidelijk aanwezig binnen het onderzoeksdomein van NLP. Dit is zichtbaar in \autoref{fig:chapt2_research_trend_NLP}. Dit komt onder andere door enkele recente ontdekkingen zoals transformers (2017) \cite{attention_is_all_you_need} en chatGPT (2022) \cite{openai_chatgpt}. Deze vooruitgang is ook een gevolg van de verbeteringen in het gebied van machine learning, zoals neurale netwerken en deep learning.
+
+\subsection{Preprocessingstechnieken}
+Binnen het gebied van NLP zijn er technieken voor preprocessing van de tekstuele data. Deze worden vaak toegepast voordat men begint aan het extraheren van inzichten en eigenschappen. Dit houdt in dat men
+onverwerkte tekstuele data opkuist, in een vast formaat giet, ruis verwijdert... Het doel van deze stappen is de onverwerkte tekst omzetten in een vorm die beter begrepen kan worden door algoritmen, zoals LDA en BERT. Meerdere preprocessingstechnieken kunnen gecombineerd worden. Welke stappen aaneengeschakeld worden hangt vooral af van het algoritme dat er op volgt en wat het einddoel is. We zullen nu enkele preprocessingstechnieken bespreken. Merk op dat deze lijst zeker niet exhausti is.
+
+\subsubsection{Tokenization}
+\label{sub:chapt2_tokenization}
+Bij het proces van tokenization \cite{tokenization_basics} zullen we de tekst opdelen in kleiner stukken. Hiervoor bestaan er meerdere varianten, zoals sentence tokenization en word tokenization.
+Hierbij worden respectievelijk de tekst in zinnen en woorden opgedeeld. Beiden lijken triviaal aangezien zinnen eindigen met leestekens en woorden gescheiden zijn door spaties. Echter zijn er veel uitzonderingen die afhangen van taalkundige kenmerken. Leestekens betekenen niet altijd het einde van een zin. Denk maar aan een punt na een afkorting. Analoog zijn er woorden die als één token beschouwd moeten worden ondanks het feit dat er een spatie tussen staat, een voorbeeld hiervan is New York. Dit betekent niet dat white-space tokenizers, waarbij men splitst op een spatie, niet werken. Een voorbeeld van een white-space word tokenizer is te vinden in \autoref{fig:chapt2_example_white_space_tokenizer}.
+
+\mijnfiguur[H]{width=16cm}{fig/chapt2/example_white_space_tokenizer.jpg}{Voorbeeld waarbij één zin omgezet wordt in tokens aan de hand van een white-space tokenizer.}{fig:chapt2_example_white_space_tokenizer}
+
+Word tokenization is een cruciale stap die vaak wordt toegepast. Een van de redenen is dat opvolgende preprocessingstechnieken, zoals het verwijderen van stopwoorden of lemmatization, op het niveau van tokens (woorden) werken. Een andere reden is dat woorden de bouwstenen van de menselijk taal zijn: hierdoor zullen veel modellen ook de tekst op het niveau van tokens verwerken.
+
+\subsubsection{Stopwoorden}
+Een algemene definitie van een stopwoord, volgens verschillende bronnen \cite{paper_stopwords,wisdom_stopwords,medium_stopwords,opinosis_stopwords}, zijn woorden die geen significante bijdrage hebben tot de zin of context. In teksten zijn dit type woorden frequent aanwezig. Stopwoorden zijn onder andere taalspecifieke woorden zoals lidwoorden of voorzetsels, of frequent voorkomende domeinspecifieke woorden. Deze hangen af van het onderwerp. Zo zal het woord 'restaurant' niet relevant zijn als alle teksten over restaurants gaan.
+
+Tijdens het preprocessen van tekstuele data worden deze stopwoorden vaak verwijderd, met de redenering dat ze weinig tot zelf geen waarde hebben. Deze stap werkt op het niveau van tokens, 'word tokenization' is dus vereist. Om deze voorverwerkingsstap te implementeren, bestaan er meerdere algoritmen zoals rule-based of gebaseerd op Zipf’s Law. \cite{paper_stopwords}.
+
+Stopwoorden verwijderen is zeker geen verplichte stap en kan zelf een nadelig effect geven afhankelijk van het einddoel. In onderstaand voorbeeld \ref{fig:chapt2_example_keep_stopwords} uit \cite{medium_stopwords} zal het stopwoord 'not' verwijderd worden, wat voor een einddoel zoals sentiment analysis niet het gewenste effect geeft. Hierdoor zal men de input, die een negatief gevoel heeft, beschouwen als positief.
+
+\mijnfiguur[H]{width=16cm}{fig/chapt2/example_sentiment.jpg}{Verkeerd gebruik van het verwijderen van stopwoorden met als einddoel sentiment analysis. Voorbeeld gebaseerd op \cite{medium_stopwords}}{fig:chapt2_example_keep_stopwords}
+
+Natuurlijk heeft het verwijderen van stopwoorden ook meerdere voordelen \cite{paper_stopwords}. Bij einddoelen zoals information retrieval en tekst classificatie kan men zien dat het verwijderen van stopwoorden het gewenste effect heeft en men nauwkeurigere resultaten verkrijgt. Het verwijderen van stopwoorden is een krachtige techniek maar we kunnen deze niet blindelings toepassen.
+
+\subsection{Transformers}
+\label{sec:chapt2_transformers}
+Transformers zijn een soort neurale netwerken (NN). ze werden voor het eerst geïntroduceerd in 2017 via de paper 'Attention Is All You Need'. \cite{attention_is_all_you_need}
+De modellen werden initieel gebruikt binnen het gebied van NLP om Engelse teksten te vertalen naar onder andere Duits en Frans. Nu zijn ze opgenomen als state of the art en worden ze gebruikt in diverse NLP taken. Voor onze einddoelen zullen we vooral BERT beschouwen.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/transformers_outperform.jpg}{Transformers overtreffen vorige state of the art modellen op het vlak van vertalen op basis van BLEU (BiLingual Evaluation Understudy). Tabel overgenomen uit \cite{attention_is_all_you_need}.}{fig:chapt2_transformers_outperform}
+
+De vorige state-of-the-arttechnieken waren voornamelijk methoden die gebruik maakten van Recurrent Neural Networks (RNN) \cite{rnn_for_nlp}, zoals bijvoorbeeld Long Short-Term Memory (LSTM) \cite{lstm_paper} of Gated RNN \cite{gated_rnn_paper} netwerken. Deze technieken hebben knelpunten die niet relevant zijn transformermodellen. \cite{transformers_knoldus,transformers_datacamp} Een van de grootste uitdagingen hierbij was de lange trainingstijd. Doordat de embedding in dezelfde volgorde door de encoder en decoder moet gaan, is parallellisatie niet mogelijk. Een andere uitdaging is performantie bij langere teksten: hier werden relaties tussen woorden die ver van elkaar verwijderd staan niet altijd correct geïnterpreteerd.
+
+Door de structuur van transformers worden beide uitdagingen aangepakt. Hierdoor zijn transformers een nieuwe state of the art zoals ook aangetoond in tabel \ref{fig:chapt2_transformers_outperform}. Merk op dat RNN niet voor alle doeleinden overtroffen worden door transformers. 
+
+\subsubsection{Architectuur}
+De transformer neurale netwerken hebben een encoder-decoder architectuur gebaseerd op het self-attention mechanisme. In definitie \ref{def:chapt2_transformers_encoder_decoder} is een simpele encoder-decoder structuur afgebeeld. Hier gaan we van input sequentie X naar hidden representatie Y tot uiteindelijke output sequentie Z. Aangezien het verwerken van tokens parallel kan door het gebruik van multi-head self-attention, zal dit een significante verbetering in trainingstijd geven.
+
+\begin{equation}
+\begin{split}
+X = [x_1, x_2, ..., x_n]  \\
+\Downarrow \;\;\;\;\;\;\;\;\;\;\;\;\;\;\; \\
+Y = [y_1, y_2, ..., y_n] \\
+\Downarrow \;\;\;\;\;\;\;\;\;\;\;\;\;\;\; \\
+Z = [z_1, z_2, ..., z_n]
+\end{split}
+\end{equation}
+\label{def:chapt2_transformers_encoder_decoder}    
+
+
+Het encoder-decoder gedeelte bestaat dus uit twee delen: het eerste deel is het encoder gedeelte. Met deze stap zullen we een gegeven input X omzetten in een verborgen representatie Y. Dit zal gebeuren door de betekenis van tokens in de input X te encoderen gebaseerd op een approximatie van het belang van deze woorden in de context. Het verkrijgen van deze informatie zal gebeuren door meerdere lagen. Elke encodinglaag bestaat uit een multi-head self-attention mechanisme gevolgd door een fully connected feed-forward laag.     
+
+In onderstaand voorbeeld zal de encodering van het vetgedrukt woord 'die' significant veranderen. Dit komt omdat het belang van het woord waar 'die' naar refereert, gewijzigd is. ('beker' in de eerste zin en 'kan' in de tweede zin)
+
+\begin{Verbatim}[commandchars=\\\{\}]
+    Hij giet water van de kan in de \verbatimbold{beker} todat \verbatimbold{die} vol is.
+    Hij giet water van de \verbatimbold{kan} in de beker todat \verbatimbold{die} leeg is.
+\end{Verbatim}
+
+Het tweede deel van de architectuur is de decoder. Deze zal de verborgen representatie Y omzetten naar de output sequentie Z. Het zal hier gebruik maken van de vorige output sequentie om zo een mapping van de input op de output te leren. De decoder zelf bestaat net zoals de encoder uit meerdere lagen. Elke decoding laag zal bestaan uit een masked multi-head self-attention mechanisme gevolgd door multi-head self-attention die de encoding als input gebruikt. Hoe deze lagen exact werken wordt beschreven in de volgende sectie aan de hand van scaled dot-product attention. Ten slotte volgt nog een fully connected feed-forward laag, dit zorgt voor niet-lineariteit waardoor het model complexe verbanden tussen self-attention outputs kan leren. 
+
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/transformer_network_layout.jpg}{Encoder-decoder architectuur van een transformer neuraal netwerk. (encoder: links, decoder: rechts) \cite{attention_is_all_you_need}}{fig:chapt2_transformer_network_layout}
+
+\subsubsection{Self-attention mechanisme}
+Door dit mechanisme kan het model, gebaseerd op de waarde van bepaalde woorden, verschillende gewichten geven aan bepaalde delen van de input. Het maakt gebruik van een query matrix $Q$, key matrix $K$ en een value matrix $V$. Deze worden verkregen door een vermenigvuldiging van de inputsequentie met leerbare gewichten (learnable weights). Merk op dat deze matrices eigenlijk bestaan uit $N$ vectoren van een bepaalde lengte $D$. Ze worden gegroepeerd in een matrix omdat dit in de praktijk computationeel efficiënter is.
+
+
+Voor dit voorbeeld zullen we een 'scaled dot-product attention' berekenen, merk op dat dat er andere varianten van attention bestaan. Om de attention gewichten G te berekenen gebruiken we vergelijking \ref{eq:chap2_attention_gewichten} gebruiken. Hier zullen we eerste een matrix vermenigvuldiging (dot product) toepassen op de query en key matrix. Vervolgens zullen we een schaalfactor S toepassen (in de paper \cite{attention_is_all_you_need} wordt S gelijk gesteld aan de $\sqrt{D_k}$, waarbij $D_k$ de lengte van een vector in de key matrix is). Ten slotte om de uiteindelijk attention gewichten te bekomen wordt de softmax functie nog toegepast.
+
+\begin{equation}
+G = softmax(QK^T / S)
+\label{eq:chap2_attention_gewichten}
+\end{equation}
+
+waarbij:
+\begin{conditions}
+Q & Query matrix \\
+K^T & Getransponeerde key matrix \\
+S & schaalfactor \\
+\end{conditions}
+
+Vervolgens worden de attention gewichten G gebruikt om een gewogen som van de key matrix V te nemen zoals in vergelijking \ref{eq:chap2_attention_output}. Deze gewogen som W is dan de output van attention mechanisme en zal dus vervolgens worden doorgegeven aan de fully connected feed-forward laag.
+
+\begin{equation}
+W = GV
+\label{eq:chap2_attention_output}
+\end{equation}
+
+De uiteindelijke architectuur beschreven in \autoref{fig:chapt2_transformer_network_layout} maakt gebruik van multi-head attention. Deze zal het self-attention mechanisme in parallel uitvoeren met H groepen van kleinere matrices $Q_i$, $V_i$ en $K_i$ met $i=1,2,...,H$. Deze groepen worden verkregen door de originele matrices lineair te projecteren, met andere woorden de matrices op te splitsen. De output van het attention mechanisme wordt ten slotte weer samengevoegd om zo de uiteindelijke output te bekomen. Dit proces wordt ook gevisualiseerd in \autoref{fig:chapt2_scaled_dot_multi_head}. Door het gebruik van multi-head attention kan het model berekeningen parallel uitvoeren, hierdoor zal het model sneller trainen.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/scaled_dot_and_multi_head_attention.jpg}{Visualisatie van scaled dot-product attention (links). Visualisatie van multi-head attention met h attention lagen op basis van scaled dot-product attention (rechts)\cite{attention_is_all_you_need}.}{fig:chapt2_scaled_dot_multi_head}
+
+\subsubsection{Trainen van een model}
+Het trainen van een accuraat nieuw transformermodel vereist een grote hoeveelheid data. Na het verzamelen van de data moet het model de trainingsdata nog verwerken, wat computationeel zeer duur is. In de praktijk wordt daarom vaak het concept van transfer learning toegepast \cite{transfer_learning_basic,transformers_datacamp}: dit is een techniek die eerst een model zal trainen op een gigantische, algemene dataset en vervolgens zal finetunen met een kleinere, specifieke dataset. 
+
+Binnen de context van NLP zullen modellen tijdens het trainen de relaties tussen de verschillende woorden en zinnen leren. Hierdoor kunnen modellen de woorden uit een taal of zelfs meerdere talen geëncodeerd voorstellen. Vervolgens zal het model gefinetuned worden op een kleinere dataset voor één specifiek taak, bijvoorbeeld sentiment analysis. Indien we het model voor een andere taak willen gebruiken, zoals vertalen of spraakherkenning, zullen we het pre-trained LLM hergebruiken. Vervolgens zullen we het finetunen met een andere dataset en taak, dit concept is visueel voorgesteld in \autoref{fig:chapt2_transfer_learning_LLM}.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/transfer_learning_LLM.jpg}{Transfer learning waarbij een pre-trained LLM hergebruikt wordt voor verschillende taken}{fig:chapt2_transfer_learning_LLM} 
+
+\subsubsection{BERT}
+\label{sec:chapt2_bert}
+BERT \cite{BERT_paper}, wat staat voor Bidirectional Encoder Representations from Transformers, is een open source deep learning model gebaseerd op transformers (\ref{sec:chapt2_transformers}) gecreëerd door Google.
+
+Het is een pre-trained model, getraind op ongelabelde tekstuele data zonder specifieke taak. Hierdoor kan het principe van transfer learning toegepast worden. Hierdoor kan het BERT-model gebruikt worden voor verschillende taken.
+
+Wat BERT onderscheidt \cite{bert_llm_basic} van vorige transformermodellen is diens begrip van de context waarin een woord gebruikt wordt. Dit komt omdat BERT gebruik maakt van een bidirectionele transformer.  Dat wil zeggen dat elke input sequentie in beide richtingen zal verwerkt worden, met andere woorden zowel van links naar rechts als van rechts naar links.
+
+Wij gebruiken het BERT taalmodel als basis om de geschreven reviews te verwerken.
+
+\subsection{Topic modelling}
+
+Topic modelling binnen NLP is een techniek om uit verschillende tekstuele documenten verborgen onderwerpen te halen. Deze onderwerpen noemen topics en bestaan uit meerdere woorden die semantisch dicht bij elkaar liggen. Een voorbeeld van een topic die dieren voorstelt is onderstaande verzameling van woorden.
+
+\[
+topic\_n = \{leeuw, aap, varken, koe, olifant, kat, hond, goudvis\}
+\]
+
+Merk op dat deze verzameling niet uniek is en sterkt afhangt van meerdere factoren zoals onder andere de trainingsdata en het aantal topics. Indien de trainingsdata verschillende documenten over huisdieren en wilde dieren bevat zal de verdeling anders zijn. Een mogelijke verdeling voor respectievelijk huisdieren tegenover wilde dieren is hieronder te vinden.
+
+\[
+topic\_1 = \{kat, hond, goudvis\}
+\]
+\[
+topic\_2 =\{leeuw, poema, olifant\}
+\]
+
+Deze machine learning-algoritmen zijn unsupervised en hebben dus geen gelabelde trainingsdata nodig. Er is dus geen enkele voorkennis over de onderwerpen nodig, dit geldt voor zowel de documenten als de topics zelf. 
+
+Topic modelling kan op diverse manieren gebruikt worden. Een toepassing is een gelijkheidsscore bepalen: met topic modelling kan men de onderwerpen van twee teksten bepalen en op basis daarvan een gelijkheidsscore berekenen. Wij zullen topic modelling gebruiken om de geschreven reviews samen te vatten tot één of meerdere topics.
+
+\subsubsection{BERTopic}
+\label{sub:chapt2_bertopic}
+
+BERTopic \cite{bertopic_paper} is een krachtig topic modelling algoritme, het maakt onder andere gebruik van dimensionaliteitsreductie, clustering en class based TF-IDF. Het algoritme werd BERTopic genoemd aangezien de tekstuele data initieel wordt omgezet naar vectoren aan de hand van BERT (\ref{sec:chapt2_bert}). In tegenstelling tot oudere methoden zoals LDA (Latent Dirichlet Allocation) \cite{lda_paper} die zuiver op tokens werken, bevatten deze BERT-vectoren ook contextinformatie. Hierdoor wordt de echte betekenis dus veel beter gemodelleerd.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/bertopic_algo.jpg}{Opbouw van BERTopic (links) met een mogelijke implementatie per stap (rechts) \cite{bertopic_algo}.}{fig:chapt2_bertopic_algo} 
+
+BERTopic bestaat conceptueel uit de volgende stappen: eerst gaat men de tekstuele input opzetten in een numerieke vector die men vervolgens zal clusteren. Ten slotte zal men de topics voorstellen via een aangepaste c-TF-IDF. Om dit proces te realiseren is BERTopic samengesteld uit 6 stappen zoals aangetoond in \autoref{fig:chapt2_bertopic_algo}, hiervan is de laatste stap optioneel. In de volgende secties bespreken we wat deze stappen inhouden, inclusief mogelijk implementaties.
+
+\subsubsection{Genereren van een embedding}
+\label{sub:chapt2_bertopic_embedding}
+De eerste stap in dit algoritme is de tekstuele input omzetten naar een numerieke vector. Deze voorstelling noemt men een embedding. De standaard in BERTopic is Sentence-BERT (SBERT) \cite{sentence_bert}. SBERT zal zinnen of paragrafen omzetten in één embedding. SBERT zelf is een gefinetuned BERT-model, zoals men voorstelt in \cite{BERT_paper}, via een Siamese Triplet Netwerk. SBERT kan, in tegenstelling tot BERT, de tekstuele input omzetten naar vectoren in een vectorruimte, die geschikt is voor veelgebruikte gelijkheidsmetrieken zoals de cosinusgelijkheid of Euclidische afstand. \cite{sentence_bert}
+Een bijkomend voordeel van SBERT is dat de lengte van de elke output vector gelijk is. Dit zal de volgende verwerkingsstappen vereenvoudigen. Ook de uitvoeringstijd is significant lager waardoor men SBERT de huidige state of the art voor sentence embeddings noemt.
+
+\subsubsection{Dimensionaliteitsreductie}
+\label{sub:chapt2_bertopic_dim_reduction}
+Als SBERT een hoge-dimensievoorstelling gebruikt voor de embeddings, wordt de vectorruimte ijler. Hierdoor worden de afstand tussen clusters en dichtheid van een cluster moeilijker te bepalen.  Dit fenomeen noemt men de 'curse of dimensionality'. \cite{curse_of_dim, high_dim_problem} Voordat men de numerieke vectoren gaat clusteren, zal men vaak een algoritme voor dimensionaliteitsreductie toepassen. Hoewel door deze compressie er informatie verloren gaat, kan betere clustering dit effect meer dan compenseren. \cite{dim_reduction_summary}.
+
+% TODO nalezen deze paragraaf
+Enkele mogelijkheden om dit te doen zijn UMAP \cite{paper_umap}, PCA \cite{paper_pca}, IPCA (gebaseerd op \cite{incremental_pca}), etc.
+In de bijhorende papers heeft men aangetoond dat dit significante stijgingen in performantie van de clusteringsalgoritmen geeft. 
+Er is een ruim assortiment \cite{dim_reduction_options} aan dimensionaliteitsreductiealgoritmen. Deze verschillen vaak in hun onderliggende wiskundige principes \cite{dim_reduction_summary}, waardoor ze verschillende voor- en nadelen hebben. De keuze van algoritme hangt vast met het gekozen clusteringsalgoritme. PCA zal zoveel mogelijk informatie behouden, dit geeft een voordeel voor afstandsgebaseerde clusteringsalgoritmen zoals K-means. Aan de andere kant bestaan er dichtheidsgebaseerde clusteringsalgoritmen zoals DBSCAN. In dit geval moeten we zo veel mogelijk de structuur van de data behouden, hiervoor is UMAP geschikt. Wij kiezen voor incremental PCA, daar dit algoritme schaalt voor grote datasets. Zie ook \autoref{sub:chapt2_bertopic}.
+
+\subsubsection{Clustering}
+\label{sub:chapt2_bertopic_clustering}
+Clustering is een unsupervised machine learning-techniek om gelijkaardige objecten, voorgesteld als een numerieke vector, te groeperen. Het doel is om gebruik te maken van de eigenschappen van de objecten om zo patronen te herkennen die niet onmiddellijk zichtbaar zijn. In BERTopic wordt dit gebruikt om verschillende zinnen die hetzelfde onderwerp hebben te groeperen. Dit is dus een cruciale stap voor het genereren van inputfeatures voor ons voorgesteld aanbevelingssysteem. Er zijn meerdere soorten clusteringstechnieken. \cite{clustering_types_of}
+
+Eén hiervan is hierarchical clustering, waarbij de objecten verdeeld worden over een hiërarchie. Dit wordt vaak voorgesteld met een dendrogram. Er zijn twee soorten aanpakken om een hiërarchie op te stellen. De divisive clustering of top-down manier, hierbij zullen alle objecten starten in één cluster (de top) en zullen ze recursief verdeeld worden in kleinere groepen. De andere manier is de omgekeerde richting, bekend als de agglomerative clustering of bottom-up aanpak. In dit geval heeft elk object zijn eigen cluster (bottom). Vervolgens zal men recursief clusters samenvoegen. We kunnen dit herhalen tot we aan de top zitten en alles weer één cluster is. In veel gevallen kunnen we eerder stoppen indien het aantal clusters volstaat. Deze twee aanpakken zijn gevisualiseerd in \autoref{fig:chapt2_hierarchical_clustering}.
+\newline De manier waarop men clusters zal splitsen of samenvoegen kan verschillen. Dit zal vaak gedaan worden door het optimaliseren van de afstand tussen de verschillende clusters (inter-cluster). Hiervoor zal men een linkage function gebruiken. Een andere manier is de afstand tussen de punten binnen één cluster te minimaliseren (intra-cluster). % TODO nalezen deelparagraaf onder hier:
+Deze technieken zijn dichtheidsgebaseerde clusteringsalgoritmen, een goede keuze van dimensionaliteitsreductie algoritme is dan PCA zoals uitgelegd in \autoref{sub:chapt2_bertopic_dim_reduction}.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/hierachical_clustering.png}{Hierarchical clustering: agglomerative tegenover divisive clustering \cite{clustering_hierarch_image}.}{fig:chapt2_hierarchical_clustering}
+
+Een andere soort is partitional clustering, hierbij gaat men alle $n$ objecten clusteren in $k$ clusters met $ n \leq k $. Het meest gebruikte algoritme hiervoor is K-Means \cite{kmeans_wiki}, hiervoor bestaan er ook varianten zoals MiniBatch K-Means \cite{kmeans_minibatch} of K-Means Supervised \cite{kmeans_supervised}. Het is een iteratief algoritme dat eerst de $k$ zwaartepunten van de clusters initialiseert. Vervolgens zullen we itereren over het volgende proces: voeg elk object toe aan zijn dichtstbijzijnde cluster. Dit zal vaak gebeuren aan de hand van de Euclidische afstand. Vervolgens zullen we binnen elke cluster het zwaartepunt herberekenen. Deze stappen zullen we blijven herhalen tot de clusters niet meer veranderen.
+
+Aangezien de zwaartepunten vaak random geïnitialiseerd worden kan het resultaat vastlopen in een lokaal minimum dat niet de optimale oplossing is, dit probleem wordt afgebeeld in \autoref{fig:kmeans_local_min}. Daarom zullen we het algoritme meerdere keren uitvoeren en de beste clustering selecteren op basis van evaluatiemetrieken (\autoref{sec:chapt2_clustering_evaluation}). % TODO nalezen volgdende zin
+Voor dezelfde reden als hierarchical clustering is PCA een gepast kandidaat voor dimensionaliteitsreductie
+
+\mijnfiguur[H]{width=16cm}{fig/chapt2/kmeans_local_min.jpg}{K-Means waarbij de zwaartepunten slecht geïnitialiseerd zijn (links) tegenover een goede oplossing (rechts) \cite{cursus_ML_unsupervised}}{fig:kmeans_local_min}
+
+Een derde soort is density-based clustering. Hiermee zal men de clusters opdelen op basis van de dichtheid van de objecten (vectoren). Een voorbeeld hiervan is DBSCAN met hyperparameters $\epsilon$ en $minPoints$. Dit algoritme zal eerst alle datapunten één van de volgende types toekennen.
+
+\begin{itemize}
+    \item Kernpunt: Het punt heeft minstens $minPoints$ buren binnen een straal van $\epsilon$.
+    \item Grenspunt: Het punt voldoet niet aan de eigenschap van $minPoints$ buren, maar er ligt wel een kernpunt binnen een straal van $\epsilon$.
+    \item Ruis: Alle overige punten.
+\end{itemize}
+
+Vervolgens zullen we de datapunten in clusters verdelen door alle kernpunten te overlopen. Telkens we een kernpunt tegenkomen die nog niet in een cluster zit maken we een nieuwe cluster voor dit punt. Vervolgens voegen we alle punten binnen een straal $\epsilon$ toe aan deze cluster. Indien het toegevoegde punt een kernpunt was, voegen we recursief de buren binnen een straal $\epsilon$ toe voordat men overgaat naar het volgende kernpunt. Eens alle kernpunten overlopen zijn, hebben we de finale clusters. Dit proces is gevisualiseerd in \autoref{fig:chapt2_dbscan_example}. Merk op dat sommige punten niet tot een cluster behoren.
+
+\mijnfiguur[H]{width=16cm}{fig/chapt2/DBSCAN_example.jpg}{Visualisatie van DBSCAN ($\epsilon=10$ \& $minPunten=4$) met de originele punten (links), type van de punten (midden) en de uiteindelijk clusters waarbij ruis afgebeeld is in het donkerblauw (rechts) \cite{cursus_ML_unsupervised}}{fig:chapt2_dbscan_example} 
+
+DBSCAN kan ook density-based met hierarchical clustering combineren tot HDBSCAN \cite{hdbscan_paper}. Hierbij zal men meerdere keren DBSCAN uitvoeren met verschillende $\epsilon$ waardoor men clusters van verschillende dichtheden kan detecteren. Deze eigenschap is het grootste voordeel tegenover DBSCAN. % TODO nalezen zin hieronder
+Beiden zijn dichtheidsgebaseerde clusteringsalgoritmen, zoals beschreven in \autoref{sub:chapt2_bertopic_dim_reduction} is een UMAP een slimme keuze voor dimensionaliteitsreductie.
+
+HDBSCAN is de standaard in BERTopic. Echter schaalt dit algoritme niet voor grotere datasets. MiniBatch K-Means is dan een geldig alternatief door diens combinatie van schaalbaarheid en accuraatheid. Wij gaan de standaard BERTopic vergelijken met zijn online variant door gebruik te maken van MiniBatch K-Means.
+
+\subsubsection{Topic representatie}
+\label{sub:topic_representatie}
+De laatste stap is een voorstelling van de topics opbouwen. Dit is het opstellen van een beschrijving ('onderwerp') per cluster. Deze stap is belangrijk voor explainability (\autoref{sec:chapt2_explainability}).  Hierbij moet men rekening houden met de flexibiliteit van BERTopic. Daarom zullen we zorgen dat deze stap onafhankelijk is van de vorige delen. Er mogen dus geen assumpties gemaakt worden over de eigenschappen van de clusters. Dit probleem zullen we oplossen door een nieuwe voorstelling van de cluster te maken. Voor deze voorstelling op te stellen zullen we alle items binnen één cluster samennemen als één lang document. De standaard en meest succesvolle techniek om een representatie van dit document te maken is bag-of-words (BOW) \cite{bag_of_words_blog}. Hierbij gaan we simpelweg tellen hoeveel keer elk woord voorkomt. Merk op dat preprocessingsstappen zoals stopwoorden verwijderen of lemmatization een grote impact kunnen hebben op deze BOW-representatie.
+
+Aangezien een BOW-representatie een simpele voorstelling is en dus niet de focus legt op de correcte woorden, zullen we hier nog gewichten aan hangen. Hiervoor gebruikt men c-TF-IDF zoals gegeven in definitie \ref{eq:chapt2_c_tf_idf} \cite{bertopic_algo}, dit is gelijkaardig aan TF-IDF toe te passen waarbij één document een cluster voorstelt. Het doel van dit algoritme is om de topic voor te stellen. Via deze techniek zullen we aan de ene kant rekening houden met hoe vaak een bepaald woord voorkomt binnen één cluster. Aan de andere kant zullen we ook rekening houden met hoe vaak dit woord voorkomt in de andere clusters, met andere woorden hoe veel keer meer komt dit woord voor in de huidige cluster dan in de andere clusters.
+
+\begin{equation}
+    W_{x,c} = F_{x,c} \times log(1 + \frac{A}{F_x})
+    \label{eq:chapt2_c_tf_idf}
+\end{equation}
+Waarbij
+\begin{description}
+    \item$\mathbf{W_{x,c}}$ is het gewicht van woord $x$ voor cluster $c$.
+    \item$\mathbf{F_{x,c}}$ is het aantal voorkomens van woord $x$ binnenin cluster $c$.
+    \item$\mathbf{A}$ is het gemiddelde aantal woorden per cluster.
+    \item$\mathbf{F_{x}}$ is het totaal aantal voorkomens van woord $x$ over alle cluster.
+\end{description}
+
+Merk op dat bovenstaande formule flexibel is door andere gewichten te kiezen \cite{bertopic_c_tf_idf}. Het is bijvoorbeeld mogelijk om minder belang te hechten aan het aantal keer dat een woord $x$ voorkomt in een bepaalde cluster $c$ door $F_{x,c}$ te vervangen door $\sqrt{F_{x,c}}$. Om de uiteindelijke representatie van een cluster $c$ op te stellen zullen we de woorden $x$ met het hoogste gewicht $W_{x,c}$ uit \autoref{eq:chapt2_c_tf_idf} nemen.
+
+
+Ten slotte kunnen we optioneel deze representatie, verkregen door c-TF-IDF, nog finetunen. Een mogelijke optie, gebaseerd op keyBERT \cite{keybert}, is KeyBERTInspired. Hierbij zal men op basis van c-TF-IDF voor één cluster de best passende documenten selecteren en hiervan een gemiddelde embedding genereren. Vervolgens zal men uit de beste $n$ woorden van de representatie van de cluster een selectie nemen. Deze zal geordend zijn op basis van relevantie aan de gemiddelde embedding van de geselecteerde documenten. Dit proces is gevisualiseerd in \autoref{fig:chapt2_bertopic_keybertinspired}.
+
+\mijnfiguur[H]{width=12cm}{fig/chapt2/keybertinspired.jpg}{Visualisatie startend van de c-TF-IDF representatie van een cluster tot de nieuwe representatie aan de hand van KeyBERTInspired \cite{bertopic_keybert}.}{fig:chapt2_bertopic_keybertinspired} 
+
+
+\mijnfiguur[H]{width=16cm}{fig/chapt2/bertopic_customizable.jpg}{Verschillende implementaties per stap (links) met enkele mogelijke combinaties van een volledige BERTopic model (rechts) \cite{bertopic_algo}.}{fig:chapt2_bertopic_customizable}
+
+\subsubsection{Evaluatiemetrieken}
+\label{sec:chapt2_clustering_evaluation}
+% TODO: LEES NA
+% uitleggen dat evaluatie belangrijk is om te weten welke combinatie van bouwstenen het beste werken voor de specifieke toepassing. Er zijn verschillende metrieken, die bvb de inter- of intracluster afstand bekijken, of de density of whatever. Leg kinda uit dat er niet één juiste manier om dit te evalueren , en dat ge best kijkt naar welke eigenschappen belangrijk zijn voor uw specifieke toepassing. Zeg welke metrieken wel of niet schalen. Eventueel Sluit af dat een goede clusteringsscore geen garantie geeft op een goed resultaat.
+Zoals afgebeeld in \autoref{fig:chapt2_bertopic_customizable} is er ruim assortiment aan combinaties. Om te bepalen welke combinatie(s) het beste werken voor een specifieke toepassing gebruiken we evaluatiemetrieken voor clustering. Er bestaan hierbij twee soorten. \cite{eval_metrics_scikit,eval_metrics} De eerste groep bevat de 'extrinsic measures', waarbij men zal evalueren op basis van ground truth labels. Aangezien BERTopic unsupervised is, ontbreken deze labels. Hierdoor gaan wij hier niet verder op in. De andere soort zijn 'intrinsic measures', hierbij is geen ground truth vereist en zal men vooral de eigenschappen van clustering beoordelen.  Hierdoor focussen  we enkel op de laatste soort metrieken. Deze metrieken zetten de volgende eigenschappen van een goede clustering om in een numerieke score:
+
+\begin{itemize}
+    \item \textbf{Cohesie/Dichtheid van een cluster}:  Bij een goede clustering zullen de punten binnenin één cluster dicht bij elkaar liggen (intra-cluster similarity).
+    \item \textbf{Separatie/Afstand tussen clusters}: Bij een goede clustering zullen de verschillende clusters gescheiden zijn en niet overlappen (inter-cluster distance).
+\end{itemize}
+
+De eerste metriek die we bespreken is Sum of Squared Error (SSE) gebaseerd op \cite{cursus_ML_unsupervised}. Deze techniek wordt vaak gebruikt bij K-means om de beste clustering met verschillende parameters te selecteren \cite{sse_with_kmeans}. Deze techniek beschrijft de dichtheid van een cluster door de afstanden tot het zwaartepunt van de cluster te berekenen zoals gegeven in definitie \ref{eq:chapt2_SSE}. Een van de voordelen van deze metriek is dat ze efficiënt berekenbaar is.
+
+\begin{equation}
+    SSE = \sum_{i=1}^{K}\sum_{x \in K_i} dist^2(C_i, x)
+    \label{eq:chapt2_SSE}
+\end{equation}
+Waarbij
+\begin{description}
+    \item$\mathbf{K}$ is het aantal clusters.
+    \item$\mathbf{C_i}$ is het zwaartepunt in cluster $i$.
+    \item$\mathbf{dist}$ is de euclidische afstand.
+\end{description}
+
+Een andere vaak gebruikte metriek is de silhouttescore \cite{silhoutte_score_paper}. Deze zal zoals SSE de intra-cluster similarity beschrijven, gecombineerd met de dichtheid van de verschillende clusters. In definitie \ref{eq:chapt2_silhoutte_coeff} is de formule van de silhouttescore weergegeven zoals geïmplementeerd in scikit-learn. \cite{eval_metrics_scikit} Een van de voordelen is dat de score zeer eenvoudig geïnterpreteerd kan worden. Deze ligt altijd in het interval $[-1,1]$, waarbij $-1$ overeenkomt met de slechtste en $1$ met een perfecte clustering. Het gevolg hiervan is dat we een clustering niet hoeven te vergelijken met anderen. Het 'goed' zijn van een cluster wordt hier bepaald door de dichtheid van de clusters en de separatie van clusters. Een van de nadelen is dat de tijdscomplexiteit $\mathcal{O}(n^2)$ is, waardoor deze metriek maar beperkt gebruikt kan worden bij grote datasets.
+
+\begin{equation}
+    S_{sil} = \frac{b - a}{max(a,b)}
+    \label{eq:chapt2_silhoutte_coeff}
+\end{equation}
+Waarbij
+\begin{description}
+    \item$\mathbf{a}$ is de gemiddelde afstand tussen een punt en alle andere punten binnen dezelfde cluster van het oorspronkelijke punt.
+    \item$\mathbf{b}$ is de gemiddelde afstand tussen een punt en alle andere punten binnen de dichtstbijzijnde cluster verschillend van de cluster van het oorspronkelijke punt. Hierbij wordt de dichtstbijzijnde cluster bepaald vanaf de locatie van het oorspronkelijke punt tot het zwaartepunt van een cluster.
+\end{description}
+
+De Calinski-Harabasz score (CH) is gebaseerd op verhouding tussen de afstand van de clusters en de spreiding van de punten binnenin één cluster. Hoe groter deze verhouding, hoe beter de clustering gedefinieerd is. \autoref{eq:chapt2_calinski_harabasz} toont de formule voor de Calinski-Harabasz score. \cite{calinski_paper} Een van de voordelen van deze metriek is dat ze efficiënt berekenbaar is. De score beschrijft ook het aantal punten en clusters. Voor clusteringsalgoritmen die dynamisch het aantal clusters bepalen kan dit een voordeel zijn.
+\begin{equation}
+    \begin{split}
+        B & = \sum_{q \in k} n_q(c_q - c_E)(c_q-c_E)^{T} \\
+        W & = \sum_{q \in k} \sum_{x \in q} (x-c_q)(x-c_q)^{T} \\
+        CH & = \frac{B}{W} \times \frac{n_E-k}{k-1}
+    \end{split}
+    \label{eq:chapt2_calinski_harabasz}
+\end{equation}
+
+Voor een dataset $E$ van grootte $n_E$ met $k$ clusters waarbij
+\begin{description}
+    \item$\mathbf{k}$ is het aantal clusters.
+    \item$\mathbf{n_q}$ is het aantal punten in cluster q.
+    \item$\mathbf{c_q}$ is het zwaartepunt van cluster q.
+    \item$\mathbf{n_E}$ is het totaal aantal datapunten.
+    \item$\mathbf{c_E}$ is het zwaartepunt van alle datapunten.
+    \item$\mathbf{X^T}$ is de getransponeerde van matrix X. 
+    \item$\mathbf{B}$ is de separatie tussen de verschillende clusters.
+    \item$\mathbf{W}$ is de spreiding van de punten binnenin één cluster.
+\end{description}
+
+% todo nalezen paragraaf
+Er bestaan nog meer metrieken zoals de Davies-Bouldin score \cite{davies_bouldin_paper} en Dunn score \cite{dunn_paper}. De meeste van deze scores beschrijven de cohesie en separatie van de clusters. Samen met het feit dat verschillende clusteringsalgoritmen een verschillende structuur genereren zal het moeilijk zijn om verschillende algoritmen te vergelijken. Bijvoorbeeld clusters gegeneerd door K-means hebben vaak dezelfde grootte \cite{cursus_ML_unsupervised}. Bij en ander algoritme zoals DBSCAN hoeft dit niet het geval te zijn, hier hebben de clusters dezelfde dichtheid. De meeste metrieken zullen een betere score halen op convex clusteringsalgoritmen zoals bijvoorbeeld K-means dan dichtheidsgebaseerde algoritmen zoals DBSCAN \cite{eval_metrics_scikit}. De keuze van de evaluatiemetriek hangt af van de toepassing en de relevante eigenschappen van de clustering. Merk op dat een goede clusteringsscore geen garantie geeft op een goed resultaat en visa versa. \newline
+In ons geval zijn meerdere mogelijkheden. Een eerste kandidaat is de silhouette score, deze heeft een vaste range waardoor we één clustering op zichzelf kunnen beoordelen. Dit werkt ook om verschillende clusteringen te vergelijken, een goed alternatief hiervoor is de Davies-Bouldin score. Ten slotte is de Calinski-Harabasz score aantrekkelijk wegens zijn lage computationele complexiteit. Een potentieel nadeel is dat de score afhangt van het aantal clusters, hierdoor kunnen de resultaten moeilijk interpreteerbaar worden tijdens het vergelijken van modellen met verschillende groottes.
+
+%% Eindconclusie BERTopic
+We concluderen dat BERTopic een state of the art topic modelling-algoritme is. De combinatie van performantie en flexibiliteit van de bouwstenen zorgen ervoor dat deze techniek domeinonafhankelijk zeer goede resultaten geeft. Elke stap in het proces kan vervangen worden door een ander gelijkaardig algoritme zoals afgebeeld in \autoref{fig:chapt2_bertopic_customizable}. Indien men voor een bepaalde stap een nieuwe state of the art creëert, kan men het onmiddellijk gebruiken zonder drastische wijzigingen aan het algoritme. Het is wel nodig om voor een specifieke toepassing steeds na te gaan welke bouwstenen het beste toegepast worden aan de hand van evaluatiemetrieken. Dit onderzoeken we in \autoref{sec:chapt4_tekst_naar_features}. \newline
+Een nadeel van BERTopic is dat het geen ondersteuning biedt om voor één document meerdere topics toe te kennen. Enkele voorgestelde oplossingen zijn de documenten opsplitsen, wat niet altijd optimaal is, of het gebruik van een kansmatrix, wat computationeel intensief is. Een ander significant nadeel is dat de transformers niet rechtstreeks in de uiteindelijke representatie van de topics gebruikt worden. Het gevolg hiervan is dat de mogelijkheid bestaat dat woorden, binnenin één representatie, gelijkaardig zijn op vlak van betekenis.
+
+
+% TODO: "Enkel gebruiken voor restaurant profiles" uitleggen in HS4
+\subsection{Sentiment analysis}
+Sentiment analysis is een vorm van topic classificatie. Binnen NLP is dit een techniek die gebruikt wordt om documenten te categoriseren in voorafbepaalde categorieën. In het geval van sentiment analysis zijn dit 'positief' en 'negatief'. Deze stellen respectievelijk voor dat een tekst een positieve of negatieve connotatie heeft. Deze techniek kan verder uitgebreid worden om emoties te detecteren in tekst. \cite{paper_emotions}.
+
+In onderstaand voorbeeld van sentiment analysis werden de zinnen positief en negatief gelabeld op basis van het gevoel van de gebruiker, met andere woorden de gebruikerservaring.
+
+\begin{Verbatim}
+    "Leuk dat bestellingen snel gebracht worden!"             POSITIVE
+    "Altijd leuk als de soep koud geserveerd wordt!"          NEGATIVE
+\end{Verbatim}
+
+Onze toepassing van sentiment analysis is het extraheren van een positieve of negatieve gebruikerservaring bij een geschreven review zonder dat deze een expliciete score vereist. Een geschreven review kan tegelijk goede als slechte punten van een restaurant omschrijven. Gecombineerd met BERTopic kan deze techniek een score toekennen per onderwerp beschreven in de review. Hoe sentiment analysis geïntegreerd wordt in het uiteindelijke resultaat is beschreven in \autoref{sec:chapt4_nlp_profielen}
+
+Er bestaan meerdere implementaties om sentiment analysis uit te voeren, maar de state-of-the-arttechnieken gebruiken transformermodellen, zoals beschreven in \autoref{sec:chapt2_transformers}. \cite{sentiment_older_paper, sentiment_transformer_paper}.
+
+% todo waarom distilbert -> zou dit eerder in H4 zetten
+% EVENTUEEL: online varianten (vragen aan Toon)
+% EVENTUEEL: zero-shot encoding (indien extra tekst nodig)
