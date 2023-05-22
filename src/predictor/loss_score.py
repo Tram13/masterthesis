@@ -20,9 +20,9 @@ class LossScore(nn.Module):
         # Variation on MSE
         loss = torch.square(target - output)
         # Higher loss for misprediction of low rated items
-        is_3_or_less_stars_penalty = (target <= 0.5).float() * 0.6
-        is_5_penalty = (target >= 0.99).float() * 0.1
-        return (loss + is_3_or_less_stars_penalty + is_5_penalty).mean()
+        is_3_or_less_stars_penalty = ((target <= 0.5).float() * 0.6) + 1
+        is_5_penalty = ((target >= 0.99).float() * 0.1) + 1
+        return (loss * is_3_or_less_stars_penalty * is_5_penalty).mean()
 
     def MSE_variation1(self, output, target):
         loss = torch.square(target - output)
