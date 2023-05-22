@@ -18,6 +18,8 @@ from tools.restaurant_profiles_manager import RestaurantProfilesManager
 from tools.user_profiles_manager import UserProfilesManager
 
 
+# Code om een model te trainen, met de ingestelde parameters
+# Optioneel kan een model en een optimizer meegegeven worden.
 def main_train_models_with_same_data_splits(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, models: list[MultiLayerPerceptronPredictor] = None, optimizers=None):
     with tqdm(total=EPOCHS, desc="Epochs", leave=True) as p_bar:
         train_test_data = DataPreparer.parse_data_train_test(train_data, test_data, (up_params, rp_params), cache_index_if_available=0)
@@ -66,6 +68,7 @@ def main_train_models_with_same_data_splits(train_data, test_data, up_params, rp
     gc.collect()
 
 
+# Deze code zal verschillende combinaties van user profiles en restaurant profiles testen
 def main_profiles_grid_search_for_nn(EPOCHS: int, SUB_EPOCHS: int):
     logging.info("Reading Yelp Dataset")
     train_data_f, test_data_f = DataReader().read_data()
@@ -90,6 +93,7 @@ def main_profiles_grid_search_for_nn(EPOCHS: int, SUB_EPOCHS: int):
     return 0
 
 
+# Code om guided topics: scores uit te rekenen
 def main_guided_topics_score_creation():
     print("hello world")
     logging.basicConfig(level=logging.INFO)
@@ -107,6 +111,7 @@ def main_guided_topics_score_creation():
                             )
 
 
+# Code om het offline BERTopic model te genereren
 def main_user_profile_offline_bert():
     print("hello world")
     (_, reviews, _), _ = DataReader().read_data(no_train_test=True)
@@ -125,6 +130,7 @@ def main_user_profile_offline_bert():
                             )
 
 
+# Clustering van een specifiek BERTopic model valideren
 def main_evaluate_model(model_name):
     print("hello world")
     logging.basicConfig(level=logging.INFO)
@@ -160,6 +166,7 @@ def main():
     gc.collect()
 
     # Dit traint een neuraal netwerk met de beste combinaties van inputfeatures en parameters voor het netwerk zelf.
+    # De huidige instellingen geven het beste resultaat, met een MSE van 0.0771
     # Zie hoofdstuk 5 voor de analyses
     main_train_models_with_same_data_splits(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS)
 
