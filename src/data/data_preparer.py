@@ -69,6 +69,9 @@ class DataPreparer:
 
     @staticmethod
     def get_tensor_for_ml(restaurant_reviews: torch.Tensor, ratings: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Prepares the provided tensor for GPU learning
+        """
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         ratings = ratings.unsqueeze(-1)
         restaurant_reviews, ratings = restaurant_reviews.to(device), ratings.to(device)  # Copy to GPU
@@ -98,6 +101,17 @@ class DataPreparer:
             profile_params: tuple[dict, dict],
             cache_index_if_available: int | None = None
     ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+        """
+        Combineert de aparte Users, Reviews, Restaurants DataFrames naar één DataFrame a.d.h.v. joins
+        Daarna wordt bij zowel de train- als testset een deel van de data gebruikt als generation set voor de profielen zoals  gespecifieerd in `profile_params`
+        Deze profielen worden dan toegevoegd aan de overige data en teruggegeven
+        Zie HS4: Data Flow
+        :param train_data:
+        :param test_data:
+        :param profile_params:
+        :param cache_index_if_available:
+        :return:
+        """
 
         if cache_index_if_available is not None \
                 and profile_params[0] == UserProfilesManager().get_best() \
@@ -109,7 +123,7 @@ class DataPreparer:
                 logging.warning(f"ML input/output not available in cache {cache_index_if_available}")
                 pass
         logging.info("Parsing train set")
-        training_input, training_output = DataPreparer.transform_data(*train_data, *profile_params, profile_size=0.5)  # TODO: in het verslag vermelden!
+        training_input, training_output = DataPreparer.transform_data(*train_data, *profile_params, profile_size=0.5)
         logging.info("Parsing test set")
         test_input, test_output = DataPreparer.transform_data(*test_data, *profile_params, profile_size=0.7)
         gc.collect()
@@ -118,6 +132,9 @@ class DataPreparer:
     @staticmethod
     def make_nn_caches(train_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], test_data: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame], up_params: dict,
                        rp_params: dict, n: int = 30, resume_from: int = 0):
+        """
+        Helper functions to create caches so repeated computations go faster
+        """
         for i in tqdm(range(resume_from, n), desc="Creating input/output data"):
             DataPreparer._make_nn_cache(train_data, test_data, up_params, rp_params, i)
 

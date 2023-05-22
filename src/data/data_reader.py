@@ -24,6 +24,12 @@ f"{swifter.config}"
 # This class works with the Yelp data set format. Download the data from https://www.yelp.com/dataset.
 # It is expected that the data files are unpacked in the location defined by config.ini.
 class DataReader:
+    """
+    Deze klasse omvat functies om de originele Yelp Dataset te parsen
+    Hier gaan we dus data inlezen, de train-test split maken en in kleine mate feature engineering toepassen
+    De code om de restaurants, users en reviews te parsen staat ook in `src/data/data analysis/*.ipynb
+    Het is makkelijker om de code daar te volgen dan in deze klasse
+    """
     EXPECTED_FILES = [
         'yelp_academic_dataset_business.json',
         'yelp_academic_dataset_checkin.json',
@@ -59,14 +65,6 @@ class DataReader:
         'date'
     ]
 
-    RELEVANT_TIP_FIELDS = [  # TODO: prob dit mergen samen met de review, indien dit veld bestaat
-        'user_id',
-        'business_id',
-        'text',
-        'date',
-        'compliment_count'
-    ]
-
     RELEVANT_USER_FIELDS = [
         'user_id',
         'useful',
@@ -88,6 +86,18 @@ class DataReader:
     def read_data(self, use_cache: bool = True, save_as_cache: bool = True, part: int = None,
                   total_parts: int = None, no_train_test: bool = False, at_least: int = None, at_most: int = None) -> \
             tuple[tuple[DataFrame, DataFrame, DataFrame], tuple[DataFrame, DataFrame, DataFrame]]:
+        """
+        De ""main"" functie van deze klasse. Hiermee wordt alle data ingeladen, in 2 tuples die de train- en testset voorstellen
+        Voor de overige methoden uit deze klasse te begrijpen, raden we aan om de notebooks te gebruiken
+        :param use_cache: Lees data uit cache, indien mogelijk
+        :param save_as_cache: Sla de verwerkte data op in de cache
+        :param part: Not supported
+        :param total_parts: Not supported
+        :param no_train_test: Maak geen train-test-split. Alle data zal dan in het 0de element van de returned tuple zitten
+        :param at_least: Filter data met minimaal `at_least` reviews
+        :param at_most:  Filter data met maximaal `at_most` reviews
+        :return:
+        """
         if part is not None or total_parts is not None:
             raise NotImplementedError("Dit wordt niet meer ondersteund")
         if no_train_test:
@@ -448,15 +458,6 @@ class DataReader:
         return train_reviews, test_reviews
 
     @staticmethod
-    def _parse_tips(file_location: os.PathLike, businesses: DataFrame) -> DataFrame:
-        entries = DataReader._get_entries_from_file(file_location)
-        filtered_entries = DataReader._filter_entries(entries, DataReader.RELEVANT_TIP_FIELDS)
-        tips = DataFrame.from_records(filtered_entries)
-        tips = tips[tips['business_id'].isin(businesses.index)]  # Only keep tips for restaurants
-        tips['text'] = tips['text'].astype("string")
-        return tips
-
-    @staticmethod
     def _parse_users(file_location: os.PathLike) -> tuple[DataFrame, DataFrame]:
         entries = DataReader._get_entries_from_file(file_location)
         # Combine all compliments
@@ -550,6 +551,10 @@ class DataReader:
     def fix_indices(businesses: DataFrame, reviews_train: DataFrame, reviews_test: DataFrame,
                     users_train: DataFrame, users_test: DataFrame) \
             -> tuple[DataFrame, DataFrame, DataFrame, DataFrame, DataFrame]:
+        """
+        Performance 'hack': De originele data van de Yelp Dataset gebruikt strings als IDs. Dit is zeer traag en niet memory-efficient
+        Met deze functie worden alle indices vervangen naar ints op een consistente manier
+        """
 
         # Transforming business IDs to integers
         businesses_indices = pd.Series(range(len(businesses)), index=businesses.index).astype(np.uint16)
