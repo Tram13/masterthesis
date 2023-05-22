@@ -27,7 +27,7 @@ class DataReader:
     """
     Deze klasse omvat functies om de originele Yelp Dataset te parsen
     Hier gaan we dus data inlezen, de train-test split maken en in kleine mate feature engineering toepassen
-    De code om de restaurants, users en reviews te parsen staat ook in `src/data/data analysis/*.ipynb
+    De code om de restaurants, users en reviews te parsen staat ook in `src/data/data analysis/*.ipynb`
     Het is makkelijker om de code daar te volgen dan in deze klasse
     """
     EXPECTED_FILES = [
