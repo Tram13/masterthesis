@@ -11,8 +11,10 @@ class LossScore(nn.Module):
     def forward(self, output, target):
         if self.impl == 1:
             return self.MSE_variation1(output, target)
-        else:
+        elif self.impl == 2:
             return self.MSE_variation2(output, target)
+        else:
+            raise NotImplementedError("No more than 2 methods are supported")
 
     def MSE_variation2(self, output, target):
         # Variation on MSE
