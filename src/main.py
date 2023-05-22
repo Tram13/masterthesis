@@ -3,7 +3,6 @@ import logging
 import random
 from pathlib import Path
 
-from torch import optim
 from torch.optim import Adagrad
 from tqdm import tqdm
 
@@ -12,20 +11,14 @@ from NLP.utils.evaluate_model import evaluate_model
 from NLP.utils.sentence_splitter import SentenceSplitter
 from data.data_preparer import DataPreparer
 from data.data_reader import DataReader
-from predictor.implementations.multilayer_perceptron1 import MultiLayerPerceptron1Predictor
-from predictor.implementations.multilayer_perceptron2 import MultiLayerPerceptron2Predictor
-from predictor.implementations.multilayer_perceptron3 import MultiLayerPerceptron3Predictor
-from predictor.implementations.multilayer_perceptron4 import MultiLayerPerceptron4Predictor
-from predictor.implementations.multilayer_perceptron5 import MultiLayerPerceptron5Predictor
+from predictor.implementations.multilayer_perceptron import MultiLayerPerceptronPredictor
 from predictor.implementations.multilayer_perceptron6 import MultiLayerPerceptron6Predictor
-from predictor.implementations.multilayer_perceptron7 import MultiLayerPerceptron7Predictor
-from predictor.implementations.multilayer_perceptron8 import MultiLayerPerceptron8Predictor
 from predictor.neural_network_trainer import NeuralNetworkTrainer
 from tools.restaurant_profiles_manager import RestaurantProfilesManager
 from tools.user_profiles_manager import UserProfilesManager
 
 
-def main_train_models_with_same_data_splits(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, models=None, optimizers=None):
+def main_train_models_with_same_data_splits(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, models: list[MultiLayerPerceptronPredictor] = None, optimizers=None):
     with tqdm(total=EPOCHS, desc="Epochs", leave=True) as p_bar:
         train_test_data = DataPreparer.parse_data_train_test(train_data, test_data, (up_params, rp_params), cache_index_if_available=0)
 
@@ -152,8 +145,7 @@ def main_evaluate_model(model_name):
 def main():
     # Note: force manual garbage collection is used to save on memory after heavy RAM and I/O instructions
     EPOCHS = 20
-    SUB_EPOCHS = 20
-    LR = 0.0002
+    SUB_EPOCHS = 20  # Aantal keer dat met dezelfde NLP-profielen getraind wordt. Zie hoofdstuk 4: Dataflow
 
     logging.basicConfig(
         level=logging.INFO,
@@ -167,21 +159,9 @@ def main():
     rp_params = RestaurantProfilesManager().get_best()
     gc.collect()
 
-    main_train_models_with_same_data_splits(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS, models, optimizers)
-
-    logging.info("***************** Coldstart *****************")
-    # TODO: zorgen dat we een getraind model pakken, en dan evalueren met een subset van de data, id est de coldstart dataset.
-    train_data, test_data = DataReader().read_data(at_least=5)
-    # TODO: vergeet zeker niet te zorgen dat de caching uitstaat bij de profile split generation! de cache_index_if_available of whatever!!
-
-
-
-
-
-    logging.info("***************** splits maken *****************")
-    DataPreparer.make_nn_caches(train_data, test_data, up_params, rp_params, resume_from=33, n=50)
-    # logging.info("***************** random forest trainen *****************")
-    # main_random_forest(train_data, test_data, up_params, rp_params)
+    # Dit traint een neuraal netwerk met de beste combinaties van inputfeatures en parameters voor het netwerk zelf.
+    # Zie hoofdstuk 5 voor de analyses
+    main_train_models_with_same_data_splits(train_data, test_data, up_params, rp_params, EPOCHS, SUB_EPOCHS)
 
 
 if __name__ == '__main__':
