@@ -116,6 +116,7 @@ Het verschil tussen de hoogste en laagste score van een restaurant is vaak extre
 \end{figure}
 
 \subsubsection{Attributen en categorieën}
+\label{sec:chapt3_labeled_data_attributes_categories}
 Een bedrijf dat de categorie 'restaurant' bevat, zal vaak nog andere categorieën bevatten die het type restaurant beter beschrijven, zoals 'fastfood' of 'Italian'. Deze categorieën kunnen dus gebruikt worden om de restaurants te beschrijven aan de hand van labels. Er zijn in totaal 1311 verschillende categorieën die de restaurants modelleren. Dit grote aantal zorgt ervoor dat ieder restaurant vrij uniek beschreven is, wat zorgt voor een ijle dataset. Hierdoor wordt het ook moeilijker om gelijkaardige items te vinden op basis van labels. Een restaurant bevat gemiddeld 4,25 categorieën (\autoref{fig:chapt3_verdeling_aantal_categorieën_per_restaurant}).\newline
 Als een gebruiker een review achterlaat over een restaurant dan associëren we die gebruiker met de categorieën van dat restaurant. Zo zien we dat de categorieën van een gebruiker ook vrij lineair schalen met het aantal reviews (\autoref{fig:chapt3_stijging_categorieen_per_gebruiker}). Dit toont dat een gebruiker vaak verschillende types restaurants bezoekt. Dit suggereert dat Content-Based filtering niet goed zal werken op deze dataset.
 
@@ -124,7 +125,7 @@ Als een gebruiker een review achterlaat over een restaurant dan associëren we d
     \begin{subfigure}{.5\textwidth}
         \centering
         \includegraphics[width=1\linewidth]{fig/chapt3/verdeling_aantal_categorieën_per_restaurant.png}
-        \caption{Histogram aantal categorieën per restaurant}
+        \caption{Histogram aantal categorieën per restaurant \\ \\}
         \label{fig:chapt3_verdeling_aantal_categorieën_per_restaurant}
     \end{subfigure}
     \begin{subfigure}{.5\textwidth}
@@ -136,8 +137,6 @@ Als een gebruiker een review achterlaat over een restaurant dan associëren we d
     \caption{Analyse categorieën bij restaurants}
     \label{fig:chapt3_categorieen_combined}
 \end{figure}
-% TODO: deze figuren aligneren met elkaar, prob whitespace toevoegen onderaan eerste figuur
-
 
 Een attribuut uit de Yelp dataset is vaak een faciliteit die een restaurant bezit, zoals parking of de mogelijkheid tot betalen met kredietkaart. We houden bij het maken van aanbevelingen geen rekening met de meeste van dit soort attributen: de verwachte use case is dat een gebruiker een manuele filter gebruikt om dergelijke eisen te verwerken. Dit type attributen zullen we dus niet gebruiken. Dezelfde redenering gaat op voor de locatie van een restaurant. We verwachten dat deze data gebruikt wordt om restaurants te filteren die fysiek dicht bij de gebruiker zijn, voordat de verwachte score wordt berekend.\newline
 Er zijn wel enkele nuttige attributen zoals 'atmosphere', dat de sfeer van een restaurant beschrijft in één woord zoals 'romantic' of 'classy', en 'priceRange', wat een restaurant opdeelt in één van vier prijsklassen. In tegenstelling tot categorieën, zijn attributen niet consistent aanwezig bij ieder restaurant. 

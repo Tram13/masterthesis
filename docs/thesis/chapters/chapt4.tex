@@ -6,9 +6,8 @@ In deze thesis onderzoeken we of de combinatie van tekstuele data aan de hand va
 \mijnfiguur[H]{width=10.5cm}{fig/chapt4/predictor/architectuur_begin.png}{Schets van de initiële architectuur}{fig:chapt4_architectuur_begin}
 
 Eerst bespreken we hoe we de data gebruiken. In \autoref{sec:chapt4_tekst_naar_features} beschrijven we het onderzoek naar de combinatie van technieken die het best werkt om de geschreven reviews om te zetten naar features voor het neuraal netwerk. In \autoref{sec:chapt4_neuraal_netwerk} leggen we het onderzoek uit naar de optimale vorm van het neuraal netwerk om de verwachte scores zo precies mogelijk te kunnen voorspellen.
-% TODO: throwback naar chapt2 waarin ik de uitdagingen uitleg en geef aan in welke categorie we zitten
 
-\section{Dataflow} % TODO: in de afbeelding en op andere plaatsen: in de trainset is de split 50-50! En ook uitleggen waarom: omdat er dan meer data is om te trainen, afgewogen dat de profielen dan wel minder data bevatten/minder accuraat zijn.
+\section{Dataflow}
 \label{sec:chapt4_data_flow}
 Zoals aangeduid in \autoref{fig:chapt4_architectuur_begin}, verwacht het neuraal netwerk vier vectoren als inputdata:
 \begin{itemize}
@@ -22,7 +21,6 @@ Het neuraal netwerk gebruikt deze data om een voorspelling te genereren voor de 
 
 \autoref{fig:chapt4_data_flow} toont welke data verwerkt wordt tot profielen, gebruikt wordt voor trainen en welke data gebruikt wordt voor testen. Bij machine learning-technieken is het afgetekend en correct opsplitsen van data in train- en testset uitermate belangrijk. Dit is nodig om de generaliteit van het model te garanderen en overfitting te voorkomen. Door de complexe architectuur van het voorgesteld netwerk is de dataflow niet evident:
 
-% TODO: verifien dat deze percentages kloppen. Ook aanpassen op de afbeeldingen EN verder in de tekst. Gebruik de zoekfunctie!
 \begin{enumerate}
     \item Eerst splitsen we de gebruikers uit de dataset op in twee groepen, steeds met bijhorende reviews voor die gebruikers. De eerste groep stelt de trainset voor, en omvat 80\% van de volledige dataset. De andere groep is de testset, met de overige 20\% van de data.
     \item We gaan eerst verder met de trainset. Het neuraal netwerk verwacht vier vectoren, die steeds een gebruikersprofiel of restaurantprofiel voorstellen. Echter kunnen we niet gewoon alle reviews van een gebruiker verwerken om deze profielen op te stellen! 
@@ -42,7 +40,6 @@ Het neuraal netwerk gebruikt deze data om een voorspelling te genereren voor de 
 
 \mijnfiguur[H]{width=17cm}{fig/chapt4/predictor/data_flow.png}{Schets van dataflow doorheen het model}{fig:chapt4_data_flow}
 
-% todo we use Azure cluster for offline BERT, trust me :) @arno
 \section{Tekst naar features}
 \label{sec:chapt4_tekst_naar_features}
 In deze sectie zullen we beschrijven hoe we uit de tekstuele reviews features (profielen) zullen verkrijgen die we gebruiken als input voor het neuraal netwerk. Ook beschrijven we de redeneringen achter de algoritmen, met andere woorden wat deze features moeten voorstellen. We zullen deze algoritmen hoofdzakelijk baseren op BERTopic. We onderzoeken de capaciteiten van verschillende modellen, en trachten deze zo objectief mogelijk te evalueren. BERTopic zal de reviews opsplitsen in clusters. Voordat we de reviews kunnen gebruiken als inputvector voor het neuraal netwerk, moeten we deze clustering eerst nog omzetten tot gebruikers- en restaurantprofielen. Dit proces is ook gevisualiseerd in \autoref{fig:chapt4_structuur_evaluatie_bertopic}.
@@ -51,19 +48,17 @@ In deze sectie zullen we beschrijven hoe we uit de tekstuele reviews features (p
 
 \subsection{Testset-up}
 \label{sub:chapt4_testsetup}
-Zoals gevisualiseerd in \autoref{fig:chapt4_structuur_evaluatie_bertopic} kunnen we ons algoritme op meerdere plaatsen evalueren. In volgende paragrafen zullen we beide manieren met elkaar vergelijken.
-% TODO: technische gegevens ontbreken hier! implementatie, cpu, os, ..
-% TODO: met onderstaande zin: We hebben gebruik gemaakt van een bestaande implementaties van BERTopic \cite{bertopic_homepage} waarbij we de verschillende lagen aanpassen door onder andere een sentence-BERT te gebruiken van \cite{sentence_transformers_implementation}.
+We hebben gebruik gemaakt van een bestaande implementatie van BERTopic \cite{bertopic_homepage} waarbij we de verschillende lagen aanpassen. We gebruiken sentence-BERT van sentence-transformers. \cite{sentence_transformers_implementation} Zoals gevisualiseerd in \autoref{fig:chapt4_structuur_evaluatie_bertopic} kunnen we ons algoritme op meerdere plaatsen evalueren. In volgende paragrafen zullen we beide manieren met elkaar vergelijken.
+
 \subsubsection{Evaluatie van profielen}
 \label{sub:chapt4_evaluatie_profielen}
 Een eerste mogelijkheid is om de uiteindelijk verkregen profielen te evalueren. Aan de ene kant modelleren deze wat een bepaalde gebruiker belangrijk vindt via het gebruikersprofiel. We combineren dit met een restaurantprofiel: dit stelt de specialiteiten en andere eigenschappen van een bepaald restaurant voor. Om deze profielen te evalueren, zullen we gebruik maken van de architectuur afgebeeld in \autoref{fig:chapt4_architectuur_begin}. Hierbij zullen we het volledige neuraal netwerk constant houden met uitzondering van deze NLP-profielen. We gebruiken een beperkt aantal epochs om sneller resultaten te verkrijgen. De precieze implementatie staat uitgeschreven in \autoref{sec:chapt4_basisimplementatie}. We kiezen dan de beste combinatie van profielen op basis van minimale loss door een grid search uit te voeren over alle mogelijke combinaties. We letten ook op de trend van de loss, om zeker te zijn dat er geen significante verschillen meer zullen optreden als we het model trainen met meer epochs. Op deze manier kunnen we de performantie van de profielen objectief beoordelen.
 
 \subsubsection{Evaluatie van de clustering}
 
-De tweede evaluatietechniek werkt aan de hand de verkregen clusters zoals beschreven in \autoref{sub:chapt2_bertopic_clustering}. Bij de keuze van een evaluatiemetriek voor deze clusters moeten we rekening houden met enkele aspecten. Het eerste is dat we geen gelabelde data hebben. In theorie kunnen we de zinnen handmatig labelen aan de hand van een lijst van topics. Dit introduceert een eerste vorm van subjectiviteit in de evaluatie, daar de zinnen anders geïnterpreteerd kunnen worden dan oorspronkelijk bedoeld, of het toekennen van een topic ambigu kan zijn. Hierbij stelt zich een bijkomend probleem dat elk BERTopic-model verschillende topics zal maken, met als gevolg dat iedere zin voor ieder model apart zal moeten gelabeld worden. Door deze redenen zullen we metrieken die gebruik maken van de ground truth labels uitsluiten en gebruik maken van de technieken beschreven in \autoref{sec:chapt2_clustering_evaluation}.
+De tweede evaluatietechniek werkt aan de hand de verkregen clusters zoals beschreven in \autoref{sub:chapt2_bertopic_clustering}. Bij de keuze van een evaluatiemetriek voor deze clusters moeten we rekening houden met enkele aspecten. Het eerste is dat we geen gelabelde data hebben. In theorie kunnen we de zinnen handmatig labelen aan de hand van een lijst van topics. Dit introduceert een eerste vorm van subjectiviteit in de evaluatie, daar de zinnen anders geïnterpreteerd kunnen worden dan oorspronkelijk bedoeld, of het toekennen van een topic ambigu kan zijn. Hierbij stelt zich een bijkomend probleem dat elk BERTopic-model verschillende topics zal maken, met als gevolg dat iedere zin voor ieder model apart zal moeten gelabeld worden. Door deze redenen zullen we metrieken die gebruik maken van de ground truth-labels uitsluiten en gebruik maken van de technieken beschreven in \autoref{sec:chapt2_clustering_evaluation}.
 
-% todo nalezen
-Met de overige methoden kunnen we de verschillende modellen vergelijken. Het doel van deze evaluatiemethode is om een idee te krijgen hoe goed de clustering werkt, zonder eerst een volledig neuraal netwerk te trainen. Een bijkomend voordeel is dat deze metrieken minder computationeel intensief zijn dan het trainen van een neuraal netwerk.
+Met de overige technieken kunnen we de verschillende modellen vergelijken. Het doel van deze evaluatiemethode is om een idee te krijgen hoe goed de clustering werkt, onafhankelijk van een neuraal netwerk. Een bijkomend voordeel is dat deze metrieken dus minder computationeel intensief zijn dan het trainen van een neuraal netwerk.
 
 \subsection{Clustering via BERTopic}
 In deze sectie bespreken we hoe we BERTopic gebruiken om een clustering te genereren. Deze modellen gebruiken we dan bij het creëren van gebruikers- en restaurantprofielen in \autoref{sec:chapt4_nlp_profielen}. Merk op dat het gebruikte embeddingmodel bij BERTopic getraind is op algemene data. Idealiter beschikken we over een gelabelde dataset die specifiek in context van de culinaire wereld kan aangeven hoe gelijkaardig twee zinnen zijn. Helaas is dit niet het geval, waardoor finetunen van het sentence-BERT model niet mogelijk is. Hierdoor verwachten we dat de interclusterafstand relatief laag zal zijn, daar een algemeen model alle topics rond \q{eten} moeilijker zal kunnen onderscheiden.
@@ -92,7 +87,6 @@ In ons onderzoek met een statische dataset is dit niet relevant, maar dit is zek
 
 Om BERTopic om te zetten naar een online algoritme, zullen we alle stappen moeten omzetten naar een online variant, indien dit nog niet het geval is. Hoe deze stappen omgezet worden, staat hieronder beschreven. Deze transformatie wordt ook gevisualiseerd in \autoref{fig:chapt4_bertopic_online_transformation}
 
-% todo REF naar H2 indien we het daar uitleggen.
 \begin{itemize}
     \item \textbf{De embedding} komt uit een LLM. Dit LLM hoeft niet continu getraind te worden en kan al bevraagd worden voor ongeziene data. Door de generaliteit van het LLM is er dus geen aanpassing nodig.
     \item Voor \textbf{dimensionaliteitsreductie} gebruiken we een online variant, namelijk Incremental PCA (IPCA).
@@ -122,12 +116,6 @@ Aangezien we het model vaak zullen bevragen met dezelfde data tijdens het traine
 
 \subsection{Evaluatie clustering}
 \label{sub:chapt4_eval_clustering}
-% voordelen/nadelen van technieken
-
-% schalen de clusteringsmetrieken? -> nee, maar is het nodig om dit op zoveel data te doen => kleiner delen van de data (checken wat het verband is)
-% => DUNN schaalt helemaal niet (maar kan aan implementatie liggen dus skip)
-% metrics vergelijken
-
 Voordat we verder gaan met deze modellen om gebruikers- en restaurantprofielen te genereren, gaan we voor iedere implementatie een evaluatie op de clustering uitvoeren. We doen dit door de clusteringsmetrieken, beschreven in \autoref{sec:chapt2_clustering_evaluation}, uit te rekenen. Aangezien de meeste metrieken niet schaalbaar zijn, gebruiken we slechts een deel van de data voor de berekeningen. Om te bepalen hoe groot dit deel moet zijn om representatieve scores te behalen, vergelijken we eerst dezelfde metrieken over hetzelfde model, maar met een verschillende hoeveelheid data.
 
 \begin{figure}[H]
@@ -169,15 +157,9 @@ In \autoref{fig:chapt4_datapercentage_clusteringmetrics} zijn de scores weergege
     \caption{Scores voor de verschillende modellen (1\% van dataset)}
     \label{fig:chapt4_clusteringmetrics_vergelijking}
 \end{figure}
-% TODO: eventueel bij de laatste grafiek de as Y=0 iets vetter zetten, zodat het duidelijker is dat offline een negatieve score heeft
 
-% online_50, online_400 en guided_58 hebben beste score (dunn/silhouette)
-% offline doet significant slechter
-% meer dim houden doet ook slechter maar kan aan dim reduction liggen
 Uit \autoref{fig:chapt4_clusteringmetrics_vergelijking} kunnen we het volgende concluderen: de volgende modellen hebben algemeen de beste scores: online\_50, online\_400 en guided\_58\footnote{\q{online\_50} wil zeggen \q{Online BERTopic, 50 topics}, etc}. Voor deze modellen liggen de Davies-Bouldin score en silhouette score dicht bij elkaar. De exacte volgorde verschilt afhankelijk van de gekozen metriek. In het geval van Calinski-Harabasz score zijn er verschillen, maar deze linken we aan het verschillend aantal topics per model.\newline
 Het vierde beste model is online\_400\_HD waarbij de dimensionaliteitsreductie meer dimensies behoudt. Hierbij zien we dat de silhouette score iets slechter is, maar de Davies-Bouldin score significant hoger en dus slechter is. Voor de Calinski-Harabasz score kunnen we het enkel vergelijken met een ander model van 400 topics, namelijk online\_400. Hierbij nemen we waar dat de score significant lager en dus slechter is. Het laatste model is offline\_50, hierbij zien we dat alle scores significant slechter zijn. Merk op dat de silhouette score zelfs sterk negatief is wat wijst op een slechte clustering.
-
-% todo plots kunnen ook hier (formatting)
 
 Voor de drie beste modellen geven de scores aan dat de clustering niet optimaal is, maar dit betekent niet dat er een betere clustering is. Deze metrieken moeten we vooral gebruiken om verschillende clusteringsalgoritmen te vergelijken. Een potentiële verklaring kan zijn dat sentence-BERT, het model gebruikt voor de embeddings te generen, getraind is op algemene data en dus niet is gefinetuned op restaurantsdata. Hierdoor is het mogelijk dat het model de embeddings voor eten, service en andere restaurant gerelateerde termen te dicht bij elkaar zal leggen. Het gevolg hiervan is dat de uiteindelijke clustering veel overlap zal hebben, wat een verklaring kan zijn voor een niet optimale clustering.
 
@@ -211,7 +193,7 @@ Om vervolgens een profiel op te stellen, bepalen we de meest voorkomende onderwe
 
 Een variant hierop kan gegenereerd worden door gebruik te maken van sentiment analysis. Om dit te realiseren, bepalen we voor elk document $d_i$ of de sentiment positief, neutraal of negatief is, voorgesteld door de sentimentscore $s_i \in [-1, 1]$. De aanwezigheid van een topic $c_j$ in document $d_i$ wordt dan vermenigvuldigd met $s_i$. Na het aggregeren kan een bepaald onderwerp dan een negatieve score krijgen. Waarom dit nuttig kan zijn, wordt beschreven in \autoref{sub:chapt4_users_vs_restaurants}.
 
-We hebben op dit punt een vectormodel opgesteld voor elke review. We kunnen deze vectoren nu aggregeren tot één profiel per gebruiker of restaurant. We doen dit door de vectoren van alle reviews van één bepaalde gebruiker of restaurant elementsgewijs op te tellen. Voor gebruiker $u$ nemen we de som van alle vectoren van de reviews geschreven door $u$. Ten slotte zullen we deze geaggregeerde vector normaliseren zodat alle waarden in het interval $[0, 1]$ liggen. Dit proces is formeel uitgedrukt in \autoref{eq:chapt4_profile_per_user}. We kunnen dit analoog doen voor een restaurantsprofiel: we sommeren over de vectoren van alle reviews die geschreven zijn over het bepaalde restaurant.
+We hebben op dit punt een vectormodel opgesteld voor elke review. We kunnen deze vectoren nu aggregeren tot één profiel per gebruiker of restaurant. We doen dit door de vectoren van alle reviews van één bepaalde gebruiker of restaurant elementsgewijs op te tellen. Voor gebruiker $u$ nemen we de som van alle vectoren van de reviews geschreven door $u$. Ten slotte zullen we deze geaggregeerde vector normaliseren zodat alle waarden in het interval $[0, 1]$ liggen. Dit proces is formeel uitgedrukt in \autoref{eq:chapt4_profile_per_user}. We kunnen dit analoog doen voor een restaurantprofiel: we sommeren over de vectoren van alle reviews die geschreven zijn over het bepaalde restaurant.
 
 \begin{equation}
 \label{eq:chapt4_profile_per_user}
@@ -261,7 +243,7 @@ Met deze aangepaste vectoren $AN$ kunnen we de reviewprofielen opstellen. We zul
 
 Bij deze reviewprofielen kunnen we ook sentiment analysis toevoegen op een analoge manier zoals in \autoref{sub:chapt4_profile_by_clustering}. Ten slotte zullen we de gebruikers- en restaurantprofielen opstellen door de reviewprofielen te aggregeren. Dit zal analoog gebeuren als in \autoref{sub:chapt4_profile_by_clustering} aan de hand van \autoref{eq:chapt4_profile_per_user}.
 
-\subsubsection{Gebruikers tegenover restaurants}
+\subsubsection{Verschillen gebruikersprofielen en restaurantprofielen}
 \label{sub:chapt4_users_vs_restaurants}
 In de vorige secties haalden we verschillende mogelijkheden aan om gebruikers- en restaurantprofielen op te stellen. Voor de meeste parameters is er weinig tot geen verschil tussen een profiel opstellen voor een gebruiker tegenover een restaurant. Dit geldt ook voor de algoritmes op basis van clustering en representaties.
 
@@ -269,12 +251,7 @@ De meest interessante onderzoeksparameter is het gebruik van sentiment analysis.
 een gebruiker gaat naar een pizzarestaurant. De gebruikerservaring was negatief aangezien de pizza niet lekker was. Hierdoor is de sentiment analysis van de review negatief. Indien we dit toevoegen aan een gebruikersprofiel zou dit weergeven dat een gebruiker pizza niet lekker vindt. Deze assumptie komt niet overeen met de realiteit, aangezien de gebruiker een pizzarestaurant bezocht, nemen we aan dat hij pizza lekker vindt. Hierdoor is het logisch om geen sentiment analysis toe te passen bij een gebruikersprofiel. \newline
 Beschouw hetzelfde voorbeeld voor een pizzarestaurant dat, wat betreft het eten, meerdere negatieve reviews heeft gekregen. In dit geval zouden negatieve scores in het restaurantprofiel voorstellen dat de pizza niet lekker is. Dit komt dus wel overeen met de realiteit dat gebruikers de pizza niet smaakvol vinden, zoals beschreven in de reviews. Hierdoor zullen we bij het opstellen van een restaurantprofiel wel gebruik maken van sentiment analysis.
 
-% TODO: wat hieronder staat is niet nagelezen
-% restaurant: goed/slecht -> 'fabulous', 'awful', ...
-% restaurant: hoe was het eten -> 'overcooked', 'seasoned', ...
-Een ander verschil is de relevantie van de verschillende onderwerpen, hierbij laten we de topics die geen enkele relevantie hebben zoals 'wow' en 'lol' buiten beschouwing. Voor gebruikers nemen we een subset van de restaurants, alles wat voor een gebruiker relevant is zal ook van toepassing zijn bij een restaurant. In de omgekeerde richting geldt dit niet. De onderwerpen die vooral woorden zoals 'verschrikkelijk gekruid' en 'aangebrand' bevatten, gaan over het eten in het restaurant. Weten dat een gebruiker geen aangebrand eten wil, levert geen bijdrage op aangezien dit te algemeen is. Voor diezelfde reden kunnen we ook de algemene termen zoals 'super', 'goed', 'slecht' uitsluiten bij gebruikersprofielen. Hierdoor zal een restaurantsprofiel dus uit meer topics bestaan. Merk op dat deze verdeling volledig manueel gedaan moet worden, hierdoor is deze uiterst subjectief en vatbaar voor menselijke fouten.
-
-% TODO is het restaurantprofiel of restaurantsprofiel -> mogelijk niet overal consistent!
+Een ander verschil is de relevantie van de verschillende onderwerpen als we manueel onderwerpen gaan filteren. Hierbij filteren we altijd alle topics die geen enkele relevantie hebben zoals \q{wow} en \q{lol}. Daarnaast zijn de onderwerpen voor gebruikers een subset van de onderwerpen van de restaurants. Alles wat voor een gebruiker relevant is, zal ook van toepassing zijn bij een restaurant. In de omgekeerde richting geldt dit niet. De onderwerpen die vooral woorden zoals 'verschrikkelijk gekruid' en 'aangebrand' bevatten, gaan over het eten in het restaurant. Aangezien geen enkele gebruiker aangebrand eten wil, levert de aanwezigheid onderwerp geen meerwaarde op. Voor diezelfde reden kunnen we ook de algemene termen zoals 'super', 'goed', 'slecht' uitsluiten bij gebruikersprofielen. Hierdoor zal een restaurantprofiel dus uit meer topics bestaan. Merk op dat deze filtering volledig manueel gedaan moet worden. Hierdoor is deze uiterst subjectief en vatbaar voor menselijke fouten en interpretaties.
 
 
 
@@ -335,13 +312,12 @@ Een ander verschil is de relevantie van de verschillende onderwerpen, hierbij la
 \section{Neuraal netwerk}
 \label{sec:chapt4_neuraal_netwerk}
 
-% TODO: waarom een neuraal netwerk? Welke voordelen spreken ons aan?
-% TODO: Arno, go ahead. Bespreek in deze section ook al de individuele resultaten. Random grafieken: go! Chapter 5 is enkel bedoelt om alles nog eens samen te vatten
 \subsection{Input}
-Zoals aangeduid in \autoref{fig:chapt4_architectuur_begin} zijn er twee bronnen van inputdata voor het neuraal netwerk: de labels rechtstreeks geëxtraheerd uit de Yelp dataset, en de geschreven reviews die zijn omgezet naar numerieke features zoals beschreven in \autoref{sec:chapt4_nlp_profielen}. Beide bronnen modelleren steeds zowel een gebruikerprofiel als een restaurantprofiel. Met deze data moet het neuraal netwerk een voorspelling maken welke score die specifieke gebruiker aan dat specifieke restaurant geeft. Merk op dat deze profielen worden opgesteld met slechts een deel van de train- of testset, zoals beschreven in \autoref{sec:chapt4_data_flow} % TODO: een zelfde soort 'warning' bij Arnoud zijn deel zetten
+\label{sec:chapt4_nn_input}
+Zoals aangeduid in \autoref{fig:chapt4_architectuur_begin} zijn er twee bronnen van inputdata voor het neuraal netwerk: de labels rechtstreeks geëxtraheerd uit de Yelp dataset, en de geschreven reviews die zijn omgezet naar numerieke features zoals beschreven in \autoref{sec:chapt4_nlp_profielen}. Beide bronnen modelleren steeds zowel een gebruikerprofiel als een restaurantprofiel. Met deze data moet het neuraal netwerk een voorspelling maken welke score die specifieke gebruiker aan dat specifieke restaurant geeft. Merk op dat deze profielen worden opgesteld met slechts een deel van de train- of testset, zoals beschreven in \autoref{sec:chapt4_data_flow}.
 
 Een neuraal netwerk aanvaardt enkel numerieke features. Bij de NLP gebruikers- en restaurantprofielen is dit reeds opgelost. Bij de labels is er meer werk. We bespreken eerst hoe een restaurant gemodelleerd wordt, en daarna hoe we deze modellering kunnen aanpassen om ook gebruikersdata te ondersteunen.
-% TODO: checken dat er niet te veel overlap is met Arnoud hier
+
 \subsubsection{Restaurantlabels}
 \label{sec:chapt4_nn_restaurantlabels}
 Een restaurant wordt hoofdzakelijk beschreven in de Yelp dataset met behulp van categorieën en attributen (\autoref{sec:chapt3}). We maken gebruik van one-hot encoding om de aanwezigheid van een categorie (nominaal) bij een restaurant aan te duiden. Doordat er in de totale dataset 1311 unieke categorieën zijn, zou er door de one-hot encoding een zeer ijle inputvector gemaakt worden. Om dit probleem te beperken, houden we enkel de categorieën die bij minstens 500 restaurants (1\% van totaal) voorkomen. Zo houden we nog 75 categorieën over.
@@ -363,10 +339,6 @@ met $R_{j, v}$ de genormaliseerde score die gebruiker $j$ geeft aan restaurant $
 Beide profielen, gecombineerd met de profielen die gecreëerd zijn aan de hand van NLP, vormen de input voor het neuraal netwerk. (\autoref{fig:chapt4_architectuur_input})
 
 \mijnfiguur[H]{width=8cm}{fig/chapt4/predictor/architectuur_input.png}{Close-up inputlaag van architectuur zoals in \autoref{fig:chapt4_architectuur_begin}}{fig:chapt4_architectuur_input}
-
-
-% TODO: zie correlatiegraphs, om te bekijken of er obvious dubbele data inzit of niet
-% TODO: zeggen dat corr. voor andere NLP profielen er basically zelfde uitziet
 
 \subsubsection{Correlaties}
 Het lijkt overbodig om zowel de labels als geschreven reviews te verwerken in hetzelfde neuraal netwerk, daar deze dezelfde objecten omschrijven. We beschouwen een paar features $(f_i, f_j)$ gecorreleerd indien $\lvert C(f_i, f_j) \rvert \ge 0,70$. Intuïtief zou men denken dat er sterke correlaties bestaan tussen een overeenkomstig profiel opgesteld door NLP en aan de hand van labels.\newline
@@ -415,7 +387,7 @@ Dit blijkt echter niet het geval: er zijn maar 14 van de 495 510 paren van featu
 De volledige data is beschikbaar in \verb|src/corr.zip|. Deze conclusie geldt voor alle varianten van profielen gemaakt door NLP.
 
 \subsection{Testset-up}
-De modellen zijn steeds geschreven in Python 3.10. De implementaties maken gebruik van PyTorch 2.0.0. \cite{pytorch} De inputvector voor het neuraal netwerk bestaat uit \verb||torch.float32 getallen. De uitvoering gebeurt op een AMD Ryzen 5800X, NVIDIA RTX 2080, en 64GB werkgeheugen. % TODO: checken dat bij arnoud dit klopt, en eventueel checken dat arnoud ook de azure pc erop zet, want dat lijkt beter
+De modellen zijn steeds geschreven in Python 3.10. De implementaties maken gebruik van PyTorch 2.0.0. \cite{pytorch} De inputvector voor het neuraal netwerk bestaat uit \verb||torch.float32 getallen. De uitvoering gebeurt op een AMD Ryzen 5800X, NVIDIA RTX 2080, en 64GB werkgeheugen.
 
 In dit deelonderzoek evalueren we de architectuur en parameters van het neuraal netwerk. Het effect van de inhoud van de inputvectoren wordt niet verder onderzocht. Zoals besproken in \autoref{sub:chapt4_testsetup}, zijn er meerdere mogelijke combinaties voor de NLP-profielen. We kozen de beste combinatie van profielen om verder mee te experimenteren. We analyseren iedere implementatie op dezelfde manier. De data wordt verwerkt zoals beschreven in \autoref{sec:chapt4_data_flow}: iedere epoch trainen we het neuraal netwerk met een trainset en berekenen we vervolgens de loss op de testset. Als de loss meerdere epochs op rij omhoog gaat, stoppen we het trainen om overfitting te voorkomen. De gebruikte lossfunctie voor optimalisatie is de MSE.
 
@@ -424,7 +396,7 @@ Nadat het model volledig getraind en getest is volgens de hierboven beschreven m
 \subsection{Basisimplementatie}
 \label{sec:chapt4_basisimplementatie}
 We beginnen met een basisimplementatie van een neuraal netwerk, om te verifiëren dat het mogelijk is om de echte score te schatten op basis van de inputdata. We werken met een standaard multilayer perceptron (feed-forward) model. De output van het model is één waarde in $[0, 1]$. We implementeren het aanbevelingssysteem dus als een regressiemodel, waarbij de output daarna herschaald wordt naar een score tussen 1 en 5. We kiezen voor de bij regressiemodellen veelgebruikte lossfunctie MSE. Deze is ook makkelijk om te zetten naar RMSE, wat vergelijken met andere onderzoeken rechtdoorzee maakt. \cite{narre, deepconn, wide_deep_learning_paper}
-% TODO: eerste idee en resultaten, problemen en opmerkingen...
+
 Het model bestaat uit 5 verborgen lagen, waarbij het aantal neurons eerst stijgt en daarna steeds halveert (\autoref{fig:chapt4_basisimplementatie}). In tegenstelling tot collaborative filtering, kan dit model wel niet-lineaire verbanden capteren. We gebruiken Stochastic Gradient Descent (SGD) als netwerkoptimizer, met een learning rate van $0,01$.
 
 \mijnfiguur[H]{width=16cm}{fig/chapt4/predictor/basisimplementatie_netwerk.png}{Voorstelling basisimplementatie, waarbij $n$ het aantal inputfeatures voorstelt}{fig:chapt4_basisimplementatie}
@@ -446,5 +418,6 @@ De Yelp dataset bevat in totaal 4 731 031 reviews over restaurants, waarbij veel
 Neurale netwerken zijn vaak onstabiel bij kleinere datasets. We onderzoeken wat de impact is van het verwijderen van een deel van de dataset.\newline
 We bestuderen ook of het verwerken van de tekstuele data tot profielen een meerwaarde is voor het voorspellingsvermogen van het netwerk, en of een dimensionaliteitsreductiealgoritme de grootte van de inputlaag van het model efficiënt kan beperken, waardoor het model makkelijker te trainen valt. Als de inputdata beschreven is in een lagere dimensie, dan is het eenvoudiger om generaliteit aan te leren aan het model. \cite{curse_of_dim}
 
-\subsection{Random Forest}
-Een neuraal netwerk heeft het meeste potentieel om hogere precisie te halen, ten koste van explainability. We onderzoeken hoeveel precisie we opgeven, en in welke omstandigheden deze trade-off het waard is.
+\section{Andere implementaties}
+We vergelijken ons neuraal netwerk met een baseline methode die steeds 4 sterren voorspelt, en met traditionele methoden: Content-Based Filtering en User-User/Item-Item Collaborative Filtering. We vergelijken ons model ook met state-of-the-arttechnieken: DeepCoNN en Wide \& Deep Learning.\newline
+Van alle implementaties heeft een neuraal netwerk het meeste potentieel om de hoogste precisie te halen, ten koste van explainability. We onderzoeken hoeveel precisie we opgeven als we een random forest-architectuur gebruiken in plaats van een neuraal netwerk.
