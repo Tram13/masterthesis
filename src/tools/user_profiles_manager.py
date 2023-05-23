@@ -52,7 +52,7 @@ class UserProfilesManager:
             approx_amount_top_n=5,
             filter_useful_topics=False
         ).get_build_parameters(),
-        # ProfileCreator(  # TODO: code fixen
+        # ProfileCreator(
         #     model_name="offline_bertopic_100000.bert",
         #     use_sentiment_in_scores=False,
         #     approx_mode=False,
@@ -60,7 +60,7 @@ class UserProfilesManager:
         #     approx_amount_top_n=5,
         #     filter_useful_topics=False
         # ).get_build_parameters(),
-        # ProfileCreator(  # TODO: te weinig RAM
+        # ProfileCreator(
         #     model_name="online_model_400top_97.bert",
         #     use_sentiment_in_scores=False,
         #     approx_mode=True,
@@ -68,7 +68,7 @@ class UserProfilesManager:
         #     approx_amount_top_n=10,
         #     filter_useful_topics=True
         # ).get_build_parameters(),
-        # ProfileCreator(  # TODO: cache missing
+        # ProfileCreator(
         #     model_name="online_model_400top_97.bert",
         #     use_sentiment_in_scores=False,
         #     approx_mode=True,
