@@ -10,9 +10,9 @@ Contact: [arvermot.vermote@ugent.be](mailto:arvermot.vermote@ugent.be)
 
 ## Inleiding
 Deze repository bevat alle code en data waarmee wij onze experimenten uitvoerden. De code staat in `src`. De onverwerkte data staat in `data`.\
-Alle overige documenten, zoals de volledige thesis in PDF en LaTeX-vorm, Excel-bestanden voor grafieken en PowerPoint van de tusesntijdse presentatie staan in `docs`.
+Alle overige documenten, zoals de volledige thesis in PDF en LaTeX-vorm, Excel-bestanden voor grafieken en PowerPoint van de tussentijdse presentatie staan in `docs`.
 
-In `src` staat een README.md die de verdere uitleg voor de code uitlegt.
+In `src` staat een README.md die de verdere uitleg voor de code geeft.
 
 ## Setup en uitvoering
 1. Installeer python3.10

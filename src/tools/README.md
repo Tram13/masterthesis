@@ -28,7 +28,7 @@ for profile_params in RestaurantProfilesManager():
 # Rechtstreeks
 from NLP.profiles_creator import ProfileCreator
 best_config_NLP_restaurant_profiles = RestaurantProfilesManager().get_best()
-ProfileCreator.load_from_dict(best_config_NLP_restaurant_profiles).get_restaurant_profile(reviews_generation)
+profile = ProfileCreator.load_from_dict(best_config_NLP_restaurant_profiles).get_restaurant_profile(reviews_generation)
 ```
 (Analoog voor `UserProfilesManager`)
 ## RestaurantReviewsDataset
