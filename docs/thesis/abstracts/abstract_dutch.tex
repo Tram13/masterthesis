@@ -1,27 +1,11 @@
 \chapter[Nederlandstalige samenvatting]{Samenvatting}
-% TODO: Volgens UGent Guidelines is dit 1 pagina. Echter is onze thesis met 2 personen, dus 2 pagina's? Ik zou gaan voor 1 zeeeeeer goed gevulde pagina.
-% TODO: GEEN GRAFIEKEN OF TABELLEN OFZO, TEKSTUEEL!
 
-% TODO: Inleiding van probleem
-
-% TODO: Probleem- en doelstelling
-
-% TODO: Bestaande technieken, en dat ze nog steeds fouten maken, 2 tot 4 zinnen max!
-
-% TODO: NLP, en hoe we uiteindelijk de tekst omzetten naar features (enkel wat we uiteindelijk gebruiken), hoe we objectief vergelijken met andere implementaties (testmethode) (ik zou zeggen hier zo weinig mogelijk zeggen over """gefaalde""" experimenten)
-
-% TODO: MLP: welke architectuur lijkt het beste te werken? + testmethode
-
-% TODO: Wat zijn de uiteindelijke resultaten?
-
-% TODO: vergelijking met bestaande methoden + conclusie
+Aanbevelingssystemen zijn algoritmen die gebruikers helpen om keuzes te maken. Zo gebruikt bijvoorbeeld Spotify een aanbevelingssysteem om de \q{Weekly Recommended} playlist aan te vullen. Deze aanbevelingen gebeuren op basis van gegevens van de specifieke gebruiker en alle items. Huidige state-of-the-arttechnieken voor aanbevelingen zoals Wide \& Deep Learning of DeepCoNN maken nog fouten.\newline
+Deze technieken maken respectievelijk gebruik van enkel gelabelde data of enkel geschreven reviews. Wij onderzoeken of de combinatie van deze twee databronnen leidt tot betere resultaten in een implementatie die gebruik maakt van NLP-transformermodellen en neurale netwerken.
 
 
+Het omzetten van geschreven reviews wordt gerealiseerd door gebruik te maken van een online BERTopic-algoritme. De opbouw van het algoritme bestaat uit meerdere onderdelen: een embeddingsmodel, dimensionaliteitsreductiealgoritme, clusteringsmodel, c-TF-IDF in combinatie met BOW. Het best presterende BERTopic-model toegepast op de Yelp Dataset is een online variant bestaande uit SBERT, Incremental PCA, MiniBatch K-Means, online BOW en c-TF-IDF.\newline
+Hierbij wordt elke review nog opgesplitst in zinnen. Vervolgens kunnen we aan de hand van de clustering gebruikers- en restaurantprofielen opstellen. Naast het BERTopic-algoritme voeren we onafhankelijke NLP analyses uit: hierbij gaf het verwerken van de zinnen met sentiment analysis enkel een positief resultaat bij de restaurantprofielen.
 
-
-
-% TODO: VERGEET NIET STEEDS BRONVERMELDINGEN!
-
-
-
-
+We beschouwen het maken van voorspellingen als een regressieprobleem, geïmplementeerd in een neuraal netwerk. Het netwerk bestaat uit een inputvector met 1 000 dimensies: een combinatie van NLP-profielen en gelabelde data. De volgende zes verborgen lagen worden eerst breder dan de inputlaag en dan gradueel smaller tot de outputlaag van 1 dimensie. Dit netwerk is in staat om een RMSE van 1.1107 te halen. Dit is beter dan de Wide \& Deep Learning en DeepCoNN met een RMSE van respectievelijk 1.4025 en 1.1642. Het model kan voor gebruikers met weinig reviews toch relatief accurate voorspellingen maken. Het voorspellen van de reviews een score van 1/5 of 5/5 sterren is wel helemaal niet accuraat, daar deze klassen minder aanwezig zijn in de dataset.\newline
+We zijn dus in staat om met een neuraal netwerk gemiddeld betere voorspellingen te maken voor restaurants dan state-of-the-artalgoritmen. Dit doen we door tekstuele data, verwerkt met transformermodellen, gecombineerd met gelabelde data als inputvector voor het neuraal netwerk te gebruiken.

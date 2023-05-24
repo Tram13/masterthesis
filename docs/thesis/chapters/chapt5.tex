@@ -81,7 +81,7 @@ Voor de beste prestaties gaan we enkel sentiment gebruiken bij een restaurantpro
         \label{fig:chapt5_nlp_approx_vs_topics}
 \end{figure}
 
-In \autoref{fig:chapt5_nlp_approx_vs_topics} vergelijken we de profielen op basis van clustering tegenover profielen op basis van representaties, zoals beschreven in \autoref{sec:chapt4_nlp_profielen}. Analoog aan sentiment analysis maken we een onderscheid tussen gebruikers- en restaurantprofielen. In \autoref{fig:chapt5_nlp_approx_vs_topics_users} vergelijken we een gebruikersprofiel op basis van clustering tegenover gebruikersprofiel op basis van representatie in combinatie met verschillende restaurantprofielen. We concluderen dat de resultaten heel gelijkaardig zijn aan elkaar. Analoog doen we dit voor restaurantprofielen, zoals weergegeven in \autoref{fig:chapt5_nlp_approx_vs_topics_restaurant}. Net zoals de gebruikersprofielen nemen we geen significante verschillen waar. 
+In \autoref{fig:chapt5_nlp_approx_vs_topics} vergelijken we de profielen op basis van clustering tegenover profielen op basis van representaties, zoals beschreven in \autoref{sec:chapt4_nlp_profielen}. Analoog aan sentiment analysis maken we een onderscheid tussen gebruikers- en restaurantprofielen. In \autoref{fig:chapt5_nlp_approx_vs_topics_users} vergelijken we een gebruikersprofiel op basis van clustering tegenover gebruikersprofiel op basis van representatie in combinatie met verschillende restaurantprofielen. We concluderen dat de resultaten heel gelijkaardig zijn aan elkaar. Analoog doen we dit voor restaurantprofielen, zoals weergegeven in \autoref{fig:chapt5_nlp_approx_vs_topics_restaurant}. Net zoals bij de gebruikersprofielen nemen we geen significante verschillen waar. 
 
 Vervolgens vergelijken we een online model van 50 topics met een guided variant van 48 voorgedefinieerde topics en 10 extra topics. Het doel van extra topics is om de overige niet-relevant informatie op te vangen. In \autoref{fig:chapt5_nlp_guided} vergelijken we beide als gebruikersprofiel in combinatie met andere restaurantprofielen en vice versa. \\
 
@@ -147,7 +147,7 @@ Nu we hebben vastgelegd welke modellen goede en slechte gebruikers- en restauran
 
 \mijnfiguur[H]{width=14cm}{fig/chapt5/NLP/nlp_comparison_davies.png}{Verband tussen MSE en de Davies-Bouldin score voor verschillende BERTopic-modellen (lagere scores zijn beter)}{fig:chapt5_nlp_davies}
 
-In \autoref{fig:chapt5_nlp_davies} merken we op dat de Davies-Bouldin score en MSE in het algemeen dezelfde trend volgen. De enige uitzondering is het model online\_400\_HD. Bij dit model is de dimensie hoger voordat er geclusterd wordt. Maar dit is niet het geval bij de MSE: deze ligt in lijn met de andere goede modellen. We nemen waar dat clusteren met een hogere dimensie een aanzienlijke impact heeft op de uitkomst van de Davies-Bouldin score. 
+In \autoref{fig:chapt5_nlp_davies} merken we op dat de Davies-Bouldin score en MSE in het algemeen dezelfde trend volgen. De enige uitzondering is het model online\_400\_HD. Bij dit model is de dimensie hoger voordat er geclusterd wordt. Maar dit is niet het geval bij de MSE: deze ligt in lijn met de andere goede modellen. We nemen waar dat clusteren met een hogere dimensie een aanzienlijke negatieve impact heeft op de uitkomst van de Davies-Bouldin score. 
 
 \mijnfiguur[H]{width=14cm}{fig/chapt5/NLP/nlp_comparison_silhouette.png}{Verband tussen MSE en de silhouette score voor verschillende BERTopic-modellen.}{fig:chapt5_nlp_silhouette}
 
@@ -262,7 +262,7 @@ Ieder model, inclusief het meest eenvoudige, lijkt wel effectief te leren op bas
 We stellen ook opnieuw het effect vast van het hergebruiken van dezelfde inputvectoren voor 20 epochs: er is een klein maar meetbaar verschil in MSE. De veronderstelling dat we meerdere epochs kunnen trainen met dezelfde datasplit blijft wel gelden: we zien bijvoorbeeld dat de loss daalt tussen epoch 80 en 100 hoewel we trainen op dezelfde data, en we zien dat er toch een generaliteit wordt aangeleerd omdat bij een volgende datasplit het verschil in loss beperkt blijft.\newline
 Bij de complexere modellen is er al sprake van convergentie bij de loss na ongeveer 100 epochs. Bij de modellen met maximaal vier verborgen lagen is dit pas na meer dan 250 epochs het geval. Dit ligt niet in lijn met een veronderstelde eigenschap van deze neurale netwerken, die stelt dat complexere netwerken trager convergeren tijdens het trainen. We vinden geen verklaring voor dit fenomeen.
 
-We concluderen dat de beste resultaten worden behaalt met een model dat bestaat uit 6 verborgen lagen. De volledige architectuur ziet er dan uit als in \autoref{fig:chapt5_best_network}.
+We concluderen dat de beste resultaten worden behaald met een model dat bestaat uit 6 verborgen lagen. De volledige architectuur ziet er dan uit als in \autoref{fig:chapt5_best_network}.
 
 \mijnfiguur[H]{width=16cm}{fig/chapt5/predictor/best_network.png}{Voorstelling van de architectuur met zes verborgen lagen, waarbij $n$ het aantal inputfeatures voorstelt}{fig:chapt5_best_network}
 
@@ -305,7 +305,7 @@ Het is ook mogelijk dat gebruikers met veel reviews meer belang hechten aan hun 
 \end{figure}
 
 \subsection{Grootte dataset}
-Na experimenten zien we dat het algoritme nog steeds goed presteert indien we slechts de helft van de originele trainset gebruiken om te trainen. Er zijn wel meer epochs nodig om de loss te laten convergeren. Dit is logisch, daar in één epoch er nu maar half zoveel informatie aanwezig is. Bij 25\% merken we dat het gebrek aan data een probleem vormt: overfitting vindt plaats, daar het model niet meer in staat is om algemene conclusies te capteren uit de beperkte trainset.
+Uit experimenten leren we dat het algoritme nog steeds goed presteert indien we slechts de helft van de originele trainset gebruiken om te trainen. Er zijn wel meer epochs nodig om de loss te laten convergeren. Dit is logisch, daar in één epoch er nu maar half zoveel informatie aanwezig is. Bij 25\% merken we dat het gebrek aan data een probleem vormt: overfitting vindt plaats, daar het model niet meer in staat is om algemene conclusies te capteren uit de beperkte trainset.
 
 \mijnfiguur[H]{width=10cm}{fig/chapt5/predictor/loss_all_beperkte_data.png}{Loss voor verschillende groottes van trainset}{fig:chapt5_loss_all_beperkte_data}
 
