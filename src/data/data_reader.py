@@ -503,6 +503,8 @@ class DataReader:
 
         reviews = reviews.join(users, on='user_id', how='inner')
         reviews = reviews.join(businesses, on='business_id', how='inner')
+        for column_name in [column_name for column_name in reviews.columns if column_name.startswith("category") or column_name.startswith("attribute")]:
+            reviews[column_name] = reviews[column_name] * (reviews['stars_normalised'] - 0.5)  # Rescale impact label of restaurant to the rating of the user for that restaurant
         drop_columns = [
             column_name for column_name in reviews.columns
             if column_name != 'user_id' and not column_name.startswith("category") and not column_name.startswith(
